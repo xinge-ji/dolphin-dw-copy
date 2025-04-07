@@ -80,7 +80,7 @@ PROPERTIES (
   "disable_auto_compaction" = "false"                    -- 是否禁用自动压缩
 );
 
--- 插入基础数据：结算单信息（整合了所有UPDATE逻辑）
+-- 插入基础数据：结算单信息
 INSERT INTO dwd.wholesale_order_settle_dtl (
     -- 主键信息
     sasettleid,
@@ -156,7 +156,7 @@ SELECT
     b.sasettledtlid,
     
     -- 关联信息
-    doctoset.salesid,
+    sales.salesid,
     doctoset.salesdtlid,
     b.dw_updatetime,
     
