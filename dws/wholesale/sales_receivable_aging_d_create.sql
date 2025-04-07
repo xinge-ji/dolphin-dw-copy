@@ -41,7 +41,7 @@ WITH all_dates AS (
         entryid,
         customid,
         DATE(create_date) AS stat_date 
-    FROM dwd.wholesale_sales_ar_detail 
+    FROM dwd.wholesale_sales_receivable_detail 
     WHERE create_date IS NOT NULL 
     AND sale_mode = '普通销售'
     AND create_date < date('2018-01-01')
@@ -52,7 +52,7 @@ WITH all_dates AS (
         a.entryid,
         a.customid,
         DATE(b.confirm_date) AS stat_date 
-    FROM dwd.wholesale_sales_ar_detail a
+    FROM dwd.wholesale_sales_receivable_detail a
     INNER JOIN dwd.wholesale_order_settle_dtl b ON a.salesdtlid = b.salesdtlid
     WHERE b.confirm_date IS NOT NULL 
     AND b.use_status != '作废'
@@ -73,7 +73,7 @@ all_events AS (
     FROM
         dwd.wholesale_order_sales_dtl s
     JOIN
-        (SELECT distinct salesdtlid FROM dwd.wholesale_sales_ar_detail) s1 ON s.salesdtlid = s1.salesdtlid
+        (SELECT distinct salesdtlid FROM dwd.wholesale_sales_receivable_detail) s1 ON s.salesdtlid = s1.salesdtlid
     WHERE s.create_date IS NOT NULL 
     AND s.sale_mode = '普通销售'
     AND s.create_date < date('2018-01-01')
@@ -93,7 +93,7 @@ all_events AS (
     FROM
         dwd.wholesale_order_settle_dtl s
     JOIN
-        dwd.wholesale_sales_ar_detail b ON s.salesdtlid = b.salesdtlid
+        dwd.wholesale_sales_receivable_detail b ON s.salesdtlid = b.salesdtlid
     WHERE s.confirm_date IS NOT NULL
     AND s.use_status!= '作废'
     AND b.sale_mode = '普通销售'
@@ -108,7 +108,7 @@ sales_settle_status AS (
         MIN(order_settle_status) AS order_settle_status,
         MAX(IFNULL(order_settle_time, DATE('9999-12-31'))) AS order_settle_time
     FROM 
-        dwd.wholesale_sales_ar_detail
+        dwd.wholesale_sales_receivable_detail
     WHERE 
         salesid IS NOT NULL
     GROUP BY 

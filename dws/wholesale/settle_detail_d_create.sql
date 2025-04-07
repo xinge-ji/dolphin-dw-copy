@@ -107,7 +107,7 @@ order_settlement AS (
     FROM
         (select distinct salesid, order_settle_time,
         entryid, customid, nianbao_type, jicai_type,comefrom,entry_name, province_name,customer_name,customertype_name,customertype_group,
-        order_settle_status, yewu_date FROM dwd.wholesale_sales_ar_detail
+        order_settle_status, yewu_date FROM dwd.wholesale_sales_receivable_detail
         WHERE order_settle_time IS NOT NULL) ss
     GROUP BY
         DATE(ss.order_settle_time),
@@ -139,7 +139,7 @@ order_item_settlement AS (
         SUM(ss.order_item_settle_status) AS settle_order_item_count,
         ROUND(SUM(datediff(ss.order_item_settle_time, ss.yewu_date))/SUM(ss.order_item_settle_status),4) AS avg_order_item_settle_time
     FROM
-        dwd.wholesale_sales_ar_detail ss
+        dwd.wholesale_sales_receivable_detail ss
     WHERE 
         ss.order_item_settle_time IS NOT NULL
     GROUP BY

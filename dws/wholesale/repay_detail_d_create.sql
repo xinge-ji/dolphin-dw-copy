@@ -103,7 +103,7 @@ order_payment AS (
     FROM
         (select distinct salesid, order_payment_time,
         entryid, customid, nianbao_type, jicai_type, entry_name, province_name, customer_name, customertype_name, customertype_group,
-        order_payment_status, yewu_date FROM dwd.wholesale_sales_ar_detail
+        order_payment_status, yewu_date FROM dwd.wholesale_sales_receivable_detail
         WHERE order_payment_time IS NOT NULL) ss
     GROUP BY
         DATE(ss.order_payment_time),
@@ -133,7 +133,7 @@ order_item_payment AS (
         SUM(ss.order_item_payment_status) AS repaid_order_item_count,
         ROUND(SUM(datediff(ss.order_item_payment_time, ss.yewu_date))/SUM(ss.order_item_payment_status),4) AS avg_order_item_repaid_time
     FROM
-        dwd.wholesale_sales_ar_detail ss
+        dwd.wholesale_sales_receivable_detail ss
     WHERE 
         ss.order_item_payment_time IS NOT NULL
     GROUP BY
