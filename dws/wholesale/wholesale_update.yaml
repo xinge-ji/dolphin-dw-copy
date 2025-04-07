@@ -24,18 +24,18 @@ tasks:
     deps: [dependent]
     sql: $FILE{"customer_sales_d_update.sql"}
 
-  - name: sales_dtl_d
+  - name: sales_detail_d
     task_type: Sql
     datasource_name: "dwd"
     flag: NO
     deps: [customer_sales_d]
-    sql: $FILE{"sales_dtl_d_update.sql"}
+    sql: $FILE{"sales_detail_d_update.sql"}
 
   - name: settle_detail_d
     task_type: Sql
     datasource_name: "dwd"
     flag: NO
-    deps: [sales_dtl_d]
+    deps: [sales_detail_d]
     sql: $FILE{"settle_detail_d_update.sql"}
 
   - name: repay_detail_d
@@ -49,7 +49,7 @@ tasks:
     task_type: Sql
     datasource_name: "dwd"
     flag: NO
-    deps: [sales_dtl_d]
+    deps: [repay_detail_d]
     sql: $FILE{"sales_receivable_aging_d_update.sql"}
 
   - name: settle_goods_d
