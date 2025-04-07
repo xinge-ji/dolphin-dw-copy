@@ -37,7 +37,7 @@ sales_summary AS (
     AND IFNULL(is_haixi,0) = 0
     AND DATE(wos.create_date) >= dr.start_date AND DATE(wos.create_date) < dr.end_date
     GROUP BY DATE(wos.create_date), wos.entryid, wos.customid 
-)
+),
 -- 计算可转化为b2b的手工订单信息
 potential_b2b AS (
     SELECT 
@@ -49,10 +49,10 @@ potential_b2b AS (
     FROM dwd.wholesale_order_sales_dtl wosd
     JOIN dim.eshop_entry_goods eeg ON wosd.entryid = eeg.entryid 
         AND wosd.goodsid = eeg.goodsid
-        AND wosd.create_date >= eeg.eshop_starttime AND wosd.create_date < eeg.eshop_endtime
+        AND wosd.create_date >= eeg.dw_starttime AND wosd.create_date < eeg.dw_endtime
     JOIN dim.eshop_entry_customer ecb ON wosd.customid = ecb.customid
         AND wosd.entryid = ecb.entryid
-        AND wosd.create_date >= ecb.eshop_starttime AND wosd.create_date < ecb.eshop_endtime
+        AND wosd.create_date >= ecb.dw_starttime AND wosd.create_date < ecb.dw_endtime
     WHERE wosd.comefrom = '手工录入'
         AND (wosd.storageid IS NULL 
              OR wosd.storage_name in ('三明鹭燕合格保管帐','漳州鹭燕大库保管帐','泉州鹭燕大库保管帐','莆田鹭燕大库保管帐','福州鹭燕大库保管帐','宁德鹭燕大库保管帐','龙岩新鹭燕大库保管帐','南平鹭燕大库保管帐','股份厦门大库保管帐')
@@ -105,11 +105,13 @@ dim_info AS (
 )
 -- 最终合并所有数据
 SELECT
-    COALESCE(pb.stat_date, bo.stat_date, bs.stat_date) AS stat_date,
-    COALESCE(pb.entryid, bo.entryid, bs.entryid, di.entryid) AS entryid,
-    COALESCE(pb.customid, bo.customid, bs.customid, di.customid) AS customid,
+    COALESCE(ss.stat_date, pb.stat_date, bo.stat_date, bs.stat_date) AS stat_date,
+    COALESCE(ss.entryid, pb.entryid, bo.entryid, bs.entryid, di.entryid) AS entryid,
+    COALESCE(ss.customid, pb.customid, bo.customid, bs.customid, di.customid) AS customid,
     di.entry_name,
     di.customer_name,
+    COALESCE(ss.order_count, 0) AS order_count,
+    COALESCE(ss.sales_amount, 0) AS sales_amount,
     COALESCE(pb.potential_b2b_order_count, 0) AS potential_b2b_order_count,
     COALESCE(pb.potential_b2b_sales_amount, 0) AS potential_b2b_sales_amount,
     COALESCE(bo.b2b_order_count, 0) AS b2b_order_count,

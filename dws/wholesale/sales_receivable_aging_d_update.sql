@@ -55,7 +55,6 @@ all_events AS (
         (SELECT distinct salesdtlid FROM dwd.wholesale_sales_receivable_detail) s1 ON s.salesdtlid = s1.salesdtlid
     WHERE s.create_date IS NOT NULL 
     AND s.sale_mode = '普通销售'
-    AND s.create_date >= CURRENT_DATE() - INTERVAL 60 DAY
     group by DATE(s.create_date),s.entryid,s.customid,s.salesid
 
     UNION ALL
@@ -76,7 +75,6 @@ all_events AS (
     WHERE s.confirm_date IS NOT NULL
     AND s.use_status!= '作废'
     AND b.sale_mode = '普通销售'
-    AND s.confirm_date >= CURRENT_DATE() - INTERVAL 60 DAY
     group by DATE(s.confirm_date),s.entryid,s.customid,s.salesid
 ),
 

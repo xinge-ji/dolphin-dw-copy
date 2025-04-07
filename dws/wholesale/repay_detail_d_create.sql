@@ -64,8 +64,8 @@ WITH repay_summary AS (
         COALESCE(s.customertype_name, 'UNKNOWN') AS customertype_name,
         COALESCE(s.customertype_group, 'UNKNOWN') AS customertype_group,
         SUM(r.payment_amount) AS repaid_amount,
-        COUNT(DISTINCT r.repayid) AS repaid_count,
-        COUNT(DISTINCT r.repaydtlid) AS repaid_item_count
+        COUNT(DISTINCT r.sarecid) AS repaid_count,
+        COUNT(DISTINCT r.sarecdtlid) AS repaid_item_count
     FROM
         dwd.wholesale_order_repay_dtl r
     LEFT JOIN
@@ -103,7 +103,7 @@ order_payment AS (
     FROM
         (select distinct sr.salesid, sr.order_settle_time,
         sr.entryid, sr.customid, sod.nianbao_type, sr.jicai_type,sr.comefrom,sr.entry_name, sr.province_name,sr.customer_name,
-        sr.customertype_name,sr.customertype_group,sr.order_settle_status, sr.yewu_date 
+        sr.customertype_name,sr.customertype_group,sr.order_payment_status, sr.order_payment_time, sr.yewu_date
         FROM dwd.wholesale_sales_receivable_detail sr
         LEFT JOIN dwd.wholesale_order_sales_dtl sod ON sr.salesid = sod.salesid
         WHERE sr.order_payment_time IS NOT NULL) ss
@@ -187,8 +187,8 @@ LEFT JOIN order_item_payment oip ON
 CREATE INDEX IF NOT EXISTS idx_stat_date ON dws.wholesale_repay_detail_d (stat_date);
 CREATE INDEX IF NOT EXISTS idx_entryid ON dws.wholesale_repay_detail_d (entryid);
 CREATE INDEX IF NOT EXISTS idx_customid ON dws.wholesale_repay_detail_d (customid);
-CREATE INDEX IF NOT EXISTS idx_salerid ON dws.wholesale_repay_detail_d (salerid);
-CREATE INDEX IF NOT EXISTS idx_inputmanid ON dws.wholesale_repay_detail_d (inputmanid);
 CREATE INDEX IF NOT EXISTS idx_nianbao_type ON dws.wholesale_repay_detail_d (nianbao_type);
 CREATE INDEX IF NOT EXISTS idx_jicai_type ON dws.wholesale_repay_detail_d (jicai_type);
-CREATE INDEX IF NOT EXISTS idx_order_source ON dws.wholesale_repay_detail_d (order_source);
+CREATE INDEX IF NOT EXISTS idx_province_name ON dws.wholesale_repay_detail_d (province_name);
+CREATE INDEX IF NOT EXISTS idx_customertype_name ON dws.wholesale_repay_detail_d (customertype_name);
+CREATE INDEX IF NOT EXISTS idx_customertype_group ON dws.wholesale_repay_detail_d (customertype_group);

@@ -116,7 +116,7 @@ SELECT
         ELSE ROUND(SUM(notax_gross_profit) / SUM(notax_amount), 4)
     END AS gross_profit_rate
 FROM 
-    dwd.wholesale_settle_dtl
+    dwd.wholesale_order_settle_dtl
 WHERE 
     use_status = '正式'
 GROUP BY 

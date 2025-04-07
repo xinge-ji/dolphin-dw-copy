@@ -13,15 +13,15 @@ CREATE TABLE dws.eshop_sales_salesman_d (
     salesman_name varchar COMMENT "销售员名称",
 
     -- 可转化为b2b的手工订单信息
-    potential_b2b_order_count int COMMENT "可转化为b2b的订单数量",
+    potential_b2b_order_item_count int COMMENT "可转化为b2b的订单数量",
     potential_b2b_sales_amount decimal(18,4) COMMENT "可转化为b2b的订单金额",
 
     -- b2b订单信息
-    b2b_order_count int COMMENT "b2b订单数量",
+    b2b_order_item_count int COMMENT "b2b订单数量",
     b2b_sales_amount decimal(18,4) COMMENT "b2b订单金额",
 
     -- b2b自主下单订单信息
-    b2b_self_initiated_order_count int COMMENT "b2b自主下单订单数量",
+    b2b_self_initiated_order_item_count int COMMENT "b2b自主下单订单数量",
     b2b_self_initiated_sales_amount decimal(18,4) COMMENT "b2b自主下单订单金额"
 )
 UNIQUE KEY(stat_date, entryid, salesman_id) 
@@ -40,11 +40,11 @@ INSERT INTO dws.eshop_sales_salesman_d (
     salesman_id,
     entry_name,
     salesman_name,
-    potential_b2b_order_count,
+    potential_b2b_order_item_count,
     potential_b2b_sales_amount,
-    b2b_order_count,
+    b2b_order_item_count,
     b2b_sales_amount,
-    b2b_self_initiated_order_count,
+    b2b_self_initiated_order_item_count,
     b2b_self_initiated_sales_amount
 )
 WITH 
@@ -54,15 +54,15 @@ potential_b2b AS (
         DATE(wosd.create_date) AS stat_date,
         wosd.entryid,
         ecs.salesman_id,
-        COUNT(DISTINCT wosd.salesid) AS potential_b2b_order_count,
+        COUNT(DISTINCT wosd.salesdtlid) AS potential_b2b_order_item_count,
         SUM(wosd.sales_amount) AS potential_b2b_sales_amount
-    FROM dwd.wholesale_order_sales_doc wosd
+    FROM dwd.wholesale_order_sales_dtl wosd
     JOIN dim.eshop_entry_goods eeg ON wosd.entryid = eeg.entryid 
         AND wosd.goodsid = eeg.goodsid
-        AND wosd.create_date BETWEEN eeg.eshop_starttime AND eeg.eshop_endtime
+        AND wosd.create_date BETWEEN eeg.dw_starttime AND eeg.dw_endtime
     JOIN dim.eshop_customer_salesman ecs ON wosd.customid = ecs.customid
         AND wosd.entryid = ecs.entryid
-        AND wosd.create_date BETWEEN ecs.eshop_starttime AND ecs.eshop_endtime
+        AND wosd.create_date BETWEEN ecs.dw_starttime AND ecs.dw_endtime
     WHERE wosd.comefrom = '手工录入'
         AND (wosd.storageid IS NULL 
              OR wosd.storage_name in ('三明鹭燕合格保管帐','漳州鹭燕大库保管帐','泉州鹭燕大库保管帐','莆田鹭燕大库保管帐','福州鹭燕大库保管帐','宁德鹭燕大库保管帐','龙岩新鹭燕大库保管帐','南平鹭燕大库保管帐','股份厦门大库保管帐')
@@ -78,25 +78,27 @@ b2b_orders AS (
     SELECT 
         DATE(eosd.create_time) AS stat_date,
         eosd.entryid,
-        eosd.salesman_id,
-        COUNT(DISTINCT wosd.order_id) AS b2b_order_count,
+        eos.salesman_id,
+        COUNT(DISTINCT eosd.order_item_id) AS b2b_order_item_count,
         SUM(eosd.sales_amount) AS b2b_sales_amount
-    FROM dwd.eshop_order_sales_doc eosd
-    WHERE eosd.process_status IN ('待发货', '发货中', '已发货', '已完成')
-    GROUP BY DATE(eosd.create_time), eosd.entryid, eosd.salesman_id
+    FROM dwd.eshop_order_sales_dtl eosd
+    JOIN dwd.eshop_order_sales_doc eos ON eosd.order_id = eosd.order_id
+    WHERE eos.process_status IN ('待发货', '发货中', '已发货', '已完成')
+    GROUP BY DATE(eosd.create_time), eosd.entryid, eos.salesman_id
 ),
 -- 计算b2b自主下单订单信息
 b2b_self_initiated AS (
     SELECT 
         DATE(eosd.create_time) AS stat_date,
         eosd.entryid,
-        eosd.salesman_id,
-        COUNT(DISTINCT eosd.order_id) AS b2b_self_initiated_order_count,
+        eos.salesman_id,
+        COUNT(DISTINCT eosd.order_item_id) AS b2b_self_initiated_order_item_count,
         SUM(eosd.sales_amount) AS b2b_self_initiated_sales_amount
-    FROM dwd.eshop_order_sales_doc eosd
-    WHERE eosd.process_status IN ('待发货', '发货中', '已发货', '已完成')
-        AND eosd.is_salesman_order = 0
-    GROUP BY DATE(eosd.create_time), eosd.entryid, eosd.salesman_id
+    FROM dwd.eshop_order_sales_dtl eosd
+    JOIN dwd.eshop_order_sales_doc eos ON eosd.order_id = eosd.order_id
+    WHERE eos.process_status IN ('待发货', '发货中', '已发货', '已完成')
+        AND eos.is_salesman_order = 0
+    GROUP BY DATE(eosd.create_time), eosd.entryid, eos.salesman_id
 ),
 -- 获取所有有数据的日期、独立单元和销售员组合
 base_data AS (
@@ -141,17 +143,12 @@ SELECT
     bd.entryid,
     bd.salesman_id,
     di.entry_name,
-    di.province_name,
-    di.city_name,
-    di.area_name,
-    di.caiwu_level1,
-    di.caiwu_level2,
     di.salesman_name,
-    COALESCE(pb.potential_b2b_order_count, 0) AS potential_b2b_order_count,
+    COALESCE(pb.potential_b2b_order_item_count, 0) AS potential_b2b_order_item_count,
     COALESCE(pb.potential_b2b_sales_amount, 0) AS potential_b2b_sales_amount,
-    COALESCE(bo.b2b_order_count, 0) AS b2b_order_count,
+    COALESCE(bo.b2b_order_item_count, 0) AS b2b_order_item_count,
     COALESCE(bo.b2b_sales_amount, 0) AS b2b_sales_amount,
-    COALESCE(bs.b2b_self_initiated_order_count, 0) AS b2b_self_initiated_order_count,
+    COALESCE(bs.b2b_self_initiated_order_item_count, 0) AS b2b_self_initiated_order_item_count,
     COALESCE(bs.b2b_self_initiated_sales_amount, 0) AS b2b_self_initiated_sales_amount
 FROM base_data bd
 JOIN dim_info di ON bd.entryid = di.entryid AND bd.salesman_id = di.salesman_id

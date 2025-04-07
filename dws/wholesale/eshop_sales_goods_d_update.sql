@@ -49,10 +49,10 @@ potential_b2b AS (
     FROM dwd.wholesale_order_sales_dtl wosd
     JOIN dim.eshop_entry_goods eeg ON wosd.entryid = eeg.entryid 
         AND wosd.goodsid = eeg.goodsid
-        AND wosd.create_date BETWEEN eeg.eshop_starttime AND eeg.eshop_endtime
+        AND wosd.create_date BETWEEN eeg.dw_starttime AND eeg.dw_endtime
     JOIN dim.eshop_entry_customer ecb ON wosd.customid = ecb.customid
         AND wosd.entryid = ecb.entryid
-        AND wosd.create_date BETWEEN ecb.eshop_starttime AND ecb.eshop_endtime
+        AND wosd.create_date BETWEEN ecb.dw_starttime AND ecb.dw_endtime
     WHERE wosd.comefrom = '手工录入'
         AND (wosd.storageid IS NULL 
              OR wosd.storage_name in ('三明鹭燕合格保管帐','漳州鹭燕大库保管帐','泉州鹭燕大库保管帐','莆田鹭燕大库保管帐','福州鹭燕大库保管帐','宁德鹭燕大库保管帐','龙岩新鹭燕大库保管帐','南平鹭燕大库保管帐','股份厦门大库保管帐')
