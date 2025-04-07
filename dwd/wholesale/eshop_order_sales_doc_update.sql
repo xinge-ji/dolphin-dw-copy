@@ -54,8 +54,7 @@ SELECT
     CAST(ORDER_TOTAL_AMOUNT / 10000 as decimal(18,4)) as sales_amount
 FROM ods_dsys.prd_order t1
 LEFT JOIN dim.entry t2 ON t1.org_id = t2.org_id
-LEFT JOIN dim.eshop_customer_buyer t3 
-    ON t1.buyers_id = t3.buyers_id AND t1.create_time >= t3.dw_starttime AND t1.create_time < t3.dw_endtime
+LEFT JOIN dim.eshop_customer_buyer t3 ON t1.buyers_id = t3.buyers_id
 LEFT JOIN (SELECT salesman_id, MIN(salesman_name) as salesman_name FROM ods_dsys.sys_org_salesman GROUP BY salesman_id) t4
     ON t1.salesman_id = t4.salesman_id
 WHERE t1.update_time >= (SELECT MAX(update_time) - INTERVAL 60 DAY FROM dwd.eshop_order_sales_doc);

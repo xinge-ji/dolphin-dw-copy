@@ -150,3 +150,10 @@ tasks:
     deps: [eshop_entry_goods]
     sql: $FILE{"eshop_customer_salesman.sql"}
 
+  - name: eshop_customer_buyer
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [eshop_entry_salesman]
+    sql: $FILE{"eshop_customer_buyer.sql"}
+
