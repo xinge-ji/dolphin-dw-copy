@@ -53,7 +53,6 @@ WITH
   )
 SELECT
   CAST(t1.keyid as bigint),
-  t1.dw_id,
   CASE
     WHEN t1.record_seq = 1 THEN LEAST(date('1970-01-01'), date(t1.dw_createtime))
     ELSE date(t1.dw_createtime)

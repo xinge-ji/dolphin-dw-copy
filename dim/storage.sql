@@ -39,7 +39,6 @@ INSERT INTO
   )
 SELECT
   CAST(storageid as bigint),
-  dw_id,
   CASE
     WHEN record_seq = 1 THEN LEAST(date('1970-01-01'), date(dw_createtime))
     ELSE date(dw_createtime)
