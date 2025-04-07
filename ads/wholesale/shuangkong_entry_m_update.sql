@@ -109,7 +109,7 @@ current_month AS (
 -- 上个月数据
 prev_month AS (
     SELECT
-        DATE_SUB(amd.stat_yearmonth, INTERVAL 1 MONTH) AS prev_month,
+        DATE_ADD(amd.stat_yearmonth, INTERVAL 1 MONTH) AS next_month,
         amd.entryid,
         amd.sales_amount AS prev_sales_amount,
         amd.sales_gross_profit AS prev_sales_gross_profit,
@@ -162,7 +162,7 @@ SELECT
 FROM
     current_month cm
 LEFT JOIN
-    prev_month pm ON cm.stat_yearmonth = pm.prev_month AND cm.entryid = pm.entryid
+    prev_month pm ON cm.stat_yearmonth = pm.next_month AND cm.entryid = pm.entryid
 LEFT JOIN
     avg_3_months a3m ON cm.stat_yearmonth = a3m.stat_yearmonth AND cm.entryid = a3m.entryid
 WHERE cm.stat_yearmonth = DATE_TRUNC(CURRENT_DATE(), 'month')

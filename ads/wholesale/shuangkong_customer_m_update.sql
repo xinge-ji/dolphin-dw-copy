@@ -1,72 +1,3 @@
-DROP TABLE IF EXISTS ads.shuangkong_customer_m;
-CREATE TABLE ads.shuangkong_customer_m (
-    -- 颗粒度
-    stat_yearmonth DATE COMMENT "业务年月",
-    entryid bigint COMMENT '独立单元ID',
-    customid bigint COMMENT '客户ID',
-    jicai_type VARCHAR(100) COMMENT '集采类型',
-    nianbao_type VARCHAR(100) COMMENT '年报类型',
-
-    -- 维度
-    entry_name VARCHAR(255) COMMENT '独立单元名称',
-    province_name VARCHAR(255) COMMENT '省份名称',
-    customer_name VARCHAR(255) COMMENT '客户名称',
-    customertype_name varchar comment '客户类型名称',
-    is_shuangwanjia tinyint comment '是否双万家',
-    customertype_group varchar comment '客户类型组',
-
-    -- 本月指标
-    current_sales_amount decimal(18,4) COMMENT '本月销售额',
-    current_sales_gross_profit decimal(18,4) COMMENT '本月毛利额',
-    current_settle_amount decimal(18,4) COMMENT '本月结算金额',
-    current_repaid_amount decimal(18,4) COMMENT '本月回款金额',
-
-    -- 上月指标
-    prev_sales_amount decimal(18,4) COMMENT '上月销售额',
-    prev_sales_gross_profit decimal(18,4) COMMENT '上月毛利额',
-    prev_settle_amount decimal(18,4) COMMENT '上月结算金额',
-    prev_order_settle_time decimal(10,4) COMMENT '上月销售结算用时(天)',
-    prev_jicai_order_settle_time decimal(10,4) COMMENT '上月集采销售结算用时(天)',
-    prev_non_jicai_order_settle_time decimal(10,4) COMMENT '上月非集采销售结算用时(天)',
-    prev_repaid_amount decimal(18,4) COMMENT '上月回款金额',
-    prev_order_repaid_time decimal(10,4) COMMENT '上月回款用时(天)',
-    prev_jicai_order_repaid_time decimal(10,4) COMMENT '上月集采回款用时(天)',
-    prev_non_jicai_order_repaid_time decimal(10,4) COMMENT '上月非集采回款用时(天)',
-
-
-    -- 近三个月指标
-    avg_3m_sales_amount decimal(18,4) COMMENT '近三个月销售额',
-    avg_3m_sales_gross_profit decimal(18,4) COMMENT '近三个月毛利额',
-    avg_3m_settle_amount decimal(18,4) COMMENT '近三个月结算金额',
-    avg_3m_order_settle_time decimal(10,4) COMMENT '近三个月平均销售结算用时(天)',
-    avg_3m_jicai_order_settle_time decimal(10,4) COMMENT '近三个月集采平均销售结算用时(天)',
-    avg_3m_non_jicai_order_settle_time decimal(10,4) COMMENT '近三个月非集采平均销售结算用时(天)',
-    avg_3m_repaid_amount decimal(18,4) COMMENT '近三个月回款金额',
-    avg_3m_order_repaid_time decimal(10,4) COMMENT '近三个月平均回款用时(天)',
-    avg_3m_jicai_order_repaid_time decimal(10,4) COMMENT '近三个月集采平均回款用时(天)',
-    avg_3m_non_jicai_order_repaid_time decimal(10,4) COMMENT '近三个月非集采平均回款用时(天)',
-
-    -- 账期分析
-    unpaid_amount decimal(18,2) COMMENT '未收款总金额',
-    unpaid_order_count int COMMENT '未结清订单数量',
-    unpaid_within_1year decimal(18,2) COMMENT '1年内未收款金额',
-    unpaid_1to2years decimal(18,2) COMMENT '1-2年未收款金额',
-    unpaid_2to3years decimal(18,2) COMMENT '2-3年未收款金额',
-    unpaid_3to4years decimal(18,2) COMMENT '3-4年未收款金额',
-    unpaid_4to5years decimal(18,2) COMMENT '4-5年未收款金额',
-    unpaid_over_5years decimal(18,2) COMMENT '5年以上未收款金额',
-    bad_debt_reserve DECIMAL(18, 2) COMMENT '坏账计提',
-    is_key_bad_debt_customer TINYINT COMMENT '是否为坏账客户'
-)
-UNIQUE KEY(stat_yearmonth, entryid, customid, jicai_type, nianbao_type)
-DISTRIBUTED BY HASH(stat_yearmonth, entryid)
-PROPERTIES (
-    "replication_allocation" = "tag.location.default: 3",
-    "in_memory" = "false",
-    "storage_format" = "V2"
-);
-
--- 插入数据到客户维度双控月度汇总表
 INSERT INTO ads.shuangkong_customer_m (
     stat_yearmonth,
     entryid,
@@ -110,9 +41,19 @@ INSERT INTO ads.shuangkong_customer_m (
     unpaid_2to3years,
     unpaid_3to4years,
     unpaid_4to5years,
-    unpaid_over_5years
+    unpaid_over_5years,
+    bad_debt_reserve,
+    is_key_bad_debt_customer
 )
 WITH 
+-- 获取当前月份和上月
+current_period AS (
+    SELECT 
+        DATE_TRUNC(CURRENT_DATE(), 'month') AS current_month,
+        DATE_SUB(DATE_TRUNC(CURRENT_DATE(), 'month'), INTERVAL 1 MONTH) AS prev_month,
+        LAST_DAY(CURRENT_DATE()) AS current_month_last_day
+),
+
 -- 销售数据月度汇总
 sales_monthly AS (
     SELECT
@@ -130,7 +71,7 @@ sales_monthly AS (
         SUM(sales_amount) AS sales_amount,
         SUM(sales_gross_profit) AS sales_gross_profit
     FROM
-        dws.wholesale_sales_detail_d
+        dws.wholesale_sales_detail_d wos
     LEFT JOIN
         (SELECT customid, MAX(is_shuangwanjia) AS is_shuangwanjia FROM dim.customer GROUP BY customid) AS c ON wos.customid = c.customid
     WHERE
@@ -141,7 +82,8 @@ sales_monthly AS (
         entryid,
         customid,
         COALESCE(jicai_type, 'UNKNOWN'),
-        COALESCE(nianbao_type, 'UNKNOWN')
+        COALESCE(nianbao_type, 'UNKNOWN'),
+        c.is_shuangwanjia
 ),
 
 -- 结算数据月度汇总
@@ -223,7 +165,7 @@ receivable_aging AS (
         SUM(unpaid_2to3years) AS unpaid_2to3years,
         SUM(unpaid_3to4years) AS unpaid_3to4years,
         SUM(unpaid_4to5years) AS unpaid_4to5years,
-        SUM(unpaid_over_5years) AS unpaid_over_5years
+        SUM(unpaid_over_5years) AS unpaid_over_5years,
         -- 计算坏账计提
         SUM(unpaid_1to2years) * 0.05 + 
         SUM(unpaid_2to3years) * 0.3 + 
@@ -260,9 +202,7 @@ all_monthly_data AS (
         sm.nianbao_type,
         sm.entry_name,
         sm.province_name,
-        sm.city_name,
         sm.customer_name,
-        sm.customertype,
         sm.customertype_name,
         sm.is_shuangwanjia,
         sm.customertype_group,
@@ -304,9 +244,7 @@ current_month_data AS (
         amd.nianbao_type,
         amd.entry_name,
         amd.province_name,
-        amd.city_name,
         amd.customer_name,
-        amd.customertype,
         amd.customertype_name,
         amd.is_shuangwanjia,
         amd.customertype_group,
@@ -385,7 +323,7 @@ avg_3_months AS (
         target_month.nianbao_type
 )
 
--- 最终结果
+-- 最终结果，只选择当前月和上月的数据
 SELECT
     cm.stat_yearmonth,
     cm.entryid,
@@ -394,9 +332,7 @@ SELECT
     cm.nianbao_type,
     cm.entry_name,
     cm.province_name,
-    cm.city_name,
     cm.customer_name,
-    cm.customertype,
     cm.customertype_name,
     cm.is_shuangwanjia,
     cm.customertype_group,
@@ -469,4 +405,8 @@ LEFT JOIN
     receivable_aging ra
     ON cm.stat_yearmonth = ra.stat_yearmonth
     AND cm.entryid = ra.entryid
-    AND cm.customid = ra.customid;
+    AND cm.customid = ra.customid
+WHERE 
+    -- 只插入当前月和上月的数据
+    cm.stat_yearmonth = (SELECT current_month FROM current_period)
+    OR cm.stat_yearmonth = (SELECT prev_month FROM current_period);
