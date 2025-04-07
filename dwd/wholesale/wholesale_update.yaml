@@ -36,18 +36,18 @@ tasks:
     deps: [contract_doc]
     sql: $FILE{"contract_dtl_update.sql"}
   
-  - name: customer_ar_dtl
+  - name: customer_receivable_dtl
     task_type: Sql
     datasource_name: "dwd"
     flag: NO
     deps: [contract_dtl]
-    sql: $FILE{"customer_ar_dtl_update.sql"}
+    sql: $FILE{"customer_receivable_dtl_update.sql"}
 
   - name: eshop_order_sales_doc
     task_type: Sql
     datasource_name: "dwd"
     flag: YES
-    deps: [customer_ar_dtl]
+    deps: [customer_receivable_dtl]
     sql: $FILE{"eshop_order_sales_doc_update.sql"}
 
   - name: eshop_order_sales_dtl

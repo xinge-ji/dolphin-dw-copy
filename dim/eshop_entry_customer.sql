@@ -51,7 +51,7 @@ SELECT
       ELSE CAST('9999-12-31 23:59:59' AS DATETIME)
     END as dw_endtime,
     e.org_id,
-    t.buers_base_id
+    t.buyers_base_id
 FROM
     ranked_eshop_entry_customer ec
 LEFT JOIN

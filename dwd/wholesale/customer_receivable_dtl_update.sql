@@ -1,31 +1,7 @@
-DROP TABLE IF EXISTS dwd.wholesale_customer_ar_dtll;
+TRUNCATE TABLE dwd.wholesale_customer_receivable_dtl;
 
 -- 来源 ERP: v_lsqk
-CREATE TABLE dwd.wholesale_customer_ar_dtl (
-    -- 颗粒度
-    customid bigint COMMENT '客户ID',
-    entryid bigint COMMENT '独立单元ID',
-    sourcetable varchar(50) COMMENT '来源表名',
-    sourceid bigint COMMENT '来源单据ID',
-
-    -- 单据信息
-    salerid bigint COMMENT '销售员ID',
-    bill_date datetime COMMENT '单据日期',
-    bill_amount decimal(18,4) COMMENT '欠款金额'
-)
-UNIQUE KEY(customid, entryid, sourcetable, sourceid)
-DISTRIBUTED BY HASH(sourceid)
-PROPERTIES (
-    "replication_allocation" = "tag.location.default: 3",
-    "in_memory" = "false",
-    "storage_format" = "V2"
-);
-
--- =====================================================
--- 插入批发信用账单数据
--- 包含销售单和结算单的欠款信息，排除委托销售和寄售中已结算的部分
--- =====================================================
-INSERT INTO dwd.wholesale_customer_ar_dtl (
+INSERT INTO dwd.wholesale_customer_receivable_dtl (
     customid,
     entryid,
     sourcetable,
@@ -119,8 +95,3 @@ WHERE
     -- 只处理销售单和结算单
     AND c.sourcetable IN ('BMS_SA_DOC', 'BMS_SA_SETTLE_DTL')
     AND c.is_active = 1;  
-
-CREATE INDEX IF NOT EXISTS idx_customer ON dwd.wholesale_customer_ar_dtl (customid);
-CREATE INDEX IF NOT EXISTS idx_entry ON dwd.wholesale_customer_ar_dtl (entryid);
-CREATE INDEX IF NOT EXISTS idx_saler ON dwd.wholesale_customer_ar_dtl (salerid);
-CREATE INDEX IF NOT EXISTS idx_bill_date ON dwd.wholesale_customer_ar_dtl (bill_date);

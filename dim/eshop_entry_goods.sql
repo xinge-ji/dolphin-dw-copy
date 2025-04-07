@@ -20,7 +20,7 @@ INSERT INTO dim.eshop_entry_goods (
     goodsid,
     dw_starttime,
     dw_endtime,
-    ori_id,
+    org_id,
     product_id
 )
 WITH

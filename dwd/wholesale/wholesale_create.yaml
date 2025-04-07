@@ -7,29 +7,29 @@ tasks:
   - name: contract_doc
     task_type: Sql
     datasource_name: "dwd"
-    flag: NO
+    flag: YES
     deps: []
     sql: $FILE{"contract_doc_create.sql"}
 
   - name: contract_dtl
     task_type: Sql
     datasource_name: "dwd"
-    flag: NO
+    flag: YES
     deps: [contract_doc]
     sql: $FILE{"contract_dtl_create.sql"}
   
-  - name: customer_ar_dtl
+  - name: customer_receivable_dtl
     task_type: Sql
     datasource_name: "dwd"
-    flag: NO
+    flag: 
     deps: [contract_dtl]
-    sql: $FILE{"customer_ar_dtl_create.sql"}
+    sql: $FILE{"customer_receivable_dtl_create.sql"}
 
   - name: eshop_order_sales_doc
     task_type: Sql
     datasource_name: "dwd"
     flag: YES
-    deps: [customer_ar_dtl]
+    deps: [customer_receivable_dtl]
     sql: $FILE{"eshop_order_sales_doc_create.sql"}
 
   - name: eshop_order_sales_dtl
