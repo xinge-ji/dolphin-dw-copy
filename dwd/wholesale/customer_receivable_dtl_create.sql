@@ -120,7 +120,7 @@ WHERE
     AND c.sourcetable IN ('BMS_SA_DOC', 'BMS_SA_SETTLE_DTL')
     AND c.is_active = 1;  
 
-CREATE INDEX IF NOT EXISTS idx_customer ON dwd.wholesale_customer_ar_dtl (customid);
-CREATE INDEX IF NOT EXISTS idx_entry ON dwd.wholesale_customer_ar_dtl (entryid);
-CREATE INDEX IF NOT EXISTS idx_saler ON dwd.wholesale_customer_ar_dtl (salerid);
-CREATE INDEX IF NOT EXISTS idx_bill_date ON dwd.wholesale_customer_ar_dtl (bill_date);
+CREATE INDEX IF NOT EXISTS idx_customer ON dwd.wholesale_customer_receivable_dtl(customid);
+CREATE INDEX IF NOT EXISTS idx_entry ON dwd.wholesale_customer_receivable_dtl(entryid);
+CREATE INDEX IF NOT EXISTS idx_saler ON dwd.wholesale_customer_receivable_dtl(salerid);
+CREATE INDEX IF NOT EXISTS idx_bill_date ON dwd.wholesale_customer_receivable_dtl(bill_date);

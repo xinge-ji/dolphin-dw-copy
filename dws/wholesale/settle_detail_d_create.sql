@@ -50,7 +50,7 @@ INSERT INTO dws.wholesale_settle_detail_d (
     settle_item_count,
     settle_order_count,
     avg_order_settle_time,
-    settle_rder_item_count,
+    settle_order_item_count,
     avg_order_item_settle_time
 )
 WITH settle_summary AS (
@@ -105,10 +105,12 @@ order_settlement AS (
         SUM(ss.order_settle_status) AS settle_order_count,
         ROUND(SUM(datediff(ss.order_settle_time, ss.yewu_date))/SUM(ss.order_settle_status),4) AS avg_order_settle_time
     FROM
-        (select distinct salesid, order_settle_time,
-        entryid, customid, nianbao_type, jicai_type,comefrom,entry_name, province_name,customer_name,customertype_name,customertype_group,
-        order_settle_status, yewu_date FROM dwd.wholesale_sales_receivable_detail
-        WHERE order_settle_time IS NOT NULL) ss
+        (select distinct sr.salesid, sr.order_settle_time,
+        sr.entryid, sr.customid, sod.nianbao_type, sr.jicai_type,sr.comefrom,sr.entry_name, sr.province_name,sr.customer_name,
+        sr.customertype_name,sr.customertype_group,sr.order_settle_status, sr.yewu_date 
+        FROM dwd.wholesale_sales_receivable_detail sr
+        LEFT JOIN dwd.wholesale_order_sales_dtl sod ON sr.salesid = sod.salesid
+        WHERE sr.order_settle_time IS NOT NULL) ss
     GROUP BY
         DATE(ss.order_settle_time),
         ss.entryid,
@@ -128,7 +130,7 @@ order_item_settlement AS (
         DATE(ss.order_item_settle_time) as stat_date,
         ss.entryid,
         ss.customid,
-        IFNULL(ss.nianbao_type, 'UNKNOWN') AS nianbao_type,
+        IFNULL(sod.nianbao_type, 'UNKNOWN') AS nianbao_type,
         ss.jicai_type,
         ss.comefrom AS order_source,
         ss.entry_name,
@@ -140,13 +142,14 @@ order_item_settlement AS (
         ROUND(SUM(datediff(ss.order_item_settle_time, ss.yewu_date))/SUM(ss.order_item_settle_status),4) AS avg_order_item_settle_time
     FROM
         dwd.wholesale_sales_receivable_detail ss
+    LEFT JOIN dwd.wholesale_order_sales_dtl sod ON ss.salesid = sod.salesid
     WHERE 
         ss.order_item_settle_time IS NOT NULL
     GROUP BY
         DATE(ss.order_item_settle_time),
         ss.entryid,
         ss.customid,
-        IFNULL(ss.nianbao_type, 'UNKNOWN'),
+        IFNULL(sod.nianbao_type, 'UNKNOWN'),
         ss.jicai_type,
         ss.comefrom,
         ss.entry_name,
