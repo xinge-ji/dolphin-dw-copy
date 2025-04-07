@@ -1,0 +1,68 @@
+workflow:
+  name: "wholesale_create"
+  project: "dws"
+  run: true
+
+tasks:
+  - name: customer_sales_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: []
+    sql: $FILE{"customer_sales_d_create.sql"}
+
+  - name: sales_dtl_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [customer_sales_d]
+    sql: $FILE{"sales_dtl_d_create.sql"}
+
+  - name: settle_detail_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [sales_dtl_d]
+    sql: $FILE{"settle_detail_d_create.sql"}
+
+  - name: repay_detail_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [settle_detail_d]
+    sql: $FILE{"repay_detail_d_create.sql"}
+
+  - name: sales_receivable_aging_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [sales_dtl_d]
+    sql: $FILE{"sales_receivable_aging_d_create.sql"}
+
+  - name: settle_goods_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [sales_receivable_aging_d]
+    sql: $FILE{"settle_goods_d_create.sql"}
+
+  - name: eshop_sales_customer_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [settle_goods_d]
+    sql: $FILE{"eshop_sales_customer_d_create.sql"}
+  
+  - name: eshop_sales_goods_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [eshop_sales_customer_d]
+    sql: $FILE{"eshop_sales_goods_d_create.sql"}
+
+  - name: eshop_sales_salesman_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [eshop_sales_goods_d]
+    sql: $FILE{"eshop_sales_salesman_d_create.sql"}

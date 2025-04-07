@@ -1,0 +1,152 @@
+workflow:
+  name: "pub"
+  project: "dim"
+  schedule: 0 0 0 ? * * *
+
+tasks:
+  - name: dependent
+    task_type: Dependent
+    flag: YES
+    denpendence:
+    op: and
+    groups:
+      - op: and
+        groups:
+          - project_name: erp_ods
+            workflow_name: erp_update_type1_daily_04
+            dependent_task_name: '0'
+            dependent_date: today
+
+  - name: goods_variety
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [dependent]
+    sql: $FILE{"goods_variety.sql"}
+
+  - name: goods_busiscope
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [goods_variety]
+    sql: $FILE{"goods_busiscope.sql"}
+
+  - name: goods
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [goods_busiscope]
+    sql: $FILE{"goods.sql"}
+
+  - name: entry_goods
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [goods]
+    sql: $FILE{"entry_goods.sql"}
+
+  - name: customer
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [entry_goods]
+    sql: $FILE{"customer.sql"} 
+
+  - name: province_city
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [customer]
+    sql: $FILE{"province_city.sql"}
+
+  - name: entry
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [province_city]
+    sql: $FILE{"entry.sql"}
+
+  - name: entry_customer_xinyu
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [entry]
+    sql: $FILE{"entry_customer_xinyu.sql"}
+
+  - name: price_type
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [entry_customer_xinyu]
+    sql: $FILE{"price_type.sql"}
+
+  - name: settle_type
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [price_type]
+    sql: $FILE{"settle_type.sql"}
+
+  - name: employee
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [settle_type]
+    sql: $FILE{"employee.sql"}
+
+  - name: company
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [employee]
+    sql: $FILE{"company.sql"}
+
+  - name: batch
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [company]
+    sql: $FILE{"batch.sql"}
+
+  - name: storage
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [batch]
+    sql: $FILE{"storage.sql"}
+
+  - name: retail_placepoint_area
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [storage]
+    sql: $FILE{"retail_placepoint_area.sql"}
+
+  - name: retail_placepoint
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [retail_placepoint_area]
+    sql: $FILE{"retail_placepoint.sql"}
+
+  - name: eshop_entry_customer
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [retail_placepoint]
+    sql: $FILE{"eshop_entry_customer.sql"}
+
+  - name: eshop_entry_goods
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [eshop_entry_customer]
+    sql: $FILE{"eshop_entry_goods.sql"}
+
+  - name: eshop_customer_salesman
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [eshop_entry_goods]
+    sql: $FILE{"eshop_customer_salesman.sql"}
+

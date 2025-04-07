@@ -1,0 +1,431 @@
+workflow:
+    name: erp_manual_update
+    schedule: 0 0 0 ? * * *
+    project: erp_ods
+tasks:
+  - name: BMS_SA_DOCTOSET_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: []
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lyerp"
+            password = "lyerp"
+            table_path = "lyerp.BMS_SA_DOCTOSET"
+            query = """select t.SALESDTLID,t.SASETTLEDTLID, ora_hash(substr(coalesce(substr(to_char(t.SALESDTLID), 1,255), '') || coalesce(substr(to_char(t.SASETTLEDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTAL_LINE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.GOODSQTY,t.TOTAL_LINE from BMS_SA_DOCTOSET t"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_erp"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(SALESDTLID,SASETTLEDTLID,DW_ID)
+              DISTRIBUTED BY HASH (SALESDTLID,SASETTLEDTLID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: BMS_SA_DOCTOSET_ods_update
+    task_type: Sql
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    datasource_name: "ods_erp"
+    flag: YES
+    deps: [BMS_SA_DOCTOSET_ods_tmp]
+    sql: |
+        UPDATE bms_sa_doctoset t
+        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM bms_sa_doctoset_doristmp s WHERE s.SALESDTLID = t.SALESDTLID AND s.SASETTLEDTLID = t.SASETTLEDTLID AND s.DW_ID = t.DW_ID) ;
+        INSERT INTO bms_sa_doctoset (`SALESDTLID`,`SASETTLEDTLID`,`GOODSQTY`,`TOTAL_LINE`,`dw_id`,`is_active`,`dw_createtime`,`dw_updatetime`)
+        SELECT s.`SALESDTLID`,s.`SASETTLEDTLID`,s.`GOODSQTY`,s.`TOTAL_LINE`,s.`dw_id`,s.`is_active`,s.`dw_createtime`,s.`dw_updatetime`
+        FROM bms_sa_doctoset_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM bms_sa_doctoset WHERE s.SALESDTLID = BMS_SA_DOCTOSET.SALESDTLID AND s.SASETTLEDTLID = BMS_SA_DOCTOSET.SASETTLEDTLID AND s.DW_ID = BMS_SA_DOCTOSET.DW_ID);
+        DROP TABLE bms_sa_doctoset_doristmp;
+
+  - name: BMS_SA_SETTOREC_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [BMS_SA_DOCTOSET_ods_update]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lyerp"
+            password = "lyerp"
+            table_path = "lyerp.BMS_SA_SETTOREC"
+            query = """select t.SASETTLEDTLID,t.SARECDTLID, ora_hash(substr(coalesce(substr(to_char(t.SASETTLEDTLID), 1,255), '') || coalesce(substr(to_char(t.SARECDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTAL_LINE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.GOODSQTY,t.TOTAL_LINE from BMS_SA_SETTOREC t"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_erp"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(SASETTLEDTLID,SARECDTLID,DW_ID)
+              DISTRIBUTED BY HASH (SASETTLEDTLID,SARECDTLID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: BMS_SA_SETTOREC_ods_update
+    task_type: Sql
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    datasource_name: "ods_erp"
+    flag: YES
+    deps: [BMS_SA_SETTOREC_ods_tmp]
+    sql: |
+        UPDATE bms_sa_settorec t
+        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM bms_sa_settorec_doristmp s WHERE s.SASETTLEDTLID = t.SASETTLEDTLID AND s.SARECDTLID = t.SARECDTLID AND s.DW_ID = t.DW_ID) ;
+        INSERT INTO bms_sa_settorec (`SASETTLEDTLID`,`SARECDTLID`,`GOODSQTY`,`TOTAL_LINE`,`dw_id`,`is_active`,`dw_createtime`,`dw_updatetime`)
+        SELECT s.`SASETTLEDTLID`,s.`SARECDTLID`,s.`GOODSQTY`,s.`TOTAL_LINE`,s.`dw_id`,s.`is_active`,s.`dw_createtime`,s.`dw_updatetime`
+        FROM bms_sa_settorec_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM bms_sa_settorec WHERE s.SASETTLEDTLID = BMS_SA_SETTOREC.SASETTLEDTLID AND s.SARECDTLID = BMS_SA_SETTOREC.SARECDTLID AND s.DW_ID = BMS_SA_SETTOREC.DW_ID);
+        DROP TABLE bms_sa_settorec_doristmp;
+
+
+  - name: PUB_DDL_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [BMS_SA_SETTOREC_ods_update]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lyerp"
+            password = "lyerp"
+            table_path = "lyerp.PUB_DDL"
+            query = """select t.SYSID, ora_hash(substr(coalesce(substr(to_char(t.SYSID), 1,255), '') || coalesce(substr(to_char(t.KEYWORD), 1,255), '') || coalesce(substr(to_char(t.TABLECOLUMN), 1,255), '') || coalesce(substr(to_char(t.MEMO), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.KEYWORD,t.TABLECOLUMN,t.MEMO from PUB_DDL t"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_erp"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(SYSID,DW_ID)
+              DISTRIBUTED BY HASH (SYSID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: PUB_DDL_ods_update
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_erp"
+    flag: YES
+    deps: [PUB_DDL_ods_tmp]
+    sql: |
+        UPDATE pub_ddl t
+        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM pub_ddl_doristmp s WHERE s.SYSID = t.SYSID AND s.DW_ID = t.DW_ID) ;
+        INSERT INTO pub_ddl (`SYSID`,`KEYWORD`,`TABLECOLUMN`,`MEMO`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
+        SELECT s.`SYSID`,s.`KEYWORD`,s.`TABLECOLUMN`,s.`MEMO`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
+        FROM pub_ddl_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM pub_ddl WHERE s.SYSID = PUB_DDL.SYSID AND s.DW_ID = PUB_DDL.DW_ID);
+        DROP TABLE pub_ddl_doristmp;
+
+  - name: PUB_DDL_DTL_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [PUB_DDL_ods_update]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lyerp"
+            password = "lyerp"
+            table_path = "lyerp.PUB_DDL_DTL"
+            query = """select t.SYSDTLID, ora_hash(substr(coalesce(substr(to_char(t.SYSID), 1,255), '') || coalesce(substr(to_char(t.SYSDTLID), 1,255), '') || coalesce(substr(to_char(t.DDLID), 1,255), '') || coalesce(substr(to_char(t.DDLNAME), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.SYSID,t.DDLID,t.DDLNAME from PUB_DDL_DTL t"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_erp"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(SYSDTLID,DW_ID)
+              DISTRIBUTED BY HASH (SYSDTLID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: PUB_DDL_DTL_ods_update
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_erp"
+    flag: YES
+    deps: [PUB_DDL_DTL_ods_tmp]
+    sql: |
+        UPDATE pub_ddl_dtl t
+        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM pub_ddl_dtl_doristmp s WHERE s.SYSDTLID = t.SYSDTLID AND s.DW_ID = t.DW_ID) ;
+        INSERT INTO pub_ddl_dtl (`SYSID`,`SYSDTLID`,`DDLID`,`DDLNAME`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
+        SELECT s.`SYSID`,s.`SYSDTLID`,s.`DDLID`,s.`DDLNAME`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
+        FROM pub_ddl_dtl_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM pub_ddl_dtl WHERE s.SYSDTLID = PUB_DDL_DTL.SYSDTLID AND s.DW_ID = PUB_DDL_DTL.DW_ID);
+        DROP TABLE pub_ddl_dtl_doristmp;
+
+  - name: SYS_DDL_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [PUB_DDL_DTL_ods_update]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lyerp"
+            password = "lyerp"
+            table_path = "lyerp.SYS_DDL"
+            query = """select t.SYSID, ora_hash(substr(coalesce(substr(to_char(t.SYSID), 1,255), '') || coalesce(substr(to_char(t.KEYWORD), 1,255), '') || coalesce(substr(to_char(t.TABLECOLUMN), 1,255), '') || coalesce(substr(to_char(t.MEMO), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.KEYWORD,t.TABLECOLUMN,t.MEMO from SYS_DDL t"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_erp"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(SYSID,DW_ID)
+              DISTRIBUTED BY HASH (SYSID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: SYS_DDL_ods_update
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_erp"
+    flag: YES
+    deps: [SYS_DDL_ods_tmp]
+    sql: |
+        UPDATE sys_ddl t
+        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM sys_ddl_doristmp s WHERE s.SYSID = t.SYSID AND s.DW_ID = t.DW_ID) ;
+        INSERT INTO sys_ddl (`SYSID`,`KEYWORD`,`TABLECOLUMN`,`MEMO`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
+        SELECT s.`SYSID`,s.`KEYWORD`,s.`TABLECOLUMN`,s.`MEMO`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
+        FROM sys_ddl_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM sys_ddl WHERE s.SYSID = SYS_DDL.SYSID AND s.DW_ID = SYS_DDL.DW_ID);
+        DROP TABLE sys_ddl_doristmp;
+
+  - name: SYS_DDL_DTL_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [SYS_DDL_ods_update]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lyerp"
+            password = "lyerp"
+            table_path = "lyerp.SYS_DDL_DTL"
+            query = """select t.SYSDTLID, ora_hash(substr(coalesce(substr(to_char(t.SYSID), 1,255), '') || coalesce(substr(to_char(t.SYSDTLID), 1,255), '') || coalesce(substr(to_char(t.DDLID), 1,255), '') || coalesce(substr(to_char(t.DDLNAME), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.SYSID,t.DDLID,t.DDLNAME from SYS_DDL_DTL t"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_erp"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(SYSDTLID,DW_ID)
+              DISTRIBUTED BY HASH (SYSDTLID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: SYS_DDL_DTL_ods_update
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_erp"
+    flag: YES
+    deps: [SYS_DDL_DTL_ods_tmp]
+    sql: |
+        UPDATE sys_ddl_dtl t
+        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM sys_ddl_dtl_doristmp s WHERE s.SYSDTLID = t.SYSDTLID AND s.DW_ID = t.DW_ID) ;
+        INSERT INTO sys_ddl_dtl (`SYSID`,`SYSDTLID`,`DDLID`,`DDLNAME`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
+        SELECT s.`SYSID`,s.`SYSDTLID`,s.`DDLID`,s.`DDLNAME`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
+        FROM sys_ddl_dtl_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM sys_ddl_dtl WHERE s.SYSDTLID = SYS_DDL_DTL.SYSDTLID AND s.DW_ID = SYS_DDL_DTL.DW_ID);
+        DROP TABLE sys_ddl_dtl_doristmp;

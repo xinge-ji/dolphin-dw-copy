@@ -1,0 +1,110 @@
+workflow:
+  name: "wholesale_create"
+  project: "dwd"
+  run: true
+
+tasks:
+  - name: contract_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: []
+    sql: $FILE{"contract_doc_create.sql"}
+
+  - name: contract_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [contract_doc]
+    sql: $FILE{"contract_dtl_create.sql"}
+  
+  - name: customer_ar_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [contract_dtl]
+    sql: $FILE{"customer_ar_dtl_create.sql"}
+
+  - name: eshop_order_sales_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [customer_ar_dtl]
+    sql: $FILE{"eshop_order_sales_doc_create.sql"}
+
+  - name: eshop_order_sales_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [eshop_order_sales_doc]
+    sql: $FILE{"eshop_order_sales_dtl_create.sql"}
+
+  - name: jicai_cumulative_goods_qty
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [eshop_order_sales_dtl]
+    sql: $FILE{"jicai_cumulative_goods_qty_create.sql"}
+
+  - name: jicai_volume_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [jicai_cumulative_goods_qty]
+    sql: $FILE{"jicai_volume_doc_create.sql"}
+
+  - name: jicai_volume_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [jicai_volume_doc]
+    sql: $FILE{"jicai_volume_dtl_create.sql"}
+
+  - name: order_sales_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [jicai_volume_dtl]
+    sql: $FILE{"order_sales_doc_create.sql"}
+
+  - name: order_sales_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [order_sales_doc]
+    sql: $FILE{"order_sales_dtl_create.sql"}
+
+  - name: order_settle_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [order_sales_dtl]
+    sql: $FILE{"order_settle_doc_create.sql"}
+
+  - name: order_settle_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [order_settle_doc]
+    sql: $FILE{"order_settle_dtl_create.sql"}
+
+  - name: order_repay_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [order_settle_dtl]
+    sql: $FILE{"order_repay_doc_create.sql"}
+
+  - name: order_repay_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [order_repay_doc]
+    sql: $FILE{"order_repay_dtl_create.sql"}
+
+  - name: sales_settle_detail
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [order_repay_dtl]
+    sql: $FILE{"sales_settle_detail_create.sql"}

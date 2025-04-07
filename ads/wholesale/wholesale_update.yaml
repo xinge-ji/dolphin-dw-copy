@@ -1,0 +1,46 @@
+workflow:
+  name: "wholesale_update"
+  project: "ads"
+  schedule: 0 0 0 ? * * *
+
+tasks:
+  - name: dependent
+    task_type: Dependent
+    flag: YES
+    denpendence:
+    op: and
+    groups:
+      - op: and
+        groups:
+          - project_name: dws
+            workflow_name: wholesale_update
+            dependent_task_name: '0'
+            dependent_date: today
+
+  - name: eshop_sales_entry_m
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [dependent]
+    sql: $FILE{"eshop_sales_entry_m_update.sql"}
+
+  - name: eshop_sales_customer_m
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [eshop_sales_entry_m]
+    sql: $FILE{"eshop_sales_customer_m_update.sql"}
+
+  - name: eshop_sales_goods_m
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [eshop_sales_customer_m]
+    sql: $FILE{"eshop_sales_goods_m_update.sql"}
+
+  - name: eshop_sales_salesman_m
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [eshop_sales_goods_m]
+    sql: $FILE{"eshop_sales_salesman_m_update.sql"}
