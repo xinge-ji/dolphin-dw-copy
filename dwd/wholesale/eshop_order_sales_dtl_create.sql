@@ -43,7 +43,7 @@ SELECT
     CAST(SUBTOTAL / 10000 as decimal(18,4)) as sales_amount
 FROM ods_dsys.prd_order_item t1
 JOIN dwd.eshop_order_sales_doc t2 ON t1.order_id = t2.order_id
-LEFT JOIN (SELECT entryid, product_id, MIN(goodsid) FROM dim.eshop_entry_goods GROUP BY entryid, product_id) t3 ON t1.product_id = t3.product_id AND t2.entryid = t3.entryid;
+LEFT JOIN (SELECT distinct entryid, goodsid, product_id FROM dim.eshop_entry_goods) t3 ON t1.product_id = t3.product_id AND t2.entryid = t3.entryid;
 
 CREATE INDEX IF NOT EXISTS idx_order_id ON dwd.eshop_order_sales_dtl (order_id);
 CREATE INDEX IF NOT EXISTS idx_create_time ON dwd.eshop_order_sales_dtl (create_time);
