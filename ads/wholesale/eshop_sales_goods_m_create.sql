@@ -54,6 +54,8 @@ INSERT INTO ads.eshop_sales_goods_m (
     variety_level1_name,
     variety_level2_name,
     variety_level3_name,
+    order_item_count,
+    sales_amount,
     potential_b2b_order_item_count,
     potential_b2b_sales_amount,
     b2b_order_item_count,

@@ -110,38 +110,38 @@ INSERT INTO ads.shuangkong_customer_m (
     unpaid_2to3years,
     unpaid_3to4years,
     unpaid_4to5years,
-    unpaid_over_5years
+    unpaid_over_5years,
+    bad_debt_reserve,
+    is_key_bad_debt_customer
 )
 WITH 
 -- 销售数据月度汇总
 sales_monthly AS (
     SELECT
-        DATE_TRUNC(stat_date, 'month') AS stat_yearmonth,
-        entryid,
-        customid,
-        COALESCE(jicai_type, 'UNKNOWN') AS jicai_type,
-        COALESCE(nianbao_type, 'UNKNOWN') AS nianbao_type,
-        MAX(entry_name) AS entry_name,
-        MAX(province_name) AS province_name,
-        MAX(customer_name) AS customer_name,
-        MAX(customertype_name) AS customertype_name,
-        c.is_shuangwanjia,
-        MAX(customertype_group) AS customertype_group,
-        SUM(sales_amount) AS sales_amount,
-        SUM(sales_gross_profit) AS sales_gross_profit
+        DATE_TRUNC(wos.stat_date, 'month') AS stat_yearmonth,
+        wos.entryid,
+        wos.customid,
+        COALESCE(wos.jicai_type, 'UNKNOWN') AS jicai_type,
+        COALESCE(wos.nianbao_type, 'UNKNOWN') AS nianbao_type,
+        MAX(wos.entry_name) AS entry_name,
+        MAX(wos.province_name) AS province_name,
+        MAX(wos.customer_name) AS customer_name,
+        MAX(wos.customertype_name) AS customertype_name,
+        COALESCE(c.is_shuangwanjia, 0) AS is_shuangwanjia,
+        MAX(wos.customertype_group) AS customertype_group,
+        SUM(wos.sales_amount) AS sales_amount,
+        SUM(wos.sales_gross_profit) AS sales_gross_profit
     FROM
-        dws.wholesale_sales_detail_d
+        dws.wholesale_sales_detail_d wos
     LEFT JOIN
         (SELECT customid, MAX(is_shuangwanjia) AS is_shuangwanjia FROM dim.customer GROUP BY customid) AS c ON wos.customid = c.customid
-    WHERE
-        DATE_TRUNC(stat_date, 'month') >= DATE_SUB((SELECT current_month FROM current_period), INTERVAL 5 MONTH) 
-        AND DATE_TRUNC(stat_date, 'month') <= (SELECT current_month FROM current_period)
     GROUP BY
-        DATE_TRUNC(stat_date, 'month'),
-        entryid,
-        customid,
-        COALESCE(jicai_type, 'UNKNOWN'),
-        COALESCE(nianbao_type, 'UNKNOWN')
+        DATE_TRUNC(wos.stat_date, 'month'),
+        wos.entryid,
+        wos.customid,
+        COALESCE(wos.jicai_type, 'UNKNOWN'),
+        COALESCE(wos.nianbao_type, 'UNKNOWN'),
+        COALESCE(c.is_shuangwanjia, 0)
 ),
 
 -- 结算数据月度汇总
@@ -150,30 +150,27 @@ settle_monthly AS (
         DATE_TRUNC(stat_date, 'month') AS stat_yearmonth,
         entryid,
         customid,
-        COALESCE(jicai_type, 'UNKNOWN') AS jicai_type,
+        COALESCE(jicai_type, '非集采') AS jicai_type,
         COALESCE(nianbao_type, 'UNKNOWN') AS nianbao_type,
         SUM(settle_amount) AS settle_amount,
         AVG(avg_order_settle_time) AS avg_order_settle_time,
         CASE 
-            WHEN LOWER(jicai_type) LIKE '%集采%' OR LOWER(jicai_type) = '集采' 
+            WHEN COALESCE(jicai_type, '非集采') != '非集采' 
             THEN AVG(avg_order_settle_time) 
             ELSE 0 
         END AS jicai_order_settle_time,
         CASE 
-            WHEN LOWER(jicai_type) NOT LIKE '%集采%' AND LOWER(jicai_type) != '集采' 
+            WHEN COALESCE(jicai_type, '非集采') = '非集采'
             THEN AVG(avg_order_settle_time) 
             ELSE 0 
         END AS non_jicai_order_settle_time
     FROM
         dws.wholesale_settle_detail_d
-    WHERE
-        DATE_TRUNC(stat_date, 'month') >= DATE_SUB((SELECT current_month FROM current_period), INTERVAL 5 MONTH) 
-        AND DATE_TRUNC(stat_date, 'month') <= (SELECT current_month FROM current_period)
     GROUP BY
         DATE_TRUNC(stat_date, 'month'),
         entryid,
         customid,
-        COALESCE(jicai_type, 'UNKNOWN'),
+        COALESCE(jicai_type, '非集采'),
         COALESCE(nianbao_type, 'UNKNOWN')
 ),
 
@@ -183,30 +180,27 @@ repay_monthly AS (
         DATE_TRUNC(stat_date, 'month') AS stat_yearmonth,
         entryid,
         customid,
-        COALESCE(jicai_type, 'UNKNOWN') AS jicai_type,
+        COALESCE(jicai_type, '非集采') AS jicai_type,
         COALESCE(nianbao_type, 'UNKNOWN') AS nianbao_type,
         SUM(repaid_amount) AS repaid_amount,
         AVG(avg_order_repaid_time) AS avg_order_repaid_time,
         CASE 
-            WHEN LOWER(jicai_type) LIKE '%集采%' OR LOWER(jicai_type) = '集采' 
+            WHEN COALESCE(jicai_type, '非集采') != '非集采' 
             THEN AVG(avg_order_repaid_time) 
             ELSE 0 
         END AS jicai_order_repaid_time,
         CASE 
-            WHEN LOWER(jicai_type) NOT LIKE '%集采%' AND LOWER(jicai_type) != '集采' 
+            WHEN COALESCE(jicai_type, '非集采') = '非集采'
             THEN AVG(avg_order_repaid_time) 
             ELSE 0 
         END AS non_jicai_order_repaid_time
     FROM
         dws.wholesale_repay_detail_d
-    WHERE
-        DATE_TRUNC(stat_date, 'month') >= DATE_SUB((SELECT current_month FROM current_period), INTERVAL 5 MONTH) 
-        AND DATE_TRUNC(stat_date, 'month') <= (SELECT current_month FROM current_period)
     GROUP BY
         DATE_TRUNC(stat_date, 'month'),
         entryid,
         customid,
-        COALESCE(jicai_type, 'UNKNOWN'),
+        COALESCE(jicai_type, '非集采'),
         COALESCE(nianbao_type, 'UNKNOWN')
 ),
 
@@ -223,7 +217,7 @@ receivable_aging AS (
         SUM(unpaid_2to3years) AS unpaid_2to3years,
         SUM(unpaid_3to4years) AS unpaid_3to4years,
         SUM(unpaid_4to5years) AS unpaid_4to5years,
-        SUM(unpaid_over_5years) AS unpaid_over_5years
+        SUM(unpaid_over_5years) AS unpaid_over_5years,
         -- 计算坏账计提
         SUM(unpaid_1to2years) * 0.05 + 
         SUM(unpaid_2to3years) * 0.3 + 
@@ -238,12 +232,6 @@ receivable_aging AS (
         SUM(unpaid_4to5years) + SUM(unpaid_over_5years) AS over_2year_unpaid
     FROM
         dws.wholesale_sales_receivable_aging_d
-    WHERE
-        stat_date = (
-            SELECT MAX(stat_date) 
-            FROM dws.wholesale_sales_receivable_aging_d 
-            WHERE DATE_TRUNC(stat_date, 'month') <= (SELECT current_month FROM current_period)
-        )
     GROUP BY
         LAST_DAY(DATE_TRUNC(stat_date, 'month')),
         entryid,
@@ -260,9 +248,7 @@ all_monthly_data AS (
         sm.nianbao_type,
         sm.entry_name,
         sm.province_name,
-        sm.city_name,
         sm.customer_name,
-        sm.customertype,
         sm.customertype_name,
         sm.is_shuangwanjia,
         sm.customertype_group,
@@ -304,9 +290,7 @@ current_month_data AS (
         amd.nianbao_type,
         amd.entry_name,
         amd.province_name,
-        amd.city_name,
         amd.customer_name,
-        amd.customertype,
         amd.customertype_name,
         amd.is_shuangwanjia,
         amd.customertype_group,
@@ -316,8 +300,6 @@ current_month_data AS (
         amd.repaid_amount AS current_repaid_amount
     FROM
         all_monthly_data amd
-    WHERE
-        amd.stat_yearmonth IN ((SELECT current_month FROM current_period), (SELECT prev_month FROM current_period))
 ),
 
 -- 上个月数据
@@ -340,11 +322,6 @@ prev_month_data AS (
         amd.non_jicai_order_repaid_time AS prev_non_jicai_order_repaid_time
     FROM
         all_monthly_data amd
-    WHERE
-        amd.stat_yearmonth IN (
-            (SELECT prev_month FROM current_period),
-            DATE_SUB((SELECT prev_month FROM current_period), INTERVAL 1 MONTH)
-        )
 ),
 
 -- 近三个月平均值（实际是前1-4个月的平均值）
@@ -375,8 +352,6 @@ avg_3_months AS (
         AND target_month.nianbao_type = prev_months.nianbao_type
         AND prev_months.stat_yearmonth BETWEEN DATE_SUB(target_month.stat_yearmonth, INTERVAL 4 MONTH) 
                                            AND DATE_SUB(target_month.stat_yearmonth, INTERVAL 1 MONTH)
-    WHERE
-        target_month.stat_yearmonth IN ((SELECT current_month FROM current_period), (SELECT prev_month FROM current_period))
     GROUP BY
         target_month.stat_yearmonth,
         target_month.entryid,
@@ -394,9 +369,7 @@ SELECT
     cm.nianbao_type,
     cm.entry_name,
     cm.province_name,
-    cm.city_name,
     cm.customer_name,
-    cm.customertype,
     cm.customertype_name,
     cm.is_shuangwanjia,
     cm.customertype_group,

@@ -159,8 +159,8 @@ SELECT
     
     -- 销售模式
     CASE
-    	WHEN a.satypeid = 1 THEN '先配后结'
-        WHEN a.satypeid = 2 THEN '先结后配'
+    	WHEN a.fix_mode = 1 THEN '先配后结'
+        WHEN a.fix_mode = 2 THEN '先结后配'
         ELSE 'UNKNOWN'
     END AS peihuojiekuan_mode,                  -- 销售模式
     CASE

@@ -5,7 +5,7 @@ CREATE TABLE dwd.wholesale_jicai_volume_dtl (
     -- 基础维度信息
     entryid bigint COMMENT '独立单元ID',
     customid bigint COMMENT '客户ID',
-    salesid bigint COMMENT '销售单ID',
+    salesdtlid bigint COMMENT '销售单ID',
     goodsid bigint COMMENT '商品ID',
     
     -- 时间信息
@@ -29,8 +29,8 @@ CREATE TABLE dwd.wholesale_jicai_volume_dtl (
     jicai_liangneiliangwai varchar(10) COMMENT '量内/量外标识',
     guankong_type int COMMENT '管控类型'
 )
-UNIQUE KEY(entryid, customid, salesid, goodsid)
-DISTRIBUTED BY HASH(customid, salesid)
+UNIQUE KEY(entryid, customid, salesdtlid, goodsid)
+DISTRIBUTED BY HASH(customid, salesdtlid)
 PROPERTIES (
     "replication_allocation" = "tag.location.default: 3",
     "in_memory" = "false",
@@ -43,7 +43,7 @@ PROPERTIES (
 INSERT INTO dwd.wholesale_jicai_volume_dtl (
     entryid,
     customid,
-    salesid,
+    salesdtlid,
     goodsid,
     create_date,
     docid,
@@ -62,7 +62,7 @@ SELECT
     -- 基础维度信息
     k.entryid,                  -- 独立单元ID
     k.customid,                 -- 客户ID
-    k.salesid,                  -- 销售单ID
+    k.salesdtlid,               -- 销售单ID
     k.goodsid,                  -- 商品ID
     
     -- 时间信息
@@ -117,7 +117,7 @@ FROM (
         SELECT 
             d.entryid,          -- 独立单元ID
             d.customid,         -- 客户ID
-            d.salesid,          -- 销售单ID
+            e.salesdtlid,       -- 销售单ID
             e.goodsid,          -- 商品ID
             d.credate,          -- 创建日期
             
@@ -159,7 +159,6 @@ FROM (
 
 CREATE INDEX IF NOT EXISTS idx_entryid ON dwd.wholesale_jicai_volume_dtl (entryid);
 CREATE INDEX IF NOT EXISTS idx_customid ON dwd.wholesale_jicai_volume_dtl (customid);
-CREATE INDEX IF NOT EXISTS idx_salesid ON dwd.wholesale_jicai_volume_dtl (salesid);
 CREATE INDEX IF NOT EXISTS idx_goodsid ON dwd.wholesale_jicai_volume_dtl (goodsid);
 CREATE INDEX IF NOT EXISTS idx_create_date ON dwd.wholesale_jicai_volume_dtl (create_date);
 CREATE INDEX IF NOT EXISTS idx_docid ON dwd.wholesale_jicai_volume_dtl (docid);

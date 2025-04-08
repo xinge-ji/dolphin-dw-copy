@@ -92,7 +92,7 @@ WITH
 -- 当前月数据
 current_month_data AS (
     SELECT 
-        date_trunc('month', stat_date) AS stat_yearmonth,
+        date_trunc(stat_date,'month') AS stat_yearmonth,
         entryid,
         MAX(entry_name) AS entry_name,
         SUM(order_count) AS order_count,
@@ -108,7 +108,7 @@ current_month_data AS (
         SUM(b2b_self_initiated_sales_amount) AS b2b_self_initiated_sales_amount,
         COUNT(DISTINCT CASE WHEN b2b_self_initiated_order_count > 0 THEN customid END) AS b2b_self_initiated_customer_count
     FROM dws.eshop_sales_customer_d
-    GROUP BY date_trunc('month', stat_date), entryid
+    GROUP BY date_trunc(stat_date,'month'), entryid
 )
 -- 计算转化率和占比
 SELECT

@@ -103,9 +103,9 @@ city_province_info AS (
     e.entry_name,
     e.is_disabled,
     e.cityid,
-    COALESCE(pc.city_name, 'UNKNOWN') AS city_name,
-    COALESCE(pc.provinceid, NULL) AS provinceid,
-    COALESCE(pc.province_name, 'UNKNOWN') AS province_name,
+    pc.city_name,
+    pc.provinceid,
+    pc.province_name,
     e.area_name
   FROM 
     base_entry e

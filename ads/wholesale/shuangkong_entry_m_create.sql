@@ -35,10 +35,6 @@ PROPERTIES (
     "storage_format" = "V2"
 );
 
--- 修正表定义中的错误
-ALTER TABLE ads.shuangkong_entry_m
-DISTRIBUTED BY HASH(stat_yearmonth, entryid);
-
 -- 插入数据到双控月度汇总表
 INSERT INTO ads.shuangkong_entry_m (
     stat_yearmonth,

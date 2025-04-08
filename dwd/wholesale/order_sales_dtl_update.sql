@@ -178,7 +178,7 @@ SELECT
     j.jicai_liangneiliangwai,
     CASE
         WHEN a.province_name = '福建省' THEN '非集采'
-        WHEN a.province_name IN ('江西省', '海南省') AND IFNULL(b.zx_jczxflag, 0) = 1 THEN '集采'
+        WHEN a.province_name IN ('江西省', '海南省') AND (IFNULL(b.zx_jczxflag, 0) = 1 OR j.jicai_liangneiliangwai is not null) THEN '集采'
         WHEN a.province_name = '四川省' AND j.jicai_liangneiliangwai = '量内' THEN '集采量内'
         WHEN a.province_name = '四川省' AND j.jicai_liangneiliangwai = '量外' THEN '集采量外'
         ELSE '非集采'
@@ -237,10 +237,7 @@ LEFT JOIN
     dim.storage s ON b.storageid = s.storageid 
     AND a.create_date >= s.dw_starttime AND a.create_date < s.dw_endtime
 LEFT JOIN
-    dwd.wholesale_jicai_volume_dtl j ON a.entryid = j.entryid 
-    AND a.customid = j.customid 
-    AND b.salesid = j.salesid 
-    AND b.goodsid = j.goodsid
+    dwd.wholesale_jicai_volume_dtl j ON b.salesdtlid = j.salesdtlid
 LEFT JOIN
     dim.batch batch ON b.batchid = batch.batchid 
     AND a.create_date >= batch.dw_starttime AND a.create_date < batch.dw_endtime

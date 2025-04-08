@@ -88,11 +88,6 @@ dim_info AS (
     SELECT 
         e.entryid,
         e.entry_name,
-        e.province_name,
-        e.city_name,
-        e.area_name,
-        e.caiwu_level1,
-        e.caiwu_level2,
         s.salesman_id,
         s.salesman_name
     FROM (SELECT DISTINCT entryid FROM base_data) t1
