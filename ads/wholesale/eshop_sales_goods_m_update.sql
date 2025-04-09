@@ -1,4 +1,4 @@
-INSERT INTO ads.eshop_order_sales_goods_m (
+INSERT INTO ads.eshop_sales_goods_m (
     stat_yearmonth,
     entryid,
     goodsid,

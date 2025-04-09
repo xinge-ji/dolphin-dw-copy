@@ -1,5 +1,5 @@
 DELETE FROM dws.wholesale_sales_detail_d
-where stat_date > CURRENT_DATE() - INTERVAL 60 DAY;
+WHERE stat_date > CURRENT_DATE() - INTERVAL 60 DAY;
 
 INSERT INTO dws.wholesale_sales_detail_d (
     stat_date,
@@ -18,9 +18,9 @@ INSERT INTO dws.wholesale_sales_detail_d (
     saler_name,
     inputman_name,
     sales_amount,
-    batch_gross_profit,
+    sales_gross_profit,
     order_count,
-    dtl_order_count,
+    order_item_count,
     ecommerce_sales_amount,
     non_ecommerce_sales_amount,
     ecommerce_order_count,
@@ -50,9 +50,9 @@ SELECT
     
     -- 销售指标
     SUM(CASE WHEN wos.sale_type != '销退' THEN wos.sales_amount ELSE 0 END) AS sales_amount,
-    SUM(CASE WHEN wos.sale_type != '销退' THEN wos.batch_gross_profit ELSE 0 END) AS batch_gross_profit,
+    SUM(CASE WHEN wos.sale_type != '销退' THEN wos.sales_gross_profit ELSE 0 END) AS sales_gross_profit,
     COUNT(DISTINCT CASE WHEN wos.sale_type != '销退' THEN wos.salesid END) AS order_count,
-    COUNT(CASE WHEN wos.sale_type != '销退' THEN wos.salesdtlid END) AS dtl_order_count,
+    COUNT(CASE WHEN wos.sale_type != '销退' THEN wos.salesdtlid END) AS order_item_count,
     
     -- 电商相关指标
     SUM(CASE 
@@ -84,7 +84,7 @@ SELECT
     END) AS return_order_count
 FROM
     dwd.wholesale_order_sales_dtl wos
-sales_gross_profit
+WHERE
     wos.use_status = '正式' 
     AND DATE(wos.create_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY)
     AND DATE(wos.create_date) < CURRENT_DATE()

@@ -1,4 +1,3 @@
--- 插入本月与上月数据到客户月度汇总表
 INSERT INTO ads.eshop_sales_customer_m (
     stat_yearmonth,
     entryid,
@@ -20,6 +19,7 @@ INSERT INTO ads.eshop_sales_customer_m (
     b2b_self_initiated_order_count_rate,
     b2b_self_initiated_sales_amount_rate,
     b2b_self_initiated_order_count_proportion,
+    b2b_self_initiated_sales_amount_proportion
 )
 WITH 
 -- 当前月数据（包括本月和上个月）

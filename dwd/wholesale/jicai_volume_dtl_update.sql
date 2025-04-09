@@ -6,7 +6,7 @@ WHERE create_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 60 DAY);
 INSERT INTO dwd.wholesale_jicai_volume_dtl (
     entryid,
     customid,
-    salesid,
+    salesdtlid,
     goodsid,
     create_date,
     docid,
@@ -25,7 +25,7 @@ SELECT
     -- 基础维度信息
     k.entryid,                  -- 独立单元ID
     k.customid,                 -- 客户ID
-    k.salesid,                  -- 销售单ID
+    k.salesdtlid,               -- 销售单明细ID
     k.goodsid,                  -- 商品ID
     
     -- 时间信息
@@ -78,7 +78,7 @@ FROM (
         SELECT 
             d.entryid,          -- 独立单元ID
             d.customid,         -- 客户ID
-            d.salesid,          -- 销售单ID
+            e.salesdtlid,       -- 销售单明细ID
             e.goodsid,          -- 商品ID
             d.credate,          -- 创建日期
             
@@ -101,7 +101,7 @@ FROM (
         JOIN 
             ods_erp.t_101248_doc f ON d.entryid = f.entryid AND e.goodsid = f.goodsid
         LEFT JOIN 
-            dwd.wholesale_jicai_cumulative_sales_qty cs ON d.entryid = cs.entryid 
+            dwd.wholesale_jicai_cumulative_goods_qty cs ON d.entryid = cs.entryid 
                                                        AND e.goodsid = cs.goodsid 
                                                        AND d.credate = cs.create_date
         WHERE 

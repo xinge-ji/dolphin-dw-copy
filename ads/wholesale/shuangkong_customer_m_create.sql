@@ -207,9 +207,9 @@ repay_monthly AS (
 -- 应收账款账龄数据
 receivable_aging AS (
     SELECT
-        LAST_DAY(DATE_TRUNC(stat_date, 'month')) AS stat_yearmonth,
-        CAST(entryid AS BIGINT) AS entryid,
-        CAST(customid AS BIGINT) AS customid,
+        DATE_TRUNC(stat_date, 'month') AS stat_yearmonth,
+        entryid,
+        customid,
         SUM(unpaid_amount) AS unpaid_amount,
         SUM(unpaid_order_count) AS unpaid_order_count,
         SUM(unpaid_within_1year) AS unpaid_within_1year,
@@ -233,7 +233,7 @@ receivable_aging AS (
     FROM
         dws.wholesale_sales_receivable_aging_d
     GROUP BY
-        LAST_DAY(DATE_TRUNC(stat_date, 'month')),
+        DATE_TRUNC(stat_date, 'month'),
         entryid,
         customid
 ),

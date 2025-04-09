@@ -5,6 +5,7 @@ JOIN dwd.eshop_order_sales_dtl AS b
 ON a.order_item_id = b.order_item_id
 WHERE a.is_active = 0 AND a.update_time >= b.update_time;
 
+-- 插入或更新最近60天的数据
 INSERT INTO dwd.eshop_order_sales_dtl (
     order_item_id,
     order_id,
@@ -31,4 +32,4 @@ SELECT
 FROM ods_dsys.prd_order_item t1
 JOIN dwd.eshop_order_sales_doc t2 ON t1.order_id = t2.order_id
 LEFT JOIN (SELECT distinct entryid, goodsid, product_id FROM dim.eshop_entry_goods) t3 ON t1.product_id = t3.product_id AND t2.entryid = t3.entryid
-WHERE t1.update_time>=(SELECT MAX(update_time) - INTERVAL 60 DAY FROM dwd.ec_order_sales_dtl);
+WHERE t1.update_time>=(SELECT MAX(update_time) - INTERVAL 60 DAY FROM dwd.eshop_order_sales_dtl);

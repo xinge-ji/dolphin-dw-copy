@@ -1,3 +1,9 @@
+DELETE FROM ads.shuangkong_customer_m
+WHERE stat_yearmonth IN (
+    DATE_TRUNC(CURRENT_DATE(), 'MONTH'),
+    DATE_SUB(DATE_TRUNC(CURRENT_DATE(), 'MONTH'), INTERVAL 1 MONTH)
+);
+
 INSERT INTO ads.shuangkong_customer_m (
     stat_yearmonth,
     entryid,
@@ -66,7 +72,7 @@ sales_monthly AS (
         MAX(province_name) AS province_name,
         MAX(customer_name) AS customer_name,
         MAX(customertype_name) AS customertype_name,
-        c.is_shuangwanjia,
+        COALESCE(c.is_shuangwanjia, 0) AS is_shuangwanjia,
         MAX(customertype_group) AS customertype_group,
         SUM(sales_amount) AS sales_amount,
         SUM(sales_gross_profit) AS sales_gross_profit
@@ -83,7 +89,7 @@ sales_monthly AS (
         customid,
         COALESCE(jicai_type, 'UNKNOWN'),
         COALESCE(nianbao_type, 'UNKNOWN'),
-        c.is_shuangwanjia
+        COALESCE(c.is_shuangwanjia, 0)
 ),
 
 -- 结算数据月度汇总
@@ -92,17 +98,17 @@ settle_monthly AS (
         DATE_TRUNC(stat_date, 'month') AS stat_yearmonth,
         entryid,
         customid,
-        COALESCE(jicai_type, 'UNKNOWN') AS jicai_type,
+        COALESCE(jicai_type, '非集采') AS jicai_type,
         COALESCE(nianbao_type, 'UNKNOWN') AS nianbao_type,
         SUM(settle_amount) AS settle_amount,
         AVG(avg_order_settle_time) AS avg_order_settle_time,
         CASE 
-            WHEN LOWER(jicai_type) LIKE '%集采%' OR LOWER(jicai_type) = '集采' 
+            WHEN COALESCE(jicai_type, '非集采') != '非集采' 
             THEN AVG(avg_order_settle_time) 
             ELSE 0 
         END AS jicai_order_settle_time,
         CASE 
-            WHEN LOWER(jicai_type) NOT LIKE '%集采%' AND LOWER(jicai_type) != '集采' 
+            WHEN COALESCE(jicai_type, '非集采') = '非集采'
             THEN AVG(avg_order_settle_time) 
             ELSE 0 
         END AS non_jicai_order_settle_time
@@ -115,7 +121,7 @@ settle_monthly AS (
         DATE_TRUNC(stat_date, 'month'),
         entryid,
         customid,
-        COALESCE(jicai_type, 'UNKNOWN'),
+        COALESCE(jicai_type, '非集采'),
         COALESCE(nianbao_type, 'UNKNOWN')
 ),
 
@@ -125,17 +131,17 @@ repay_monthly AS (
         DATE_TRUNC(stat_date, 'month') AS stat_yearmonth,
         entryid,
         customid,
-        COALESCE(jicai_type, 'UNKNOWN') AS jicai_type,
+        COALESCE(jicai_type, '非集采') AS jicai_type,
         COALESCE(nianbao_type, 'UNKNOWN') AS nianbao_type,
         SUM(repaid_amount) AS repaid_amount,
         AVG(avg_order_repaid_time) AS avg_order_repaid_time,
         CASE 
-            WHEN LOWER(jicai_type) LIKE '%集采%' OR LOWER(jicai_type) = '集采' 
+            WHEN COALESCE(jicai_type, '非集采') != '非集采' 
             THEN AVG(avg_order_repaid_time) 
             ELSE 0 
         END AS jicai_order_repaid_time,
         CASE 
-            WHEN LOWER(jicai_type) NOT LIKE '%集采%' AND LOWER(jicai_type) != '集采' 
+            WHEN COALESCE(jicai_type, '非集采') = '非集采'
             THEN AVG(avg_order_repaid_time) 
             ELSE 0 
         END AS non_jicai_order_repaid_time
@@ -148,7 +154,7 @@ repay_monthly AS (
         DATE_TRUNC(stat_date, 'month'),
         entryid,
         customid,
-        COALESCE(jicai_type, 'UNKNOWN'),
+        COALESCE(jicai_type, '非集采'),
         COALESCE(nianbao_type, 'UNKNOWN')
 ),
 
@@ -180,12 +186,6 @@ receivable_aging AS (
         SUM(unpaid_4to5years) + SUM(unpaid_over_5years) AS over_2year_unpaid
     FROM
         dws.wholesale_sales_receivable_aging_d
-    WHERE
-        stat_date = (
-            SELECT MAX(stat_date) 
-            FROM dws.wholesale_sales_receivable_aging_d 
-            WHERE DATE_TRUNC(stat_date, 'month') <= (SELECT current_month FROM current_period)
-        )
     GROUP BY
         LAST_DAY(DATE_TRUNC(stat_date, 'month')),
         entryid,
@@ -254,8 +254,6 @@ current_month_data AS (
         amd.repaid_amount AS current_repaid_amount
     FROM
         all_monthly_data amd
-    WHERE
-        amd.stat_yearmonth IN ((SELECT current_month FROM current_period), (SELECT prev_month FROM current_period))
 ),
 
 -- 上个月数据
@@ -278,11 +276,6 @@ prev_month_data AS (
         amd.non_jicai_order_repaid_time AS prev_non_jicai_order_repaid_time
     FROM
         all_monthly_data amd
-    WHERE
-        amd.stat_yearmonth IN (
-            (SELECT prev_month FROM current_period),
-            DATE_SUB((SELECT prev_month FROM current_period), INTERVAL 1 MONTH)
-        )
 ),
 
 -- 近三个月平均值（实际是前1-4个月的平均值）
@@ -313,8 +306,6 @@ avg_3_months AS (
         AND target_month.nianbao_type = prev_months.nianbao_type
         AND prev_months.stat_yearmonth BETWEEN DATE_SUB(target_month.stat_yearmonth, INTERVAL 4 MONTH) 
                                            AND DATE_SUB(target_month.stat_yearmonth, INTERVAL 1 MONTH)
-    WHERE
-        target_month.stat_yearmonth IN ((SELECT current_month FROM current_period), (SELECT prev_month FROM current_period))
     GROUP BY
         target_month.stat_yearmonth,
         target_month.entryid,
@@ -323,7 +314,7 @@ avg_3_months AS (
         target_month.nianbao_type
 )
 
--- 最终结果，只选择当前月和上月的数据
+-- 最终结果
 SELECT
     cm.stat_yearmonth,
     cm.entryid,
@@ -405,8 +396,4 @@ LEFT JOIN
     receivable_aging ra
     ON cm.stat_yearmonth = ra.stat_yearmonth
     AND cm.entryid = ra.entryid
-    AND cm.customid = ra.customid
-WHERE 
-    -- 只插入当前月和上月的数据
-    cm.stat_yearmonth = (SELECT current_month FROM current_period)
-    OR cm.stat_yearmonth = (SELECT prev_month FROM current_period);
+    AND cm.customid = ra.customid;

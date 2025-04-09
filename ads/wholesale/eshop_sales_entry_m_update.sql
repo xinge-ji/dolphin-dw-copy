@@ -1,4 +1,3 @@
--- 插入上月与本月数据到独立单元月度汇总表
 INSERT INTO ads.eshop_sales_entry_m (
     stat_yearmonth,
     entryid,
