@@ -60,21 +60,27 @@ sales_summary AS (
     SELECT
         DATE(wos.create_date) AS stat_date,
         wos.entryid,
+        wos.entry_name,
         wos.customid,
+        wos.customer_name,
         COUNT(DISTINCT wos.salesid) AS order_count,
         SUM(wos.sales_amount) AS sales_amount
-    FROM dwd.wholesale_order_sales_dtl wos
-    WHERE wos.use_status = '正式'
+    FROM dwd.wholesale_order_sales_doc wos
+    INNER JOIN (SELECT entryid, MIN(dw_starttime) as dw_starttime FROM dim.eshop_entry_customer group by entryid) ecb 
+    ON wos.entryid = ecb.entryid AND wos.create_date >= ecb.dw_starttime
+    WHERE wos.use_status in ('正式','临时')
     AND sale_type = '销售'
     AND IFNULL(is_haixi,0) = 0
-    GROUP BY DATE(wos.create_date), wos.entryid, wos.customid 
+    GROUP BY DATE(wos.create_date), wos.entryid, wos.entry_name,wos.customid,wos.customer_name
 ),
 -- 计算可转化为b2b的手工订单信息
 potential_b2b AS (
     SELECT 
         DATE(wosd.create_date) AS stat_date,
         wosd.entryid,
+        wosd.entry_name,
         wosd.customid,
+        wosd.customer_name, 
         COUNT(DISTINCT wosd.salesid) AS potential_b2b_order_count,
         SUM(wosd.sales_amount) AS potential_b2b_sales_amount
     FROM dwd.wholesale_order_sales_dtl wosd
@@ -88,82 +94,90 @@ potential_b2b AS (
         AND (wosd.storageid IS NULL 
              OR wosd.storage_name in ('三明鹭燕合格保管帐','漳州鹭燕大库保管帐','泉州鹭燕大库保管帐','莆田鹭燕大库保管帐','福州鹭燕大库保管帐','宁德鹭燕大库保管帐','龙岩新鹭燕大库保管帐','南平鹭燕大库保管帐','股份厦门大库保管帐')
              )
-        AND wosd.use_status = '正式'
+        AND wosd.use_status in ('正式','临时')
         AND wosd.sale_type = '销售'
         AND wosd.is_dianshang = 0
         AND wosd.discount >= 1
-    GROUP BY DATE(wosd.create_date), wosd.entryid, wosd.customid
+    GROUP BY DATE(wosd.create_date), wosd.entryid, wosd.entry_name,wosd.customid,wosd.customer_name
 ),
 -- 计算b2b订单信息
 b2b_orders AS (
     SELECT 
-        DATE(eosd.create_time) AS stat_date,
-        eosd.entryid,
-        eosd.customid,
-        COUNT(DISTINCT eosd.order_id) AS b2b_order_count,
-        SUM(eosd.sales_amount) AS b2b_sales_amount
-    FROM dwd.eshop_order_sales_doc eosd
-    WHERE eosd.process_status IN ('待发货', '发货中', '已发货', '已完成')
-    GROUP BY DATE(eosd.create_time), eosd.entryid, eosd.customid
+        DATE(wosd.create_date) AS stat_date,
+        wosd.entryid,
+        wosd.entry_name,
+        wosd.customid,
+        wosd.customer_name,
+        COUNT(DISTINCT wosd.salesid) AS b2b_order_count,
+        SUM(wosd.sales_amount) AS b2b_sales_amount
+    FROM dwd.wholesale_order_sales_doc wosd
+    WHERE wosd.econid is not null
+    AND wosd.use_status in ('正式','临时')
+    GROUP BY DATE(wosd.create_date), wosd.entryid, wosd.entry_name,wosd.customid,wosd.customer_name
 ),
 -- 计算b2b自主下单订单信息
 b2b_self_initiated AS (
     SELECT 
-        DATE(eosd.create_time) AS stat_date,
-        eosd.entryid,
-        eosd.customid,
-        COUNT(DISTINCT eosd.order_id) AS b2b_self_initiated_order_count,
+        DATE(wosd.create_date) AS stat_date,
+        wosd.entryid,
+        wosd.entry_name,
+        wosd.customid,
+        wosd.customer_name,
+        COUNT(DISTINCT wosd.salesid) AS b2b_self_initiated_order_count,
         SUM(eosd.sales_amount) AS b2b_self_initiated_sales_amount
-    FROM dwd.eshop_order_sales_doc eosd
-    WHERE eosd.process_status IN ('待发货', '发货中', '已发货', '已完成')
-        AND eosd.is_salesman_order = 0
-    GROUP BY DATE(eosd.create_time), eosd.entryid, eosd.customid
+    FROM dwd.wholesale_order_sales_doc wosd
+    JOIN dwd.eshop_order_sales_doc eosd ON wosd.ordernum = eosd.order_num
+    WHERE wosd.econid is not null
+    AND wosd.use_status in ('正式','临时')
+    AND eosd.is_salesman_order = 0
+    GROUP BY DATE(wosd.create_date), wosd.entryid,wosd.entry_name, wosd.customid,wosd.customer_name
+),
+-- 获取所有有数据的日期、独立单元和商品组合
+base_data AS (
+    SELECT 
+        stat_date, entryid, entry_name,customid,customer_name
+    FROM sales_summary
+    UNION
+    SELECT 
+        stat_date, entryid, entry_name,customid,customer_name
+    FROM potential_b2b
+    UNION
+    SELECT 
+        stat_date, entryid, entry_name,customid,customer_name
+    FROM b2b_orders
+    UNION
+    SELECT 
+        stat_date, entryid, entry_name,customid,customer_name
+    FROM b2b_self_initiated
 ),
 -- 合并维度信息
 dim_info AS (
     SELECT DISTINCT
-        e.entryid,
-        e.entry_name,
-        c.customid,
-        c.customer_name
-    FROM dim.entry e
-    CROSS JOIN dim.customer c
+        bd.stat_date,
+        bd.entryid,
+        bd.customid,
+        bd.entry_name,
+        bd.customer_name
+    FROM base_data bd
 )
 -- 最终合并所有数据
 SELECT
-    COALESCE(ss.stat_date, pb.stat_date, bo.stat_date, bs.stat_date) AS stat_date,
-    COALESCE(ss.entryid, pb.entryid, bo.entryid, bs.entryid, di.entryid) AS entryid,
-    COALESCE(ss.customid, pb.customid, bo.customid, bs.customid, di.customid) AS customid,
-    di.entry_name,
-    di.customer_name,
-    COALESCE(ss.order_count, 0) AS order_count,
-    COALESCE(ss.sales_amount, 0) AS sales_amount,
-    COALESCE(pb.potential_b2b_order_count, 0) AS potential_b2b_order_count,
-    COALESCE(pb.potential_b2b_sales_amount, 0) AS potential_b2b_sales_amount,
-    COALESCE(bo.b2b_order_count, 0) AS b2b_order_count,
-    COALESCE(bo.b2b_sales_amount, 0) AS b2b_sales_amount,
-    COALESCE(bs.b2b_self_initiated_order_count, 0) AS b2b_self_initiated_order_count,
-    COALESCE(bs.b2b_self_initiated_sales_amount, 0) AS b2b_self_initiated_sales_amount
-FROM (
-    -- 先获取所有有数据的日期、独立单元和客户组合
-    SELECT 
-        stat_date, entryid, customid
-    FROM sales_summary
-    UNION
-    SELECT 
-        stat_date, entryid, customid
-    FROM potential_b2b
-    UNION
-    SELECT 
-        stat_date, entryid, customid
-    FROM b2b_orders
-    UNION
-    SELECT 
-        stat_date, entryid, customid
-    FROM b2b_self_initiated
-) base
-JOIN dim_info di ON base.entryid = di.entryid AND base.customid = di.customid
-LEFT JOIN sales_summary ss ON base.stat_date = ss.stat_date AND base.entryid = ss.entryid AND base.customid = ss.customid
-LEFT JOIN potential_b2b pb ON base.stat_date = pb.stat_date AND base.entryid = pb.entryid AND base.customid = pb.customid
-LEFT JOIN b2b_orders bo ON base.stat_date = bo.stat_date AND base.entryid = bo.entryid AND base.customid = bo.customid
-LEFT JOIN b2b_self_initiated bs ON base.stat_date = bs.stat_date AND base.entryid = bs.entryid AND base.customid = bs.customid;
+    bd.stat_date,
+    bd.entryid,
+    bd.customid,
+    MAX(bd.entry_name),
+    MAX(bd.customer_name),
+    SUM(COALESCE(ss.order_count, 0)) AS order_count,
+    SUM(COALESCE(ss.sales_amount, 0)) AS sales_amount,
+    SUM(COALESCE(pb.potential_b2b_order_count, 0)) AS potential_b2b_order_count,
+    SUM(COALESCE(pb.potential_b2b_sales_amount, 0)) AS potential_b2b_sales_amount,
+    SUM(COALESCE(bo.b2b_order_count, 0)) AS b2b_order_count,
+    SUM(COALESCE(bo.b2b_sales_amount, 0)) AS b2b_sales_amount,
+    SUM(COALESCE(bs.b2b_self_initiated_order_count, 0)) AS b2b_self_initiated_order_count,
+    SUM(COALESCE(bs.b2b_self_initiated_sales_amount, 0)) AS b2b_self_initiated_sales_amount
+FROM dim_info bd
+LEFT JOIN sales_summary ss ON bd.stat_date = ss.stat_date AND bd.entryid = ss.entryid AND bd.customid = ss.customid
+LEFT JOIN potential_b2b pb ON bd.stat_date = pb.stat_date AND bd.entryid = pb.entryid AND bd.customid = pb.customid
+LEFT JOIN b2b_orders bo ON bd.stat_date = bo.stat_date AND bd.entryid = bo.entryid AND bd.customid = bo.customid
+LEFT JOIN b2b_self_initiated bs ON bd.stat_date = bs.stat_date AND bd.entryid = bs.entryid AND bd.customid = bs.customid
+GROUP BY bd.stat_date, bd.entryid, bd.customid;

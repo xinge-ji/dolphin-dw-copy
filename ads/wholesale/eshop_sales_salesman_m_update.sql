@@ -1,9 +1,9 @@
 INSERT INTO ads.eshop_sales_salesman_m (
     stat_yearmonth,
     entryid,
-    salesman_id,
+    salerid,
     entry_name,
-    salesman_name,
+    saler_name,
     potential_b2b_order_count,
     potential_b2b_sales_amount,
     b2b_order_count,
@@ -23,29 +23,29 @@ current_month_data AS (
     SELECT 
         DATE_TRUNC(stat_date, 'month') AS stat_yearmonth,
         entryid,
-        salesman_id,
+        salerid,
         MAX(entry_name) AS entry_name,
-        MAX(salesman_name) AS salesman_name,
-        SUM(potential_b2b_order_item_count) AS potential_b2b_order_count,
+        MAX(saler_name) AS saler_name,
+        SUM(potential_b2b_order_count) AS potential_b2b_order_count,
         SUM(potential_b2b_sales_amount) AS potential_b2b_sales_amount,
-        SUM(b2b_order_item_count) AS b2b_order_count,
+        SUM(b2b_order_count) AS b2b_order_count,
         SUM(b2b_sales_amount) AS b2b_sales_amount,
-        SUM(b2b_self_initiated_order_item_count) AS b2b_self_initiated_order_count,
+        SUM(b2b_self_initiated_order_count) AS b2b_self_initiated_order_count,
         SUM(b2b_self_initiated_sales_amount) AS b2b_self_initiated_sales_amount
-    FROM dws.ec_sales_salesman_d
+    FROM dws.eshop_sales_salesman_d
     WHERE DATE_FORMAT(stat_date, '%Y%m') IN (
         DATE_FORMAT(DATE_TRUNC(CURRENT_DATE(), 'MONTH'), '%Y%m'),
         DATE_FORMAT(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), 'MONTH'), INTERVAL 1 MONTH), '%Y%m')
     )
-    GROUP BY DATE_TRUNC(stat_date, 'month'), entryid, salesman_id
+    GROUP BY DATE_TRUNC(stat_date, 'month'), entryid, salerid
 )
 -- 计算各种转化率和占比
 SELECT
     cm.stat_yearmonth,
     cm.entryid,
-    cm.salesman_id,
+    cm.salerid,
     cm.entry_name,
-    cm.salesman_name,
+    cm.saler_name,
     
     -- 可转化为b2b的手工订单信息
     cm.potential_b2b_order_count,
@@ -88,4 +88,5 @@ SELECT
         WHEN IFNULL(cm.b2b_sales_amount, 0) = 0 THEN 0
         ELSE ROUND(cm.b2b_self_initiated_sales_amount / cm.b2b_sales_amount, 4)
     END AS b2b_self_initiated_sales_amount_proportion
-FROM current_month_data cm;
+FROM current_month_data cm
+WHERE cm.entryid in (1,2,5,104,124,144,164,204,224) and cm.stat_yearmonth is not null;

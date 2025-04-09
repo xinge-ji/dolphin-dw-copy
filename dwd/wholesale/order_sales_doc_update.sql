@@ -36,6 +36,7 @@ INSERT INTO dwd.wholesale_order_sales_doc (
     is_yaoxiewang,
     econid,
     is_btob,
+    ordernum,
     
     -- 销售模式
     peihuojiekuan_mode,
@@ -101,6 +102,7 @@ SELECT
     	WHEN a.econid is not null then 1
         ELSE 0
     END AS is_btob,                             -- 是否B2B订单
+    a.ordernum,                                 -- B2B平台系统订单ID
     
     -- 销售模式
     CASE

@@ -18,47 +18,26 @@ CREATE TABLE dim.eshop_entry_goods (
 INSERT INTO dim.eshop_entry_goods (
     entryid,
     goodsid,
-    dw_starttime,
-    dw_endtime,
+    product_id,
     org_id,
-    product_id
+    dw_starttime,
+    dw_endtime
 )
-WITH
-    ranked_eshop_entry_goods AS (
-        SELECT
-            entryid,
-            goodsid,
-            tob2bdate,
-            MAX(dw_createtime) as dw_createtime,
-            MAX(dw_updatetime) as dw_updatetime
-        FROM
-            ods_erp.eshop_entry_goods
-        WHERE
-            entryid IS NOT NULL
-            AND goodsid IS NOT NULL
-            AND tob2bdate IS NOT NULL
-        GROUP BY
-            entryid,
-            goodsid,
-            tob2bdate
-    )
-SELECT
-    ec.entryid,
-    ec.goodsid,
-    ec.tob2bdate as dw_starttime,
-    CASE
-      WHEN ec.dw_createtime <> ec.dw_updatetime THEN date(ec.dw_updatetime)
-      ELSE CAST('9999-12-31 23:59:59' AS DATETIME)
-    END as dw_endtime,
-    e.org_id,
-    g.product_id
-FROM
-    ranked_eshop_entry_goods ec
-LEFT JOIN
-    (SELECT entryid, MIN(org_id) as org_id FROM dim.entry group by entryid) e ON ec.entryid = e.entryid
-LEFT JOIN
-    (SELECT PRODUCT_CODE, MIN(PRODUCT_ID) as product_id FROM ods_dsys.prd_product group by PRODUCT_CODE) g ON ec.goodsid = g.PRODUCT_CODE;
+SELECT 
+        t1.entryid,
+        t1.goodsid,
+        MAX(t2.product_id),
+        MAX(t2.org_id),
+        MIN(IFNULL(t1.credate, t2.create_time)) AS dw_starttime,
+        CAST('9999-12-31 23:59:59' AS DATETIME) AS dw_endtime
+    FROM ods_erp.eshop_entry_goods t1
+    LEFT JOIN (SELECT entryid, MAX(org_id) as org_id FROM dim.entry group by entryid) e ON t1.entryid = e.entryid
+    LEFT JOIN ods_dsys.prd_product t2 on t1.goodsid = t2.PRODUCT_CODE AND e.org_id = t2.org_id
+    WHERE t1.is_active = 1 and t1.entryid is not null and t1.goodsid is not null
+    GROUP BY t1.entryid, t1.goodsid;
 
 
-CREATE INDEX IF NOT EXISTS idx_startdates ON dim.eshop_entry_goods (dw_starttime);
-CREATE INDEX IF NOT EXISTS idx_enddates ON dim.eshop_entry_goods (dw_endtime);
+CREATE INDEX IF NOT EXISTS idx_entryid ON dim.eshop_entry_goods (entryid);
+CREATE INDEX IF NOT EXISTS idx_goodsid ON dim.eshop_entry_goods (goodsid);
+CREATE INDEX IF NOT EXISTS idx_product_id ON dim.eshop_entry_goods (product_id);
+CREATE INDEX IF NOT EXISTS idx_org_id ON dim.eshop_entry_goods (org_id);

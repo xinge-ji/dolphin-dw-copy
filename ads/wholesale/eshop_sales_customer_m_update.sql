@@ -108,4 +108,5 @@ SELECT
         WHEN IFNULL(cm.b2b_sales_amount, 0) = 0 THEN 0
         ELSE ROUND(cm.b2b_self_initiated_sales_amount / cm.b2b_sales_amount, 4)
     END AS b2b_self_initiated_sales_amount_proportion
-FROM current_month_data cm;
+FROM current_month_data cm
+WHERE cm.entryid in (1,2,5,104,124,144,164,204,224) and cm.stat_yearmonth is not null;

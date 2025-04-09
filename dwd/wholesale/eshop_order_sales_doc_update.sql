@@ -14,6 +14,7 @@ INSERT INTO dwd.eshop_order_sales_doc (
     entryid,
     buyers_id,
     customid,
+    order_num,
     process_stat_code,
     process_status,
     is_salesman_order,
@@ -29,6 +30,7 @@ SELECT
     t2.entryid,
     t1.buyers_id,
     t3.customid,
+    t1.order_num,
     t1.process_stat_code,
     CASE
         WHEN t1.process_stat_code = 'WAIT_APPROVE' THEN '待审核'

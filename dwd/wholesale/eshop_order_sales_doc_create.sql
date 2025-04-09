@@ -7,6 +7,7 @@ CREATE TABLE dwd.eshop_order_sales_doc (
     entryid bigint COMMENT '独立单元ID',
     buyers_id bigint COMMENT '客户ID对应云商ID',
     customid bigint COMMENT '客户ID',
+    order_num varchar COMMENT '订单号',
     process_stat_code varchar COMMENT '处理状态代码',
     process_status varchar COMMENT '处理状态描述',
     is_salesman_order tinyint COMMENT '是否销售员订单(1:是,0:否)',
@@ -29,6 +30,7 @@ INSERT INTO dwd.eshop_order_sales_doc (
     entryid,
     buyers_id,
     customid,
+    order_num,
     process_stat_code,
     process_status,
     is_salesman_order,
@@ -44,6 +46,7 @@ SELECT
     t2.entryid,
     t1.buyers_id,
     t3.customid,
+    t1.order_num,
     t1.process_stat_code,
     CASE
         WHEN t1.process_stat_code = 'WAIT_APPROVE' THEN '待审核'

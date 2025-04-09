@@ -31,6 +31,7 @@ CREATE TABLE dwd.wholesale_order_sales_doc (
     is_yaoxiewang tinyint COMMENT '是否药械网订单',
     econid bigint COMMENT 'B2B平台订单ID（电商订单）',
     is_btob tinyint COMMENT '是否B2B订单',
+    ordernum varchar COMMENT 'B2B平台系统订单ID（电商订单）',
     
     -- 销售模式
     peihuojiekuan_mode varchar COMMENT '销售模式:先配后结/先结后配',
@@ -91,6 +92,7 @@ INSERT INTO dwd.wholesale_order_sales_doc (
     is_yaoxiewang,
     econid,
     is_btob,
+    ordernum,
     
     -- 销售模式
     peihuojiekuan_mode,
@@ -156,6 +158,7 @@ SELECT
     	WHEN a.econid is not null then 1
         ELSE 0
     END AS is_btob,                             -- 是否B2B订单
+    a.ordernum,                                 -- B2B平台系统订单ID
     
     -- 销售模式
     CASE

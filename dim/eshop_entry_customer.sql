@@ -5,8 +5,8 @@ CREATE TABLE dim.eshop_entry_customer (
         dw_starttime datetime COMMENT '客户上线日期',
         dw_endtime datetime COMMENT '客户下线日期',
         org_id bigint COMMENT '独立单元电商ID',
-        buyers_base_id bigint COMMENT '客户电商ID'
-    ) UNIQUE KEY (entryid, customid, dw_starttime) DISTRIBUTED BY HASH (customid) PROPERTIES (
+        buyers_id bigint COMMENT '客户电商ID'
+    ) UNIQUE KEY (entryid, customid) DISTRIBUTED BY HASH (customid) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",
         "storage_format" = "V2",
@@ -18,47 +18,27 @@ CREATE TABLE dim.eshop_entry_customer (
 INSERT INTO dim.eshop_entry_customer (
     entryid,
     customid,
-    dw_starttime,
-    dw_endtime,
+    buyers_id,
     org_id,
-    buyers_base_id
+    dw_starttime,
+    dw_endtime
 )
-WITH
-    ranked_eshop_entry_customer AS (
-        SELECT
-            entryid,
-            customid,
-            tob2bdate,
-            MAX(dw_createtime) as dw_createtime,
-            MAX(dw_updatetime) as dw_updatetime
-        FROM
-            ods_erp.eshop_entry_customer
-        WHERE
-            entryid IS NOT NULL
-            AND customid IS NOT NULL
-            AND tob2bdate IS NOT NULL
-        GROUP BY
-            entryid,
-            customid,
-            tob2bdate
-    )
-SELECT
-    ec.entryid,
-    ec.customid,
-    ec.tob2bdate as dw_starttime,
-    CASE
-      WHEN ec.dw_createtime <> ec.dw_updatetime THEN date(ec.dw_updatetime)
-      ELSE CAST('9999-12-31 23:59:59' AS DATETIME)
-    END as dw_endtime,
-    e.org_id,
-    t.buyers_base_id
-FROM
-    ranked_eshop_entry_customer ec
-LEFT JOIN
-    (SELECT entryid, MIN(org_id) as org_id FROM dim.entry group by entryid) e ON ec.entryid = e.entryid
-LEFT JOIN
-    (SELECT ERP_BASE_CODE, MIN(buyers_base_id) as buyers_base_id FROM ods_dsys.sys_buyers_base group by ERP_BASE_CODE) t ON ec.customid = t.ERP_BASE_CODE;
+SELECT 
+        t1.entryid,
+        t1.customid,
+        MAX(t3.buyers_id),
+        MAX(t3.org_id),
+        MIN(IFNULL(t1.credate, t3.create_time)) AS dw_starttime,
+        CAST('9999-12-31 23:59:59' AS DATETIME) AS dw_endtime
+    FROM ods_erp.eshop_entry_customer t1
+    LEFT JOIN ods_dsys.sys_buyers t2 on t1.customid = t2.ERP_CODE
+    LEFT JOIN (SELECT entryid, MAX(org_id) as org_id FROM dim.entry group by entryid) e ON t1.entryid = e.entryid
+    LEFT JOIN ods_dsys.sys_buyers_org_rel t3 ON t3.BUYERS_ID = t2.BUYERS_ID AND e.org_id = t3.org_id
+    WHERE t1.is_active = 1 and t1.entryid is not null and t1.customid is not null
+    GROUP BY t1.entryid, t1.customid;
 
+CREATE INDEX IF NOT EXISTS idx_eshop_entry_customer_entryid ON dim.eshop_entry_customer (entryid);
+CREATE INDEX IF NOT EXISTS idx_eshop_entry_customer_customid ON dim.eshop_entry_customer (customid);
+CREATE INDEX IF NOT EXISTS idx_eshop_entry_customer_buyers_id ON dim.eshop_entry_customer (buyers_id);
+CREATE INDEX IF NOT EXISTS idx_eshop_entry_customer_org_id ON dim.eshop_entry_customer (org_id);
 
-CREATE INDEX IF NOT EXISTS idx_startdates ON dim.eshop_entry_customer (dw_starttime);
-CREATE INDEX IF NOT EXISTS idx_enddates ON dim.eshop_entry_customer (dw_endtime);
