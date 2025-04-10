@@ -1,7 +1,7 @@
 workflow:
   name: "wholesale_update"
   project: "dwd"
-  schedule: 0 0 0 ? * * *
+  schedule: 0 0 4 ? * * *
 
 tasks:
   - name: dependent
@@ -12,8 +12,8 @@ tasks:
     groups:
       - op: and
         groups:
-          - project_name: dim
-            workflow_name: pub
+          - project_name: erp_ods
+            workflow_name: erp_manual_update
             dependent_task_name: '0'
             dependent_date: today
         
