@@ -1,4 +1,3 @@
--- 插入最近两个月的数据到批发任务商品月度汇总表
 INSERT INTO ads.wholesale_task_goods_m (
     stat_yearmonth,
     entryid,
@@ -21,7 +20,7 @@ monthly_sales AS (
         sg.entryid,
         ts.docid,
         sg.goodsid,
-        SUM(sg.sales_amount) AS sales_amount
+        IFNULL(SUM(sg.sales_amount), 0) AS sales_amount
     FROM
         dws.wholesale_sales_goods_d sg
     JOIN
@@ -50,8 +49,8 @@ customer_purchase AS (
         ts.docid,
         sg.goodsid,
         sg.customid,
-        COUNT(*) AS purchase_count,
-        SUM(sg.sales_amount) AS sales_amount
+        IFNULL(COUNT(sg.sales_amount>0), 0) AS purchase_count,
+        IFNULL(SUM(sg.sales_amount), 0) AS sales_amount
     FROM
         dws.wholesale_sales_goods_d sg
     JOIN
@@ -108,9 +107,9 @@ customer_stats AS (
             THEN cp.sales_amount
             ELSE 0
         END) AS new_customer_sales_amount,
-        -- 留存客户数：本月购买该商品超过1次的客户数
+        -- 留存客户数：本月首次购买且购买该商品超过1次的客户数
         COUNT(DISTINCT CASE 
-            WHEN cp.purchase_count > 1 
+            WHEN hp.first_purchase_month = cp.stat_yearmonth AND cp.purchase_count > 1 
             THEN cp.customid 
         END) AS retention_customer_count
     FROM

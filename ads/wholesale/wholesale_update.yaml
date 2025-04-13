@@ -76,6 +76,6 @@ tasks:
   - name: task_goods_m
     task_type: Sql
     datasource_name: "dwd"
-    flag: YES
+    flag: NO
     deps: [task_customer_m]
     sql: $FILE{"task_goods_m_update.sql"}
