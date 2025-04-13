@@ -18,6 +18,7 @@ INSERT INTO dwd.wholesale_order_sales_doc (
     entry_name,
     province_name,
     city_name,
+    area_name,
         
     -- 客户维度
     customid,
@@ -27,6 +28,7 @@ INSERT INTO dwd.wholesale_order_sales_doc (
 
     -- 订单状态
     use_status,
+    memo,
     
     -- 来源相关
     comefrom,
@@ -71,6 +73,7 @@ SELECT
     e.entry_name,                               -- 独立单元名称
     e.province_name,                            -- 省份名称
     e.city_name,                                -- 城市名称
+    e.area_name,                                -- 区域名称
     
     -- 客户维度
     a.customid,                                 -- 客户ID
@@ -84,6 +87,7 @@ SELECT
         WHEN a.usestatus = 2 THEN '临时'
         ELSE 'UNKNOWN'
     END as use_status,                          -- 使用状态
+    memo,                                      -- 备注
     
     -- 来源相关
     b.ddlname as comefrom,                      -- 订单来源

@@ -54,7 +54,7 @@ INSERT INTO dwd.wholesale_order_settle_dtl (
     create_date,
     confirm_date,
     use_status,
-    settle_status,
+    received_status,
     inputmanid,
     inputman_name,
     
@@ -123,12 +123,12 @@ SELECT
     a.create_date,                
     a.confirm_date,                         
     a.use_status,
-    CASE                                    
-        WHEN b.recfinflag = 0 THEN '未收完'
-        WHEN b.recfinflag = 1 THEN '已收完'
-        WHEN b.recfinflag = 2 THEN '不收款'
+    CASE                                 
+        WHEN IFNULL(b.recfinflag, 0) = 1 OR abs(b.total_line) <= abs(b.totalrecmoney) THEN '已收完'   
+        WHEN IFNULL(b.recfinflag, 0) = 0 THEN '未收完'
+        WHEN IFNULL(b.recfinflag, 0) = 2 THEN '不收款'
         ELSE ''
-    END AS settle_status,
+    END AS received_status,
     a.inputmanid,
     a.inputman_name,
     

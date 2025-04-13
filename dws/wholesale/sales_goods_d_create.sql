@@ -7,46 +7,25 @@ CREATE TABLE dws.wholesale_sales_goods_d (
     goodsid bigint COMMENT "商品ID",
     entryid bigint COMMENT "独立单元ID",
     customid bigint COMMENT "客户ID",
-    goodsid bigint COMMENT "商品ID",
-    
-    -- 集采信息
-    is_jicai_zhongxuan tinyint COMMENT "是否集采中选(0:否, 1:是)",
 
     -- 组织信息
     entry_name varchar COMMENT "独立单元名称",
     province_name varchar COMMENT "独立单元省份名称",
     city_name varchar COMMENT "独立单元城市名称",
     area_name varchar COMMENT "独立单元地区名称",
-    caiwu_level1 varchar COMMENT "集团模块一级",
-    caiwu_level2 varchar COMMENT "集团模块二级",
 
     -- 客户信息
     customer_name varchar COMMENT "客户名称",
-    customertype_name varchar COMMENT "客户类型名称",
-    customertype_group varchar COMMENT "客户类型分组",
-    customer_financeclass_name varchar COMMENT "客户财务类别名称",
+    customertype_task varchar comment '分销项目客户类型:等级机构/基层/终端',
     
     -- 商品信息
-    nianbao_type varchar COMMENT "商品年报类型",
-    qixie_class varchar COMMENT "器械分类",
-    qixie_brandtype varchar COMMENT "器械品牌类型",
-    leibiebeizhu int COMMENT "独立单元商品类别备注",
-    group_manage_type varchar COMMENT "商品集团管理类型",
-    
-    -- 数量指标
-    goods_qty decimal(20, 6) COMMENT "商品总数量",
+    goods_name varchar COMMENT "商品名称",
     
     -- 金额指标
-    settle_amount decimal(18,4) COMMENT "结算总金额",
-    notax_amount decimal(18,4) COMMENT "不含税总金额",
-    cost_amount decimal(18,4) COMMENT "成本总金额",
-    
-    -- 利润指标
-    batch_gross_profit decimal(18,4) COMMENT "批次总毛利",
-    notax_gross_profit decimal(18,4) COMMENT "不含税总毛利",
-    gross_profit_rate decimal(18,4) COMMENT "平均不含税毛利率"
+    sales_amount decimal(18,4) COMMENT '销售金额',
+    return_amount decimal(18,4) COMMENT '销退金额'
 )
-UNIQUE KEY(stat_date, goodsid, entryid, customid, is_jicai_zhongxuan) 
+UNIQUE KEY(stat_date, goodsid, entryid, customid) 
 DISTRIBUTED BY HASH(stat_date, goodsid) 
 PROPERTIES (
   "replication_allocation" = "tag.location.default: 3",
@@ -54,3 +33,61 @@ PROPERTIES (
   "storage_format" = "V2",
   "disable_auto_compaction" = "false"
 );
+
+-- 插入数据
+INSERT INTO dws.wholesale_sales_goods_d (
+    stat_date,
+    goodsid,
+    entryid,
+    customid,
+    entry_name,
+    province_name,
+    city_name,
+    area_name,
+    customer_name,
+    customertype_task,
+    goods_name,
+    sales_amount,
+    return_amount
+)
+SELECT
+    DATE(wos.create_date) AS stat_date,
+    wos.goodsid,
+    wos.entryid,
+    wos.customid,
+    wos.entry_name,
+    wos.province_name,
+    wos.city_name,
+    wos.area_name,
+    wos.customer_name,
+    c.customertype_task,
+    wos.goods_name,
+    SUM(CASE WHEN wos.sale_type != '销退' THEN wos.sales_amount ELSE 0 END) AS sales_amount,
+    SUM(CASE WHEN wos.sale_type = '销退' THEN wos.sales_amount ELSE 0 END) AS return_amount
+FROM
+    dwd.wholesale_order_sales_dtl wos
+LEFT JOIN
+    dim.customer c ON wos.customid = c.customid 
+LEFT JOIN
+    dim.entry e ON wos.entryid = e.entryid
+WHERE
+    wos.use_status = '正式'
+GROUP BY
+    DATE(wos.create_date),
+    wos.goodsid,
+    wos.entryid,
+    wos.customid,
+    wos.entry_name,
+    wos.province_name,
+    wos.city_name,
+    wos.area_name,
+    wos.customer_name,
+    c.customertype_task,
+    wos.goods_name;
+
+-- 创建索引提高查询性能
+CREATE INDEX IF NOT EXISTS idx_stat_date ON dws.wholesale_sales_goods_d (stat_date);
+CREATE INDEX IF NOT EXISTS idx_goodsid ON dws.wholesale_sales_goods_d (goodsid);
+CREATE INDEX IF NOT EXISTS idx_entryid ON dws.wholesale_sales_goods_d (entryid);
+CREATE INDEX IF NOT EXISTS idx_customid ON dws.wholesale_sales_goods_d (customid);
+CREATE INDEX IF NOT EXISTS idx_customertype_task ON dws.wholesale_sales_goods_d (customertype_task);

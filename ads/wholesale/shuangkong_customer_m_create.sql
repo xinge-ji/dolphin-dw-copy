@@ -4,8 +4,6 @@ CREATE TABLE ads.shuangkong_customer_m (
     stat_yearmonth DATE COMMENT "业务年月",
     entryid bigint COMMENT '独立单元ID',
     customid bigint COMMENT '客户ID',
-    jicai_type VARCHAR(100) COMMENT '集采类型',
-    nianbao_type VARCHAR(100) COMMENT '年报类型',
 
     -- 维度
     entry_name VARCHAR(255) COMMENT '独立单元名称',
@@ -25,26 +23,26 @@ CREATE TABLE ads.shuangkong_customer_m (
     prev_sales_amount decimal(18,4) COMMENT '上月销售额',
     prev_sales_gross_profit decimal(18,4) COMMENT '上月毛利额',
     prev_settle_amount decimal(18,4) COMMENT '上月结算金额',
-    prev_order_settle_time decimal(10,4) COMMENT '上月销售结算用时(天)',
-    prev_jicai_order_settle_time decimal(10,4) COMMENT '上月集采销售结算用时(天)',
-    prev_non_jicai_order_settle_time decimal(10,4) COMMENT '上月非集采销售结算用时(天)',
+    prev_order_item_settle_time decimal(10,4) COMMENT '上月销售结算用时(天)',
+    prev_jicai_order_item_settle_time decimal(10,4) COMMENT '上月集采销售结算用时(天)',
+    prev_non_jicai_order_item_settle_time decimal(10,4) COMMENT '上月非集采销售结算用时(天)',
     prev_repaid_amount decimal(18,4) COMMENT '上月回款金额',
-    prev_order_repaid_time decimal(10,4) COMMENT '上月回款用时(天)',
-    prev_jicai_order_repaid_time decimal(10,4) COMMENT '上月集采回款用时(天)',
-    prev_non_jicai_order_repaid_time decimal(10,4) COMMENT '上月非集采回款用时(天)',
+    prev_order_item_repaid_time decimal(10,4) COMMENT '上月回款用时(天)',
+    prev_jicai_order_item_repaid_time decimal(10,4) COMMENT '上月集采回款用时(天)',
+    prev_non_jicai_order_item_repaid_time decimal(10,4) COMMENT '上月非集采回款用时(天)',
 
 
     -- 近三个月指标
     avg_3m_sales_amount decimal(18,4) COMMENT '近三个月销售额',
     avg_3m_sales_gross_profit decimal(18,4) COMMENT '近三个月毛利额',
     avg_3m_settle_amount decimal(18,4) COMMENT '近三个月结算金额',
-    avg_3m_order_settle_time decimal(10,4) COMMENT '近三个月平均销售结算用时(天)',
-    avg_3m_jicai_order_settle_time decimal(10,4) COMMENT '近三个月集采平均销售结算用时(天)',
-    avg_3m_non_jicai_order_settle_time decimal(10,4) COMMENT '近三个月非集采平均销售结算用时(天)',
+    avg_3m_order_item_settle_time decimal(10,4) COMMENT '近三个月平均销售结算用时(天)',
+    avg_3m_jicai_order_item_settle_time decimal(10,4) COMMENT '近三个月集采平均销售结算用时(天)',
+    avg_3m_non_jicai_order_item_settle_time decimal(10,4) COMMENT '近三个月非集采平均销售结算用时(天)',
     avg_3m_repaid_amount decimal(18,4) COMMENT '近三个月回款金额',
-    avg_3m_order_repaid_time decimal(10,4) COMMENT '近三个月平均回款用时(天)',
-    avg_3m_jicai_order_repaid_time decimal(10,4) COMMENT '近三个月集采平均回款用时(天)',
-    avg_3m_non_jicai_order_repaid_time decimal(10,4) COMMENT '近三个月非集采平均回款用时(天)',
+    avg_3m_order_item_repaid_time decimal(10,4) COMMENT '近三个月平均回款用时(天)',
+    avg_3m_jicai_order_item_repaid_time decimal(10,4) COMMENT '近三个月集采平均回款用时(天)',
+    avg_3m_non_jicai_order_item_repaid_time decimal(10,4) COMMENT '近三个月非集采平均回款用时(天)',
 
     -- 账期分析
     unpaid_amount decimal(18,2) COMMENT '未收款总金额',
@@ -58,7 +56,7 @@ CREATE TABLE ads.shuangkong_customer_m (
     bad_debt_reserve DECIMAL(18, 2) COMMENT '坏账计提',
     is_key_bad_debt_customer TINYINT COMMENT '是否为坏账客户'
 )
-UNIQUE KEY(stat_yearmonth, entryid, customid, jicai_type, nianbao_type)
+UNIQUE KEY(stat_yearmonth, entryid, customid)
 DISTRIBUTED BY HASH(stat_yearmonth, entryid)
 PROPERTIES (
     "replication_allocation" = "tag.location.default: 3",
@@ -71,8 +69,6 @@ INSERT INTO ads.shuangkong_customer_m (
     stat_yearmonth,
     entryid,
     customid,
-    jicai_type,
-    nianbao_type,
     entry_name,
     province_name,
     customer_name,
@@ -86,23 +82,23 @@ INSERT INTO ads.shuangkong_customer_m (
     prev_sales_amount,
     prev_sales_gross_profit,
     prev_settle_amount,
-    prev_order_settle_time,
-    prev_jicai_order_settle_time,
-    prev_non_jicai_order_settle_time,
+    prev_order_item_settle_time,
+    prev_jicai_order_item_settle_time,
+    prev_non_jicai_order_item_settle_time,
     prev_repaid_amount,
-    prev_order_repaid_time,
-    prev_jicai_order_repaid_time,
-    prev_non_jicai_order_repaid_time,
+    prev_order_item_repaid_time,
+    prev_jicai_order_item_repaid_time,
+    prev_non_jicai_order_item_repaid_time,
     avg_3m_sales_amount,
     avg_3m_sales_gross_profit,
     avg_3m_settle_amount,
-    avg_3m_order_settle_time,
-    avg_3m_jicai_order_settle_time,
-    avg_3m_non_jicai_order_settle_time,
+    avg_3m_order_item_settle_time,
+    avg_3m_jicai_order_item_settle_time,
+    avg_3m_non_jicai_order_item_settle_time,
     avg_3m_repaid_amount,
-    avg_3m_order_repaid_time,
-    avg_3m_jicai_order_repaid_time,
-    avg_3m_non_jicai_order_repaid_time,
+    avg_3m_order_item_repaid_time,
+    avg_3m_jicai_order_item_repaid_time,
+    avg_3m_non_jicai_order_item_repaid_time,
     unpaid_amount,
     unpaid_order_count,
     unpaid_within_1year,
@@ -121,8 +117,6 @@ sales_monthly AS (
         DATE_TRUNC(wos.stat_date, 'month') AS stat_yearmonth,
         wos.entryid,
         wos.customid,
-        COALESCE(wos.jicai_type, 'UNKNOWN') AS jicai_type,
-        COALESCE(wos.nianbao_type, 'UNKNOWN') AS nianbao_type,
         MAX(wos.entry_name) AS entry_name,
         MAX(wos.province_name) AS province_name,
         MAX(wos.customer_name) AS customer_name,
@@ -139,8 +133,6 @@ sales_monthly AS (
         DATE_TRUNC(wos.stat_date, 'month'),
         wos.entryid,
         wos.customid,
-        COALESCE(wos.jicai_type, 'UNKNOWN'),
-        COALESCE(wos.nianbao_type, 'UNKNOWN'),
         COALESCE(c.is_shuangwanjia, 0)
 ),
 
@@ -150,28 +142,33 @@ settle_monthly AS (
         DATE_TRUNC(stat_date, 'month') AS stat_yearmonth,
         entryid,
         customid,
-        COALESCE(jicai_type, '非集采') AS jicai_type,
-        COALESCE(nianbao_type, 'UNKNOWN') AS nianbao_type,
         SUM(settle_amount) AS settle_amount,
-        AVG(avg_order_settle_time) AS avg_order_settle_time,
+        -- 计算结算用时
         CASE 
-            WHEN COALESCE(jicai_type, '非集采') != '非集采' 
-            THEN AVG(avg_order_settle_time) 
+            WHEN SUM(settled_order_item_count) > 0 
+            THEN SUM(avg_order_item_settle_time * settled_order_item_count) / SUM(settled_order_item_count)
             ELSE 0 
-        END AS jicai_order_settle_time,
+        END AS avg_order_item_settle_time,
+        -- 集采结算用时
         CASE 
-            WHEN COALESCE(jicai_type, '非集采') = '非集采'
-            THEN AVG(avg_order_settle_time) 
+            WHEN SUM(CASE WHEN COALESCE(jicai_type, '非集采') != '非集采' THEN settled_order_item_count ELSE 0 END) > 0
+            THEN SUM(CASE WHEN COALESCE(jicai_type, '非集采') != '非集采' THEN avg_order_item_settle_time * settled_order_item_count ELSE 0 END) / 
+                 SUM(CASE WHEN COALESCE(jicai_type, '非集采') != '非集采' THEN settled_order_item_count ELSE 0 END)
             ELSE 0 
-        END AS non_jicai_order_settle_time
+        END AS jicai_order_item_settle_time,
+        -- 非集采结算用时
+        CASE 
+            WHEN SUM(CASE WHEN COALESCE(jicai_type, '非集采') = '非集采' THEN settled_order_item_count ELSE 0 END) > 0
+            THEN SUM(CASE WHEN COALESCE(jicai_type, '非集采') = '非集采' THEN avg_order_item_settle_time * settled_order_item_count ELSE 0 END) / 
+                 SUM(CASE WHEN COALESCE(jicai_type, '非集采') = '非集采' THEN settled_order_item_count ELSE 0 END)
+            ELSE 0 
+        END AS non_jicai_order_item_settle_time
     FROM
         dws.wholesale_settle_detail_d
     GROUP BY
         DATE_TRUNC(stat_date, 'month'),
         entryid,
-        customid,
-        COALESCE(jicai_type, '非集采'),
-        COALESCE(nianbao_type, 'UNKNOWN')
+        customid
 ),
 
 -- 回款数据月度汇总
@@ -180,28 +177,33 @@ repay_monthly AS (
         DATE_TRUNC(stat_date, 'month') AS stat_yearmonth,
         entryid,
         customid,
-        COALESCE(jicai_type, '非集采') AS jicai_type,
-        COALESCE(nianbao_type, 'UNKNOWN') AS nianbao_type,
         SUM(repaid_amount) AS repaid_amount,
-        AVG(avg_order_repaid_time) AS avg_order_repaid_time,
+        -- 使用加权平均计算回款用时
         CASE 
-            WHEN COALESCE(jicai_type, '非集采') != '非集采' 
-            THEN AVG(avg_order_repaid_time) 
+            WHEN SUM(repaid_order_item_count) > 0 
+            THEN SUM(avg_order_item_repaid_time * repaid_order_item_count) / SUM(repaid_order_item_count)
             ELSE 0 
-        END AS jicai_order_repaid_time,
+        END AS avg_order_item_repaid_time,
+        -- 集采回款用时
         CASE 
-            WHEN COALESCE(jicai_type, '非集采') = '非集采'
-            THEN AVG(avg_order_repaid_time) 
+            WHEN SUM(CASE WHEN COALESCE(jicai_type, '非集采') != '非集采' THEN repaid_order_item_count ELSE 0 END) > 0
+            THEN SUM(CASE WHEN COALESCE(jicai_type, '非集采') != '非集采' THEN avg_order_item_repaid_time * repaid_order_item_count ELSE 0 END) / 
+                 SUM(CASE WHEN COALESCE(jicai_type, '非集采') != '非集采' THEN repaid_order_item_count ELSE 0 END)
             ELSE 0 
-        END AS non_jicai_order_repaid_time
+        END AS jicai_order_item_repaid_time,
+        -- 非集采回款用时
+        CASE 
+            WHEN SUM(CASE WHEN COALESCE(jicai_type, '非集采') = '非集采' THEN repaid_order_item_count ELSE 0 END) > 0
+            THEN SUM(CASE WHEN COALESCE(jicai_type, '非集采') = '非集采' THEN avg_order_item_repaid_time * repaid_order_item_count ELSE 0 END) / 
+                 SUM(CASE WHEN COALESCE(jicai_type, '非集采') = '非集采' THEN repaid_order_item_count ELSE 0 END)
+            ELSE 0 
+        END AS non_jicai_order_item_repaid_time
     FROM
         dws.wholesale_repay_detail_d
     GROUP BY
         DATE_TRUNC(stat_date, 'month'),
         entryid,
-        customid,
-        COALESCE(jicai_type, '非集采'),
-        COALESCE(nianbao_type, 'UNKNOWN')
+        customid
 ),
 
 -- 应收账款账龄数据
@@ -244,8 +246,6 @@ all_monthly_data AS (
         sm.stat_yearmonth,
         sm.entryid,
         sm.customid,
-        sm.jicai_type,
-        sm.nianbao_type,
         sm.entry_name,
         sm.province_name,
         sm.customer_name,
@@ -255,13 +255,13 @@ all_monthly_data AS (
         sm.sales_amount,
         sm.sales_gross_profit,
         COALESCE(stm.settle_amount, 0) AS settle_amount,
-        COALESCE(stm.avg_order_settle_time, 0) AS avg_order_settle_time,
-        COALESCE(stm.jicai_order_settle_time, 0) AS jicai_order_settle_time,
-        COALESCE(stm.non_jicai_order_settle_time, 0) AS non_jicai_order_settle_time,
+        COALESCE(stm.avg_order_item_settle_time, 0) AS avg_order_item_settle_time,
+        COALESCE(stm.jicai_order_item_settle_time, 0) AS jicai_order_item_settle_time,
+        COALESCE(stm.non_jicai_order_item_settle_time, 0) AS non_jicai_order_item_settle_time,
         COALESCE(rm.repaid_amount, 0) AS repaid_amount,
-        COALESCE(rm.avg_order_repaid_time, 0) AS avg_order_repaid_time,
-        COALESCE(rm.jicai_order_repaid_time, 0) AS jicai_order_repaid_time,
-        COALESCE(rm.non_jicai_order_repaid_time, 0) AS non_jicai_order_repaid_time
+        COALESCE(rm.avg_order_item_repaid_time, 0) AS avg_order_item_repaid_time,
+        COALESCE(rm.jicai_order_item_repaid_time, 0) AS jicai_order_item_repaid_time,
+        COALESCE(rm.non_jicai_order_item_repaid_time, 0) AS non_jicai_order_item_repaid_time
     FROM
         sales_monthly sm
     LEFT JOIN
@@ -269,15 +269,11 @@ all_monthly_data AS (
         ON sm.stat_yearmonth = stm.stat_yearmonth 
         AND sm.entryid = stm.entryid
         AND sm.customid = stm.customid
-        AND sm.jicai_type = stm.jicai_type
-        AND sm.nianbao_type = stm.nianbao_type
     LEFT JOIN
         repay_monthly rm 
         ON sm.stat_yearmonth = rm.stat_yearmonth 
         AND sm.entryid = rm.entryid
         AND sm.customid = rm.customid
-        AND sm.jicai_type = rm.jicai_type
-        AND sm.nianbao_type = rm.nianbao_type
 ),
 
 -- 当前月份
@@ -286,8 +282,6 @@ current_month_data AS (
         amd.stat_yearmonth,
         amd.entryid,
         amd.customid,
-        amd.jicai_type,
-        amd.nianbao_type,
         amd.entry_name,
         amd.province_name,
         amd.customer_name,
@@ -308,18 +302,16 @@ prev_month_data AS (
         DATE_ADD(amd.stat_yearmonth, INTERVAL 1 MONTH) AS next_month,
         amd.entryid,
         amd.customid,
-        amd.jicai_type,
-        amd.nianbao_type,
         amd.sales_amount AS prev_sales_amount,
         amd.sales_gross_profit AS prev_sales_gross_profit,
         amd.settle_amount AS prev_settle_amount,
-        amd.avg_order_settle_time AS prev_order_settle_time,
-        amd.jicai_order_settle_time AS prev_jicai_order_settle_time,
-        amd.non_jicai_order_settle_time AS prev_non_jicai_order_settle_time,
+        amd.avg_order_item_settle_time AS prev_order_item_settle_time,
+        amd.jicai_order_item_settle_time AS prev_jicai_order_item_settle_time,
+        amd.non_jicai_order_item_settle_time AS prev_non_jicai_order_item_settle_time,
         amd.repaid_amount AS prev_repaid_amount,
-        amd.avg_order_repaid_time AS prev_order_repaid_time,
-        amd.jicai_order_repaid_time AS prev_jicai_order_repaid_time,
-        amd.non_jicai_order_repaid_time AS prev_non_jicai_order_repaid_time
+        amd.avg_order_item_repaid_time AS prev_order_item_repaid_time,
+        amd.jicai_order_item_repaid_time AS prev_jicai_order_item_repaid_time,
+        amd.non_jicai_order_item_repaid_time AS prev_non_jicai_order_item_repaid_time
     FROM
         all_monthly_data amd
 ),
@@ -330,34 +322,28 @@ avg_3_months AS (
         target_month.stat_yearmonth,
         target_month.entryid,
         target_month.customid,
-        target_month.jicai_type,
-        target_month.nianbao_type,
         AVG(prev_months.sales_amount) AS avg_3m_sales_amount,
         AVG(prev_months.sales_gross_profit) AS avg_3m_sales_gross_profit,
         AVG(prev_months.settle_amount) AS avg_3m_settle_amount,
-        AVG(prev_months.avg_order_settle_time) AS avg_3m_order_settle_time,
-        AVG(prev_months.jicai_order_settle_time) AS avg_3m_jicai_order_settle_time,
-        AVG(prev_months.non_jicai_order_settle_time) AS avg_3m_non_jicai_order_settle_time,
+        AVG(prev_months.avg_order_item_settle_time) AS avg_3m_order_item_settle_time,
+        AVG(prev_months.jicai_order_item_settle_time) AS avg_3m_jicai_order_item_settle_time,
+        AVG(prev_months.non_jicai_order_item_settle_time) AS avg_3m_non_jicai_order_item_settle_time,
         AVG(prev_months.repaid_amount) AS avg_3m_repaid_amount,
-        AVG(prev_months.avg_order_repaid_time) AS avg_3m_order_repaid_time,
-        AVG(prev_months.jicai_order_repaid_time) AS avg_3m_jicai_order_repaid_time,
-        AVG(prev_months.non_jicai_order_repaid_time) AS avg_3m_non_jicai_order_repaid_time
+        AVG(prev_months.avg_order_item_repaid_time) AS avg_3m_order_item_repaid_time,
+        AVG(prev_months.jicai_order_item_repaid_time) AS avg_3m_jicai_order_item_repaid_time,
+        AVG(prev_months.non_jicai_order_item_repaid_time) AS avg_3m_non_jicai_order_item_repaid_time
     FROM
         all_monthly_data target_month
     JOIN
         all_monthly_data prev_months 
         ON target_month.entryid = prev_months.entryid
         AND target_month.customid = prev_months.customid
-        AND target_month.jicai_type = prev_months.jicai_type
-        AND target_month.nianbao_type = prev_months.nianbao_type
         AND prev_months.stat_yearmonth BETWEEN DATE_SUB(target_month.stat_yearmonth, INTERVAL 4 MONTH) 
                                            AND DATE_SUB(target_month.stat_yearmonth, INTERVAL 1 MONTH)
     GROUP BY
         target_month.stat_yearmonth,
         target_month.entryid,
-        target_month.customid,
-        target_month.jicai_type,
-        target_month.nianbao_type
+        target_month.customid
 )
 
 -- 最终结果
@@ -365,8 +351,6 @@ SELECT
     cm.stat_yearmonth,
     cm.entryid,
     cm.customid,
-    cm.jicai_type,
-    cm.nianbao_type,
     cm.entry_name,
     cm.province_name,
     cm.customer_name,
@@ -380,23 +364,23 @@ SELECT
     COALESCE(pm.prev_sales_amount, 0) AS prev_sales_amount,
     COALESCE(pm.prev_sales_gross_profit, 0) AS prev_sales_gross_profit,
     COALESCE(pm.prev_settle_amount, 0) AS prev_settle_amount,
-    COALESCE(pm.prev_order_settle_time, 0) AS prev_order_settle_time,
-    COALESCE(pm.prev_jicai_order_settle_time, 0) AS prev_jicai_order_settle_time,
-    COALESCE(pm.prev_non_jicai_order_settle_time, 0) AS prev_non_jicai_order_settle_time,
+    COALESCE(pm.prev_order_item_settle_time, 0) AS prev_order_item_settle_time,
+    COALESCE(pm.prev_jicai_order_item_settle_time, 0) AS prev_jicai_order_item_settle_time,
+    COALESCE(pm.prev_non_jicai_order_item_settle_time, 0) AS prev_non_jicai_order_item_settle_time,
     COALESCE(pm.prev_repaid_amount, 0) AS prev_repaid_amount,
-    COALESCE(pm.prev_order_repaid_time, 0) AS prev_order_repaid_time,
-    COALESCE(pm.prev_jicai_order_repaid_time, 0) AS prev_jicai_order_repaid_time,
-    COALESCE(pm.prev_non_jicai_order_repaid_time, 0) AS prev_non_jicai_order_repaid_time,
+    COALESCE(pm.prev_order_item_repaid_time, 0) AS prev_order_item_repaid_time,
+    COALESCE(pm.prev_jicai_order_item_repaid_time, 0) AS prev_jicai_order_item_repaid_time,
+    COALESCE(pm.prev_non_jicai_order_item_repaid_time, 0) AS prev_non_jicai_order_item_repaid_time,
     COALESCE(a3m.avg_3m_sales_amount, 0) AS avg_3m_sales_amount,
     COALESCE(a3m.avg_3m_sales_gross_profit, 0) AS avg_3m_sales_gross_profit,
     COALESCE(a3m.avg_3m_settle_amount, 0) AS avg_3m_settle_amount,
-    COALESCE(a3m.avg_3m_order_settle_time, 0) AS avg_3m_order_settle_time,
-    COALESCE(a3m.avg_3m_jicai_order_settle_time, 0) AS avg_3m_jicai_order_settle_time,
-    COALESCE(a3m.avg_3m_non_jicai_order_settle_time, 0) AS avg_3m_non_jicai_order_settle_time,
+    COALESCE(a3m.avg_3m_order_item_settle_time, 0) AS avg_3m_order_item_settle_time,
+    COALESCE(a3m.avg_3m_jicai_order_item_settle_time, 0) AS avg_3m_jicai_order_item_settle_time,
+    COALESCE(a3m.avg_3m_non_jicai_order_item_settle_time, 0) AS avg_3m_non_jicai_order_item_settle_time,
     COALESCE(a3m.avg_3m_repaid_amount, 0) AS avg_3m_repaid_amount,
-    COALESCE(a3m.avg_3m_order_repaid_time, 0) AS avg_3m_order_repaid_time,
-    COALESCE(a3m.avg_3m_jicai_order_repaid_time, 0) AS avg_3m_jicai_order_repaid_time,
-    COALESCE(a3m.avg_3m_non_jicai_order_repaid_time, 0) AS avg_3m_non_jicai_order_repaid_time,
+    COALESCE(a3m.avg_3m_order_item_repaid_time, 0) AS avg_3m_order_item_repaid_time,
+    COALESCE(a3m.avg_3m_jicai_order_item_repaid_time, 0) AS avg_3m_jicai_order_item_repaid_time,
+    COALESCE(a3m.avg_3m_non_jicai_order_item_repaid_time, 0) AS avg_3m_non_jicai_order_item_repaid_time,
     COALESCE(ra.unpaid_amount, 0) AS unpaid_amount,
     COALESCE(ra.unpaid_order_count, 0) AS unpaid_order_count,
     COALESCE(ra.unpaid_within_1year, 0) AS unpaid_within_1year,
@@ -429,15 +413,11 @@ LEFT JOIN
     ON cm.stat_yearmonth = pm.next_month 
     AND cm.entryid = pm.entryid
     AND cm.customid = pm.customid
-    AND cm.jicai_type = pm.jicai_type
-    AND cm.nianbao_type = pm.nianbao_type
 LEFT JOIN
     avg_3_months a3m 
     ON cm.stat_yearmonth = a3m.stat_yearmonth 
     AND cm.entryid = a3m.entryid
     AND cm.customid = a3m.customid
-    AND cm.jicai_type = a3m.jicai_type
-    AND cm.nianbao_type = a3m.nianbao_type
 LEFT JOIN
     receivable_aging ra
     ON cm.stat_yearmonth = ra.stat_yearmonth

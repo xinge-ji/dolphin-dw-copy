@@ -157,3 +157,23 @@ tasks:
     deps: [eshop_customer_salesman]
     sql: $FILE{"eshop_customer_buyer.sql"}
 
+  - name: customer_set
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [eshop_customer_buyer]
+    sql: $FILE{"customer_set.sql"}
+
+  - name: goods_set
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [customer_set]
+    sql: $FILE{"goods_set.sql"}
+
+  - name: wholesale_task_set
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [goods_set]
+    sql: $FILE{"wholesale_task_set.sql"}

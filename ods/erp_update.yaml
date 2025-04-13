@@ -26,7 +26,7 @@ tasks:
             user = "lyerp"
             password = "lyerp"
             table_path = "lyerp.BMS_SA_DOCTOSET"
-            query = """select t.SALESDTLID,t.SASETTLEDTLID, ora_hash(substr(coalesce(substr(to_char(t.SALESDTLID), 1,255), '') || coalesce(substr(to_char(t.SASETTLEDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTAL_LINE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.GOODSQTY,t.TOTAL_LINE from BMS_SA_DOCTOSET t"""
+            query = """select t.SALESDTLID,t.SASETTLEDTLID, ora_hash(substr(coalesce(substr(to_char(t.SALESDTLID), 1,255), '') || coalesce(substr(to_char(t.SASETTLEDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTAL_LINE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.GOODSQTY,t.TOTAL_LINE,t2.CREDATE from BMS_SA_DOCTOSET t LEFT JOIN BMS_SA_DTL t1 ON t.SALESDTLID=t1.SALESDTLID LEFT JOIN BMS_SA_DOC t2 ON t1.salesid=t2.salesid WHERE (t2.CREDATE is not NULL AND t2.CREDATE >= TRUNC(SYSDATE-360)) OR t2.CREDATE is NULL"""
           }
         }
         sink{
@@ -65,9 +65,9 @@ tasks:
     flag: YES
     deps: [BMS_SA_DOCTOSET_ods_tmp]
     sql: |
-        UPDATE bms_sa_doctoset t
-        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
-        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM bms_sa_doctoset_doristmp s WHERE s.SALESDTLID = t.SALESDTLID AND s.SASETTLEDTLID = t.SASETTLEDTLID AND s.DW_ID = t.DW_ID) ;
+        -- UPDATE bms_sa_doctoset t
+        -- SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
+        -- WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM bms_sa_doctoset_doristmp s WHERE s.SALESDTLID = t.SALESDTLID AND s.SASETTLEDTLID = t.SASETTLEDTLID AND s.DW_ID = t.DW_ID) ;
         INSERT INTO bms_sa_doctoset (`SALESDTLID`,`SASETTLEDTLID`,`GOODSQTY`,`TOTAL_LINE`,`dw_id`,`is_active`,`dw_createtime`,`dw_updatetime`)
         SELECT s.`SALESDTLID`,s.`SASETTLEDTLID`,s.`GOODSQTY`,s.`TOTAL_LINE`,s.`dw_id`,s.`is_active`,s.`dw_createtime`,s.`dw_updatetime`
         FROM bms_sa_doctoset_doristmp s
@@ -97,7 +97,7 @@ tasks:
             user = "lyerp"
             password = "lyerp"
             table_path = "lyerp.BMS_SA_SETTOREC"
-            query = """select t.SASETTLEDTLID,t.SARECDTLID, ora_hash(substr(coalesce(substr(to_char(t.SASETTLEDTLID), 1,255), '') || coalesce(substr(to_char(t.SARECDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTAL_LINE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.GOODSQTY,t.TOTAL_LINE from BMS_SA_SETTOREC t"""
+            query = """select t.SASETTLEDTLID,t.SARECDTLID, ora_hash(substr(coalesce(substr(to_char(t.SASETTLEDTLID), 1,255), '') || coalesce(substr(to_char(t.SARECDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTAL_LINE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.GOODSQTY,t.TOTAL_LINE,t2.CREDATE from BMS_SA_SETTOREC t LEFT JOIN BMS_SA_SETTLE_DTL t1 ON t.SASETTLEDTLID=t1.SASETTLEDTLID LEFT JOIN BMS_SA_SETTLE_DOC t2 ON t1.SASETTLEID=t2.SASETTLEID  WHERE (t2.CREDATE is not NULL AND t2.CREDATE >= TRUNC(SYSDATE-360)) OR t2.CREDATE is NULL"""
           }
         }
         sink{
@@ -136,9 +136,9 @@ tasks:
     flag: YES
     deps: [BMS_SA_SETTOREC_ods_tmp]
     sql: |
-        UPDATE bms_sa_settorec t
-        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
-        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM bms_sa_settorec_doristmp s WHERE s.SASETTLEDTLID = t.SASETTLEDTLID AND s.SARECDTLID = t.SARECDTLID AND s.DW_ID = t.DW_ID) ;
+        -- UPDATE bms_sa_settorec t
+        -- SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
+        -- WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM bms_sa_settorec_doristmp s WHERE s.SASETTLEDTLID = t.SASETTLEDTLID AND s.SARECDTLID = t.SARECDTLID AND s.DW_ID = t.DW_ID) ;
         INSERT INTO bms_sa_settorec (`SASETTLEDTLID`,`SARECDTLID`,`GOODSQTY`,`TOTAL_LINE`,`dw_id`,`is_active`,`dw_createtime`,`dw_updatetime`)
         SELECT s.`SASETTLEDTLID`,s.`SARECDTLID`,s.`GOODSQTY`,s.`TOTAL_LINE`,s.`dw_id`,s.`is_active`,s.`dw_createtime`,s.`dw_updatetime`
         FROM bms_sa_settorec_doristmp s
@@ -851,3 +851,88 @@ tasks:
         BMS_ST_IO_DTL.dw_createtime = BMS_ST_IO_DTL.dw_updatetime AND 
             BMS_ST_IO_DTL.IODTLID=BMS_ST_IO_DTL_latest_records.IODTLID;
         DROP TABLE IF EXISTS BMS_ST_IO_DTL_latest_records;
+
+  - name: GPCS_REQSUPPLYDTL_d_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: NO
+    deps: [BMS_ST_IO_DTL_d_ods_update]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lyerp"
+            password = "lyerp"
+            table_path = "lyerp.GPCS_REQSUPPLYDTL"
+            query = """select t.REQSUPPLYDTLID, ora_hash(substr(coalesce(substr(to_char(t.REQSUPPLYDTLID), 1,255), '') || coalesce(substr(to_char(t.REQSUPPLYID), 1,255), '') || coalesce(substr(to_char(t.PRINTNO), 1,255), '') || coalesce(substr(to_char(t.PRINTLINE), 1,255), '') || coalesce(substr(to_char(t.GOODSID), 1,255), '') || coalesce(substr(to_char(t.GOODSDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.CHANGEABLE), 1,255), '') || coalesce(substr(to_char(t.REQSPLITFLAG), 1,255), '') || coalesce(substr(to_char(t.USESTATUS), 1,255), '') || coalesce(substr(to_char(t.TOTALGOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTALREFUSEQTY), 1,255), '') || coalesce(substr(to_char(t.MEMO), 1,255), '') || coalesce(substr(to_char(t.ZXCOLUMN1), 1,255), '') || coalesce(substr(to_char(t.ZXCOLUMN2), 1,255), '') || coalesce(substr(to_char(t.ZXCOLUMN3), 1,255), '') || coalesce(substr(to_char(t.ZXCOLUMN4), 1,255), '') || coalesce(substr(to_char(t.ZXCOLUMN5), 1,255), '') || coalesce(substr(to_char(t.ZXCOLUMN6), 1,255), '') || coalesce(substr(to_char(t.ZXCOLUMN7), 1,255), '') || coalesce(substr(to_char(t.ZXCOLUMN8), 1,255), '') || coalesce(substr(to_char(t.ZXCOLUMN9), 1,255), '') || coalesce(substr(to_char(t.ZXCOLUMN10), 1,255), '') || coalesce(substr(to_char(t.PLACEQTY), 1,255), '') || coalesce(substr(to_char(t.OOSREC_FLAG), 1,255), '') || coalesce(substr(to_char(t.ENTRYMEMO), 1,255), '') || coalesce(substr(to_char(t.OLDREQSUPPLYDTLID), 1,255), '') || coalesce(substr(to_char(t.CHANGEFLAG), 1,255), '') || coalesce(substr(to_char(t.PRICE), 1,255), '') || coalesce(substr(to_char(t.MEMO2), 1,255), '') || coalesce(substr(to_char(t.UNFLAG), 1,255), '') || coalesce(substr(to_char(t.DEFINITIONDTLCOUNT), 1,255), '') || coalesce(substr(to_char(t.DEFINITIONENFORCEMENT), 1,255), '') || coalesce(substr(to_char(t.OREQSUPPLYDTLID), 1,255), '') || coalesce(substr(to_char(t.DEFINITIONID), 1,255), '') || coalesce(substr(to_char(t.DEFINITIONNAME), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.REQSUPPLYID,t.PRINTNO,t.PRINTLINE,t.GOODSID,t.GOODSDTLID,t.GOODSQTY,t.CHANGEABLE,t.REQSPLITFLAG,t.USESTATUS,t.TOTALGOODSQTY,t.TOTALREFUSEQTY,t.MEMO,t.ZXCOLUMN1,t.ZXCOLUMN2,t.ZXCOLUMN3,t.ZXCOLUMN4,t.ZXCOLUMN5,t.ZXCOLUMN6,t.ZXCOLUMN7,t.ZXCOLUMN8,t.ZXCOLUMN9,t.ZXCOLUMN10,t.PLACEQTY,t.OOSREC_FLAG,t.ENTRYMEMO,t.OLDREQSUPPLYDTLID,t.CHANGEFLAG,t.PRICE,t.MEMO2,t.UNFLAG,t.DEFINITIONDTLCOUNT,t.DEFINITIONENFORCEMENT,t.OREQSUPPLYDTLID,t.DEFINITIONID,t.DEFINITIONNAME,t1.REQDATE from GPCS_REQSUPPLYDTL t LEFT JOIN GPCS_REQSUPPLY t1 ON t.REQSUPPLYID=t1.REQSUPPLYID WHERE (t.ZXCOLUMN9 is not NULL AND t.ZXCOLUMN9 >= TRUNC(SYSDATE-60)) OR (t.ZXCOLUMN10 is not NULL AND t.ZXCOLUMN10 >= TRUNC(SYSDATE-60)) OR (t1.REQDATE is not NULL AND t1.REQDATE >= TRUNC(SYSDATE-60)) OR (t.ZXCOLUMN9 is NULL AND t.ZXCOLUMN10 is NULL AND t1.REQDATE is NULL)"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_erp"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(REQSUPPLYDTLID,DW_ID)
+              DISTRIBUTED BY HASH (REQSUPPLYDTLID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: GPCS_REQSUPPLYDTL_d_ods_update
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_erp"
+    flag: NO
+    deps: [GPCS_REQSUPPLYDTL_d_ods_tmp]
+    sql: |
+        UPDATE gpcs_reqsupplydtl t
+        SET t.dw_updatetime = NOW(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM gpcs_reqsupplydtl_doristmp s WHERE s.REQSUPPLYDTLID = t.REQSUPPLYDTLID AND s.DW_ID = t.DW_ID)  AND ((t.`ZXCOLUMN9` is not null AND t.`ZXCOLUMN9` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`ZXCOLUMN10` is not null AND t.`ZXCOLUMN10` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`REQDATE` is not null AND t.`REQDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR ((t.`ZXCOLUMN9` is null) AND (t.`ZXCOLUMN10` is null) AND (t.`REQDATE` is null)));
+        INSERT INTO gpcs_reqsupplydtl (`REQSUPPLYDTLID`,`REQSUPPLYID`,`PRINTNO`,`PRINTLINE`,`GOODSID`,`GOODSDTLID`,`GOODSQTY`,`CHANGEABLE`,`REQSPLITFLAG`,`USESTATUS`,`TOTALGOODSQTY`,`TOTALREFUSEQTY`,`MEMO`,`ZXCOLUMN1`,`ZXCOLUMN2`,`ZXCOLUMN3`,`ZXCOLUMN4`,`ZXCOLUMN5`,`ZXCOLUMN6`,`ZXCOLUMN7`,`ZXCOLUMN8`,`ZXCOLUMN9`,`ZXCOLUMN10`,`PLACEQTY`,`OOSREC_FLAG`,`ENTRYMEMO`,`OLDREQSUPPLYDTLID`,`CHANGEFLAG`,`PRICE`,`MEMO2`,`UNFLAG`,`DEFINITIONDTLCOUNT`,`DEFINITIONENFORCEMENT`,`OREQSUPPLYDTLID`,`DEFINITIONID`,`DEFINITIONNAME`,`REQDATE`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
+        SELECT s.`REQSUPPLYDTLID`,s.`REQSUPPLYID`,s.`PRINTNO`,s.`PRINTLINE`,s.`GOODSID`,s.`GOODSDTLID`,s.`GOODSQTY`,s.`CHANGEABLE`,s.`REQSPLITFLAG`,s.`USESTATUS`,s.`TOTALGOODSQTY`,s.`TOTALREFUSEQTY`,s.`MEMO`,s.`ZXCOLUMN1`,s.`ZXCOLUMN2`,s.`ZXCOLUMN3`,s.`ZXCOLUMN4`,s.`ZXCOLUMN5`,s.`ZXCOLUMN6`,s.`ZXCOLUMN7`,s.`ZXCOLUMN8`,s.`ZXCOLUMN9`,s.`ZXCOLUMN10`,s.`PLACEQTY`,s.`OOSREC_FLAG`,s.`ENTRYMEMO`,s.`OLDREQSUPPLYDTLID`,s.`CHANGEFLAG`,s.`PRICE`,s.`MEMO2`,s.`UNFLAG`,s.`DEFINITIONDTLCOUNT`,s.`DEFINITIONENFORCEMENT`,s.`OREQSUPPLYDTLID`,s.`DEFINITIONID`,s.`DEFINITIONNAME`,s.`REQDATE`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
+        FROM gpcs_reqsupplydtl_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM gpcs_reqsupplydtl WHERE s.REQSUPPLYDTLID = GPCS_REQSUPPLYDTL.REQSUPPLYDTLID AND s.DW_ID = GPCS_REQSUPPLYDTL.DW_ID);
+        DROP TABLE gpcs_reqsupplydtl_doristmp;
+        UPDATE GPCS_REQSUPPLYDTL SET is_active = 0;
+        CREATE TABLE IF NOT EXISTS GPCS_REQSUPPLYDTL_latest_records AS
+        SELECT 
+            REQSUPPLYDTLID,
+            MAX(dw_createtime) AS dw_createtime
+        FROM GPCS_REQSUPPLYDTL
+        GROUP BY REQSUPPLYDTLID;
+        UPDATE GPCS_REQSUPPLYDTL SET is_active = 1
+        FROM GPCS_REQSUPPLYDTL_latest_records
+        WHERE GPCS_REQSUPPLYDTL.dw_createtime = GPCS_REQSUPPLYDTL_latest_records.dw_createtime AND 
+        GPCS_REQSUPPLYDTL.dw_createtime = GPCS_REQSUPPLYDTL.dw_updatetime AND 
+            GPCS_REQSUPPLYDTL.REQSUPPLYDTLID=GPCS_REQSUPPLYDTL_latest_records.REQSUPPLYDTLID;
+        DROP TABLE IF EXISTS GPCS_REQSUPPLYDTL_latest_records;
+

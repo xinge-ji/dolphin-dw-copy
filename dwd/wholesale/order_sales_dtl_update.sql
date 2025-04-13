@@ -24,13 +24,17 @@ INSERT INTO dwd.wholesale_order_sales_dtl (
     entry_name,
     province_name,
     city_name,
+    area_name,
     
     -- 客户维度
     customid,
     customer_name,
     customertype_name,
     customertype_group,
-    
+
+    -- 业务部门
+    salesdeptid,
+
     -- 订单状态
     use_status,
     
@@ -122,12 +126,16 @@ SELECT
     a.entry_name,
     a.province_name,
     a.city_name,
+    a.area_name,
     
     -- 客户维度
     a.customid,
     a.customer_name,
     a.customertype_name,
     a.customertype_group,
+
+    -- 业务部门
+    a.salesdeptid,
     
     -- 订单状态
     a.use_status,
@@ -189,10 +197,9 @@ SELECT
     b.unitprice,
     b.total_line,
     CASE
-        WHEN b.settleflag IS NULL OR b.settleflag = 0 THEN '未结算完成'
-        WHEN b.settleflag = 1 THEN '结算完成'
-        WHEN b.settleflag = 2 THEN '不结算'
-        ELSE 'UNKNOWN'
+        WHEN IFNULL(b.settleflag, 0) = 1 OR abs(b.total_line) <= abs(b.settlemoney) THEN '结算完成'
+        WHEN IFNULL(b.settleflag, 0) = 0 THEN '未结算完成'
+        WHEN IFNULL(b.settleflag, 0) = 2 THEN '不结算'
     END AS settle_status,
     b.priceid,
     pt1.price_name,

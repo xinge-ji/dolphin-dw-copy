@@ -1,32 +1,8 @@
 drop table if exists dwd.wholesale_sales_receivable_detail;
 create table dwd.wholesale_sales_receivable_detail (
     -- 颗粒度
-    salesid varchar(255) COMMENT '销售单ID',
     salesdtlid varchar(255) COMMENT '销售单明细ID',
-
-    -- 组织信息
-    entryid bigint COMMENT "独立单元ID",
-    entry_name varchar COMMENT "独立单元名称",
-    province_name varchar COMMENT "独立单元省份名称",
-    city_name varchar COMMENT "独立单元城市名称",
-    area_name varchar COMMENT "独立单元地区名称",
-    caiwu_level1 varchar COMMENT "集团模块一级",
-    caiwu_level2 varchar COMMENT "集团模块二级",
-
-    -- 客户信息
-    customid bigint COMMENT "客户ID",
-    customer_name varchar COMMENT "客户名称",
-    customertype_name varchar COMMENT "客户类型名称",
-    customertype_group varchar COMMENT "客户类型分组",
-    customer_financeclass_name varchar COMMENT "客户财务类别名称",
-    is_btob tinyint default "0" COMMENT "是否云商业务(0:否, 1:是)",
-
-    -- 集采信息
-    jicai_type varchar COMMENT "集采类型",
-    is_jicai_zhongxuan tinyint  default "0" COMMENT "是否集采中选(0:否, 1:是)",
-
-    -- 来源相关
-    comefrom varchar comment '订单来源',
+    salesid varchar(255) COMMENT '销售单ID',
 
     -- 销售相关
     create_date datetime COMMENT '销售单创建日期',
@@ -101,24 +77,24 @@ insert into dwd.wholesale_sales_receivable_detail(
 WITH fully_settled_order AS (
     SELECT 
         a.salesid,
-        MIN(CASE WHEN a.settle_status = '结算完成' OR b.settle_status in ('已收完', '不收款') THEN 1 ELSE 0 END) AS all_settled,
+        MIN(CASE WHEN a.settle_status = '结算完成' OR abs(a.sales_amount) <= abs(a.settle_amount) OR b.settle_status in ('已收完', '不收款') THEN 1 ELSE 0 END) AS all_settled,
         MAX(b.confirm_date) AS max_confirm_date
     FROM dwd.wholesale_order_sales_dtl a
     LEFT JOIN dwd.wholesale_order_settle_dtl b ON a.salesdtlid = b.salesdtlid
     WHERE a.salesid IS NOT NULL and a.create_date < date('2018-01-01')
     GROUP BY a.salesid
-    HAVING MIN(CASE WHEN a.settle_status = '结算完成' OR b.settle_status in ('已收完', '不收款') THEN 1 ELSE 0 END) = 1
+    HAVING MIN(CASE WHEN a.settle_status = '结算完成' OR abs(a.sales_amount) <= abs(a.settle_amount) OR b.settle_status in ('已收完', '不收款') THEN 1 ELSE 0 END) = 1
 ),
 fully_settled_order_item AS (
     SELECT 
         a.salesdtlid,
-        MIN(CASE WHEN a.settle_status = '结算完成' OR b.settle_status in ('已收完', '不收款') THEN 1 ELSE 0 END) AS all_settled,
+        MIN(CASE WHEN a.settle_status = '结算完成' OR abs(a.sales_amount) <= abs(a.settle_amount) OR b.settle_status in ('已收完', '不收款') THEN 1 ELSE 0 END) AS all_settled,
         MAX(b.confirm_date) AS max_confirm_date
     FROM dwd.wholesale_order_sales_dtl a
     LEFT JOIN dwd.wholesale_order_settle_dtl b ON a.salesdtlid = b.salesdtlid
     WHERE a.salesdtlid IS NOT NULL and a.create_date < date('2018-01-01')
     GROUP BY a.salesdtlid
-    HAVING MIN(CASE WHEN a.settle_status = '结算完成' OR b.settle_status in ('已收完', '不收款') THEN 1 ELSE 0 END) = 1
+    HAVING MIN(CASE WHEN a.settle_status = '结算完成' OR abs(a.sales_amount) <= abs(a.settle_amount) OR b.settle_status in ('已收完', '不收款') THEN 1 ELSE 0 END) = 1
 ),
 fully_paid_settle_dtl AS (
     -- 先计算每个结算单明细的还款总额是否足够结清

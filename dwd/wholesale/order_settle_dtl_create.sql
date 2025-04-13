@@ -49,7 +49,7 @@ CREATE TABLE dwd.wholesale_order_settle_dtl (
     create_date datetime COMMENT "生成日期",
     confirm_date datetime COMMENT "确认日期",
     use_status varchar COMMENT '使用状态: 作废/正式/临时',
-    settle_status varchar COMMENT "结算状态: 未收完/已收完/不收款",
+    received_status varchar COMMENT "结算状态: 未收完/已收完/不收款",
     inputmanid bigint COMMENT '制单人id',
     inputman_name varchar COMMENT '制单人名称',
     
@@ -129,7 +129,7 @@ INSERT INTO dwd.wholesale_order_settle_dtl (
     create_date,
     confirm_date,
     use_status,
-    settle_status,
+    received_status,
     inputmanid,
     inputman_name,
     
@@ -198,12 +198,12 @@ SELECT
     a.create_date,                
     a.confirm_date,                         
     a.use_status,
-    CASE                                    
-        WHEN b.recfinflag = 0 THEN '未收完'
-        WHEN b.recfinflag = 1 THEN '已收完'
-        WHEN b.recfinflag = 2 THEN '不收款'
+    CASE                                 
+        WHEN IFNULL(b.recfinflag, 0) = 1 OR abs(b.total_line) <= abs(b.totalrecmoney) THEN '已收完'   
+        WHEN IFNULL(b.recfinflag, 0) = 0 THEN '未收完'
+        WHEN IFNULL(b.recfinflag, 0) = 2 THEN '不收款'
         ELSE ''
-    END AS settle_status,
+    END AS received_status,
     a.inputmanid,
     a.inputman_name,
     

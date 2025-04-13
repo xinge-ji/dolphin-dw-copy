@@ -36,30 +36,30 @@ insert into dws.wholesale_sales_receivable_aging_d (
     unpaid_over_5years
 )
 WITH all_dates AS (
-    -- 获取所有开单和结算日期
+    -- 获取所有开单和回款日期
     SELECT DISTINCT 
         entryid,
         customid,
         DATE(create_date) AS stat_date 
-    FROM dwd.wholesale_sales_receivable_detail 
+    FROM dwd.wholesale_order_sales_doc 
     WHERE create_date IS NOT NULL 
     AND sale_mode = '普通销售'
-    AND create_date < date('2018-01-01')
+    AND create_date >= date('2025-04-01') AND create_date < date('2025-07-01')
     
     UNION
     
     SELECT DISTINCT 
-        a.entryid,
-        a.customid,
-        DATE(b.confirm_date) AS stat_date 
-    FROM dwd.wholesale_sales_receivable_detail a
-    INNER JOIN dwd.wholesale_order_settle_dtl b ON a.salesdtlid = b.salesdtlid
-    WHERE b.confirm_date IS NOT NULL 
-    AND b.use_status != '作废'
-    AND b.confirm_date < date('2018-01-01')
+        b.entryid,
+        b.customid,
+        DATE(b.payment_date) AS stat_date 
+    FROM dwd.wholesale_order_sales_dtl a
+    JOIN dwd.wholesale_order_repay_dtl b ON a.salesdtlid = b.salesdtlid
+    WHERE a.sale_mode = '普通销售'
+    AND b.payment_date IS NOT NULL 
+    AND b.payment_date >= date('2025-04-01') AND b.payment_date < date('2025-07-01')
 ),
 
--- 合并销售和结算事件
+-- 合并销售和回款事件
 all_events AS (
     -- 销售事件（增加应收）
     SELECT
@@ -72,43 +72,40 @@ all_events AS (
         'sale' as event_type
     FROM
         dwd.wholesale_order_sales_dtl s
-    JOIN
-        (SELECT distinct salesdtlid FROM dwd.wholesale_sales_receivable_detail) s1 ON s.salesdtlid = s1.salesdtlid
     WHERE s.create_date IS NOT NULL 
     AND s.sale_mode = '普通销售'
-    AND s.create_date < date('2018-01-01')
+    AND s.create_date < date('2025-07-01')
     group by DATE(s.create_date),s.entryid,s.customid,s.salesid
 
     UNION ALL
     
-    -- 结算事件（减少应收）
+    -- 回款事件（减少应收）
     SELECT
-        DATE(s.confirm_date) AS event_date,
+        DATE(s.payment_date) AS event_date,
         s.entryid,
         s.customid,
         s.salesid,
-        -SUM(IFNULL(s.received_amount, 0)) AS amount,
-        date(s.confirm_date) AS original_date,
-        'settle' as event_type
+        -SUM(IFNULL(s.payment_amount, 0)) AS amount,
+        date(s.payment_date) AS original_date,
+        'payment' as event_type
     FROM
-        dwd.wholesale_order_settle_dtl s
+        dwd.wholesale_order_repay_dtl s
     JOIN
-        dwd.wholesale_sales_receivable_detail b ON s.salesdtlid = b.salesdtlid
-    WHERE s.confirm_date IS NOT NULL
-    AND s.use_status!= '作废'
+        dwd.wholesale_order_sales_dtl b ON s.salesdtlid = b.salesdtlid
+    WHERE s.payment_date IS NOT NULL
     AND b.sale_mode = '普通销售'
-    AND s.confirm_date < date('2018-01-01')
-    group by DATE(s.confirm_date),s.entryid,s.customid,s.salesid
+    AND s.payment_date < date('2025-07-01')
+    group by DATE(s.payment_date),s.entryid,s.customid,s.salesid
 ),
 
--- 预先计算每个销售单的结算状态
-sales_settle_status AS (
+-- 预先计算每个销售单的回款状态
+sales_payment_status AS (
     SELECT 
         salesid,
-        MIN(order_settle_status) AS order_settle_status,
-        MAX(IFNULL(order_settle_time, DATE('9999-12-31'))) AS order_settle_time
+        MIN(is_received) AS order_payment_status,
+        MAX(IFNULL(received_time, DATE('9999-12-31'))) AS order_received_time
     FROM 
-        dwd.wholesale_sales_receivable_detail
+        dwd.wholesale_sales_receivable_doc
     WHERE 
         salesid IS NOT NULL
     GROUP BY 
@@ -125,14 +122,14 @@ sales_status_by_date AS (
         e.original_date,
         SUM(CASE WHEN date(e.event_date) <= d.stat_date THEN e.amount ELSE 0 END) AS remaining_amount,
         MIN(CASE WHEN event_type='sale' THEN 
-            CASE WHEN ss.order_settle_status = 1 AND date(ss.order_settle_time) <= d.stat_date THEN 0 ELSE 1 END
+            CASE WHEN ss.order_payment_status = 1 AND date(ss.order_received_time) <= d.stat_date THEN 0 ELSE 1 END
             ELSE 0 END) AS is_unpaid_order
     FROM
         all_dates d
     JOIN
         all_events e ON d.entryid = e.entryid AND d.customid = e.customid AND e.event_date <= d.stat_date
     LEFT JOIN
-        sales_settle_status ss ON e.salesid = ss.salesid
+        sales_payment_status ss ON e.salesid = ss.salesid
     GROUP BY
         d.stat_date, e.entryid, e.customid, e.salesid, e.original_date
 ),

@@ -1,0 +1,63 @@
+insert into dwd.wholesale_sales_receivable_dtl (
+    salesdtlid,
+    salesid,
+    create_date,
+    yewu_date,
+    sale_mode,
+    sales_amount,
+    settle_amount,
+    settle_time,
+    is_settled,
+    received_amount,
+    received_time,
+    is_received
+)
+WITH fully_settled_order_dtl AS (
+    SELECT 
+        a.salesdtlid,
+        MAX(IFNULL(b.confirm_date, a.yewu_date)) AS max_confirm_date
+    FROM dwd.wholesale_order_sales_dtl a
+    LEFT JOIN dwd.wholesale_order_settle_dtl b ON a.salesdtlid = b.salesdtlid
+    WHERE a.settle_status in ('结算完成', '不结算')
+    GROUP BY a.salesdtlid
+),
+fully_paid_settle_dtl AS (
+    -- 先计算每个结算单明细是否结清
+    SELECT 
+        s.sasettledtlid,
+        s.salesid,
+        s.salesdtlid,
+        MAX(IFNULL(r.payment_date, s.confirm_date)) AS max_payment_date,
+        1 as is_fully_paid
+    FROM dwd.wholesale_order_settle_dtl s
+    LEFT JOIN dwd.wholesale_order_repay_dtl r ON s.sasettledtlid = r.sasettledtlid
+    WHERE s.received_status in ('已收完', '不收款')
+    GROUP BY s.sasettledtlid, s.salesid, s.salesdtlid, s.settle_amount
+),
+fully_paid_order_dtl AS (
+    -- 基于结算单明细的还款状态，计算销售单明细是否完全还清
+    SELECT 
+        salesdtlid,
+        MIN(IFNULL(is_fully_paid, 0)) AS all_paid,  -- 只有当所有关联的结算单明细都已还清时，销售单明细才算完全还清
+        MAX(max_payment_date) AS max_payment_date
+    FROM fully_paid_settle_dtl
+    WHERE salesdtlid IS NOT NULL
+    GROUP BY salesdtlid
+    HAVING MIN(IFNULL(is_fully_paid, 0)) = 1  -- 所有关联的结算单明细都已还清
+)
+select
+    a.salesdtlid,
+    a.salesid,
+    a.create_date,
+    a.yewu_date,
+    a.sale_mode,
+    IFNULL(a.sales_amount, 0),
+    a.settle_amount,
+    b.max_confirm_date as settle_time,
+    CASE WHEN b.max_confirm_date IS NOT NULL THEN 1 ELSE 0 END as is_settled,
+    IFNULL(a.received_amount, 0),
+    c.max_payment_date as received_time,
+    CASE WHEN c.max_payment_date IS NOT NULL THEN 1 ELSE 0 END as is_received
+from dwd.wholesale_order_sales_dtl a
+left join fully_settled_order_dtl b on a.salesdtlid = b.salesdtlid
+left join fully_paid_order_dtl c on a.salesdtlid = c.salesdtlid;

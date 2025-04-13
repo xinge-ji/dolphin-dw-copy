@@ -13,7 +13,8 @@ CREATE TABLE
         customertype int comment '客户类型',
         customertype_name varchar comment '客户类型名称',
         is_shuangwanjia tinyint comment '是否双万家',
-        customertype_group varchar comment '客户类型组'
+        customertype_group varchar comment '双控客户类型:企业/公立等级/公立基层/私营等级/私营基层',
+        customertype_task varchar comment '分销项目客户类型:等级机构/基层/终端/企业'
     ) UNIQUE KEY (customid, dw_starttime) DISTRIBUTED BY HASH (customid) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",
@@ -34,7 +35,8 @@ INSERT INTO
         customertype,
         customertype_name,
         is_shuangwanjia,
-        customertype_group
+        customertype_group,
+        customertype_task
     )
 WITH
     ranked_customer AS (
@@ -90,10 +92,17 @@ SELECT
         WHEN t1.customertype IN (1, 2, 3, 4, 5) THEN '企业'
         WHEN t1.customertype IN (6, 7, 8, 19) THEN '公立等级'
         WHEN t1.customertype IN (9, 10, 11, 12, 13, 20, 21, 22, 23, 24, 34) THEN '公立基层'
-        WHEN t1.customertype IN (14, 15, 16, 25, 32) THEN '私营等级'
+        WHEN t1.customertype IN (14, 15, 16, 25, 32, 38) THEN '私营等级'
         WHEN t1.customertype IN (17, 18, 26, 27, 28, 33, 35, 36) THEN '私营基层'
         ELSE '其他'
-    END AS customertype_group
+    END AS customertype_group,
+    CASE
+        WHEN t1.customertype IN (7, 8, 15, 16, 32, 38) THEN '等级机构' -- 二级及以上医疗机构（含公立及民营）
+        WHEN t1.customertype IN (6, 9, 10, 11, 12, 14, 17, 18, 19, 20, 21, 22, 24, 25, 26, 28, 33, 34, 
+                                 35, 36, 37) THEN '基层' -- 卫生院、社区卫生服务中心
+        WHEN t1.customertype IN (13, 17, 23, 27, 31) THEN '终端' -- 村所、诊所、门诊部等
+        WHEN t1.customertype IN (1, 2, 3, 4, 5, 29, 30) THEN '企业'
+    END AS customertype_task
 FROM
     ranked_customer t1
     LEFT JOIN (

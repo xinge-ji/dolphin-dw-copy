@@ -69,7 +69,6 @@ fully_paid_settle_dtl AS (
             ELSE 0
         END AS is_fully_paid
     FROM dwd.wholesale_order_settle_dtl s
-    JOIN fully_settled_order_item fo ON s.salesdtlid = fo.salesdtlid
     LEFT JOIN dwd.wholesale_order_repay_dtl r ON s.sasettledtlid = r.sasettledtlid AND r.use_status = '正式'
     WHERE s.use_status = '正式' and (s.settle_status != '不收款' OR s.settle_status IS NULL)
     GROUP BY s.sasettledtlid, s.salesid, s.salesdtlid, s.settle_amount
