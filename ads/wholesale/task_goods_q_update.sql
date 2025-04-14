@@ -16,7 +16,7 @@ WITH
 -- 季度销售数据（仅包含当前季度和上季度）
 quarterly_sales AS (
     SELECT
-        DATE_FORMAT(DATE_TRUNC(sg.stat_date, 'quarter'), '%Y-%m-01') AS stat_yearquarter,
+        DATE_TRUNC(sg.stat_date, 'quarter') AS stat_yearquarter,
         sg.entryid,
         ts.docid,
         sg.goodsid,
@@ -35,7 +35,7 @@ quarterly_sales AS (
         DATE_TRUNC(sg.stat_date, 'quarter') >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), 'quarter'), INTERVAL 1 QUARTER)
         AND DATE_TRUNC(sg.stat_date, 'quarter') <= DATE_TRUNC(CURRENT_DATE(), 'quarter')
     GROUP BY
-        DATE_FORMAT(DATE_TRUNC(sg.stat_date, 'quarter'), '%Y-%m-01'),
+        DATE_TRUNC(sg.stat_date, 'quarter'),
         sg.entryid,
         ts.docid,
         sg.goodsid
@@ -44,7 +44,7 @@ quarterly_sales AS (
 -- 客户购买记录（仅包含当前季度和上季度）
 customer_purchase AS (
     SELECT
-        DATE_FORMAT(DATE_TRUNC(sg.stat_date, 'quarter'), '%Y-%m-01') AS stat_yearquarter,
+        DATE_TRUNC(sg.stat_date, 'quarter') AS stat_yearquarter,
         sg.entryid,
         ts.docid,
         sg.goodsid,
@@ -65,7 +65,7 @@ customer_purchase AS (
         DATE_TRUNC(sg.stat_date, 'quarter') >= DATE_SUB(DATE_TRUNC(CURRENT_DATE(), 'quarter'), INTERVAL 1 QUARTER)
         AND DATE_TRUNC(sg.stat_date, 'quarter') <= DATE_TRUNC(CURRENT_DATE(), 'quarter')
     GROUP BY
-        DATE_FORMAT(DATE_TRUNC(sg.stat_date, 'quarter'), '%Y-%m-01'),
+        DATE_TRUNC(sg.stat_date, 'quarter'), 
         sg.entryid,
         ts.docid,
         sg.goodsid,

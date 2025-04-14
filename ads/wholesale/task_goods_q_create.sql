@@ -45,7 +45,7 @@ WITH
 -- 季度销售数据
 quarterly_sales AS (
     SELECT
-        DATE_FORMAT(DATE_TRUNC(sg.stat_date, 'quarter'), '%Y-%m-01') AS stat_yearquarter,
+        DATE_TRUNC(sg.stat_date, 'quarter') AS stat_yearquarter,
         sg.entryid,
         ts.docid,
         sg.goodsid,
@@ -61,7 +61,7 @@ quarterly_sales AS (
         ON ts.goods_set_id = gs.setid 
         AND sg.goodsid = gs.goodsid
     GROUP BY
-        DATE_FORMAT(DATE_TRUNC(sg.stat_date, 'quarter'), '%Y-%m-01'),
+        DATE_TRUNC(sg.stat_date, 'quarter'),
         sg.entryid,
         ts.docid,
         sg.goodsid
@@ -70,7 +70,7 @@ quarterly_sales AS (
 -- 客户购买记录（季度）
 customer_purchase AS (
     SELECT
-        DATE_FORMAT(DATE_TRUNC(sg.stat_date, 'quarter'), '%Y-%m-01') AS stat_yearquarter,
+        DATE_TRUNC(sg.stat_date, 'quarter') AS stat_yearquarter,
         sg.entryid,
         ts.docid,
         sg.goodsid,
@@ -88,7 +88,7 @@ customer_purchase AS (
         ON ts.goods_set_id = gs.setid 
         AND sg.goodsid = gs.goodsid
     GROUP BY
-        DATE_FORMAT(DATE_TRUNC(sg.stat_date, 'quarter'), '%Y-%m-01'),
+        DATE_TRUNC(sg.stat_date, 'quarter'),
         sg.entryid,
         ts.docid,
         sg.goodsid,
