@@ -19,7 +19,7 @@ CREATE TABLE ads.wholesale_task_goods_q (
     new_customer_sales_amount decimal(20,2) COMMENT '准入客户销售额',
     new_customer_count bigint COMMENT '准入客户数:在项目周期内没有销售记录，在本季度存在销售记录',
     retention_customer_count bigint COMMENT '留存客户数:在项目周期内没有销售记录，在本季度存在多条销售记录'
-) UNIQUE KEY (stat_yearmonth, entryid, docid, goodsid) DISTRIBUTED BY HASH (docid) PROPERTIES (
+) UNIQUE KEY (stat_yearquarter, entryid, docid, goodsid) DISTRIBUTED BY HASH (docid) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",
         "storage_format" = "V2",
@@ -47,8 +47,12 @@ quarterly_sales AS (
     SELECT
         DATE_TRUNC(sg.stat_date, 'quarter') AS stat_yearquarter,
         sg.entryid,
+        sg.entry_name,
+        sg.area_name,
         ts.docid,
+        ts.task_name,
         sg.goodsid,
+        sg.goods_name,
         IFNULL(SUM(sg.sales_amount), 0) AS sales_amount
     FROM
         dws.wholesale_sales_goods_d sg
@@ -63,8 +67,12 @@ quarterly_sales AS (
     GROUP BY
         DATE_TRUNC(sg.stat_date, 'quarter'),
         sg.entryid,
+        sg.entry_name,
+        sg.area_name,
         ts.docid,
-        sg.goodsid
+        ts.task_name,
+        sg.goodsid,
+        sg.goods_name
 ),
 
 -- 客户购买记录（季度）
@@ -72,10 +80,14 @@ customer_purchase AS (
     SELECT
         DATE_TRUNC(sg.stat_date, 'quarter') AS stat_yearquarter,
         sg.entryid,
+        sg.entry_name,
+        sg.area_name,
         ts.docid,
+        ts.task_name,
         sg.goodsid,
+        sg.goods_name,
         sg.customid,
-        IFNULL(COUNT(sg.sales_amount>0), 0) AS purchase_count,
+        IFNULL(SUM(CASE WHEN sg.sales_amount > 0 THEN 1 ELSE 0 END), 0) AS purchase_count,
         IFNULL(SUM(sg.sales_amount), 0) AS sales_amount
     FROM
         dws.wholesale_sales_goods_d sg
@@ -90,8 +102,12 @@ customer_purchase AS (
     GROUP BY
         DATE_TRUNC(sg.stat_date, 'quarter'),
         sg.entryid,
+        sg.entry_name,
+        sg.area_name,
         ts.docid,
+        ts.task_name,
         sg.goodsid,
+        sg.goods_name,
         sg.customid
 ),
 
@@ -99,16 +115,24 @@ customer_purchase AS (
 historical_purchase AS (
     SELECT
         cp.entryid,
+        cp.entry_name,
+        cp.area_name,
         cp.docid,
+        cp.task_name,
         cp.goodsid,
+        cp.goods_name,
         cp.customid,
         MIN(cp.stat_yearquarter) AS first_purchase_quarter
     FROM
         customer_purchase cp
     GROUP BY
         cp.entryid,
+        cp.entry_name,
+        cp.area_name,
         cp.docid,
+        cp.task_name,
         cp.goodsid,
+        cp.goods_name,
         cp.customid
 ),
 
@@ -117,20 +141,21 @@ customer_stats AS (
     SELECT
         cp.stat_yearquarter,
         cp.entryid,
+        cp.entry_name,
+        cp.area_name,
         cp.docid,
+        cp.task_name,
         cp.goodsid,
-        -- 新客户数：本季度是首次购买该商品的客户数
+        cp.goods_name,
         COUNT(DISTINCT CASE 
             WHEN hp.first_purchase_quarter = cp.stat_yearquarter 
             THEN cp.customid 
         END) AS new_customer_count,
-        -- 新客户销售额：本季度首次购买该商品的客户销售额
         SUM(CASE 
             WHEN hp.first_purchase_quarter = cp.stat_yearquarter 
             THEN cp.sales_amount
             ELSE 0
         END) AS new_customer_sales_amount,
-        -- 留存客户数：本季度首次购买且购买该商品超过1次的客户数
         COUNT(DISTINCT CASE 
             WHEN hp.first_purchase_quarter = cp.stat_yearquarter AND cp.purchase_count > 1 
             THEN cp.customid 
@@ -146,8 +171,12 @@ customer_stats AS (
     GROUP BY
         cp.stat_yearquarter,
         cp.entryid,
+        cp.entry_name,
+        cp.area_name,
         cp.docid,
-        cp.goodsid
+        cp.task_name,
+        cp.goodsid,
+        cp.goods_name
 )
 
 -- 最终结果
@@ -156,31 +185,23 @@ SELECT
     qs.entryid,
     qs.docid,
     qs.goodsid,
-    ts.task_name,
-    e.entry_name,
-    g.goods_name,
-    e.area_name,
+    qs.task_name,
+    qs.entry_name,
+    qs.goods_name,
+    qs.area_name,
     qs.sales_amount,
     COALESCE(cs.new_customer_sales_amount, 0) AS new_customer_sales_amount,
     COALESCE(cs.new_customer_count, 0) AS new_customer_count,
     COALESCE(cs.retention_customer_count, 0) AS retention_customer_count
 FROM
     quarterly_sales qs
-JOIN
-    dim.wholesale_task_set ts 
-    ON qs.entryid = ts.entryid 
-    AND qs.docid = ts.docid
-JOIN
-    dim.entry e 
-    ON qs.entryid = e.entryid
-    AND e.is_active = 1
-JOIN
-    dim.goods g 
-    ON qs.goodsid = g.goodsid
-    AND g.is_active = 1
 LEFT JOIN
     customer_stats cs 
     ON qs.stat_yearquarter = cs.stat_yearquarter 
     AND qs.entryid = cs.entryid 
     AND qs.docid = cs.docid 
-    AND qs.goodsid = cs.goodsid;
+    AND qs.goodsid = cs.goodsid
+    AND qs.entry_name = cs.entry_name
+    AND qs.task_name = cs.task_name
+    AND qs.goods_name = cs.goods_name
+    AND qs.area_name = cs.area_name;

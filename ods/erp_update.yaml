@@ -26,7 +26,7 @@ tasks:
             user = "lyerp"
             password = "lyerp"
             table_path = "lyerp.BMS_SA_DOCTOSET"
-            query = """select t.SALESDTLID,t.SASETTLEDTLID, ora_hash(substr(coalesce(substr(to_char(t.SALESDTLID), 1,255), '') || coalesce(substr(to_char(t.SASETTLEDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTAL_LINE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.GOODSQTY,t.TOTAL_LINE,t2.CREDATE from BMS_SA_DOCTOSET t LEFT JOIN BMS_SA_DTL t1 ON t.SALESDTLID=t1.SALESDTLID LEFT JOIN BMS_SA_DOC t2 ON t1.salesid=t2.salesid WHERE (t2.CREDATE is not NULL AND t2.CREDATE >= TRUNC(SYSDATE-360)) OR t2.CREDATE is NULL"""
+            query = """select t.SALESDTLID,t.SASETTLEDTLID, ora_hash(substr(coalesce(substr(to_char(t.SALESDTLID), 1,255), '') || coalesce(substr(to_char(t.SASETTLEDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTAL_LINE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.GOODSQTY,t.TOTAL_LINE,t2.CREDATE as SALES_CREDATE, t4.CREDATE as SETTLE_CREDATE from BMS_SA_DOCTOSET t LEFT JOIN BMS_SA_DTL t1 ON t.SALESDTLID=t1.SALESDTLID LEFT JOIN BMS_SA_DOC t2 ON t1.salesid=t2.salesid LEFT JOIN BMS_SA_SETTLE_DTL t3 ON t.SASETTLEDTLID=t3.SASETTLEDTLID LEFT JOIN BMS_SA_SETTLE_DOC t4 ON t3.SASETTLEID=t4.SASETTLEID WHERE (t2.CREDATE is not NULL AND t2.CREDATE >= TRUNC(SYSDATE-360)) OR  (t4.CREDATE is not NULL AND t4.CREDATE >= TRUNC(SYSDATE-360)) OR (t2.CREDATE is NULL AND t4.CREDATE is NULL)"""
           }
         }
         sink{
@@ -65,11 +65,11 @@ tasks:
     flag: YES
     deps: [BMS_SA_DOCTOSET_ods_tmp]
     sql: |
-        -- UPDATE bms_sa_doctoset t
-        -- SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
-        -- WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM bms_sa_doctoset_doristmp s WHERE s.SALESDTLID = t.SALESDTLID AND s.SASETTLEDTLID = t.SASETTLEDTLID AND s.DW_ID = t.DW_ID) ;
-        INSERT INTO bms_sa_doctoset (`SALESDTLID`,`SASETTLEDTLID`,`GOODSQTY`,`TOTAL_LINE`,`dw_id`,`is_active`,`dw_createtime`,`dw_updatetime`)
-        SELECT s.`SALESDTLID`,s.`SASETTLEDTLID`,s.`GOODSQTY`,s.`TOTAL_LINE`,s.`dw_id`,s.`is_active`,s.`dw_createtime`,s.`dw_updatetime`
+        UPDATE bms_sa_doctoset t
+        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM bms_sa_doctoset_doristmp s WHERE s.SALESDTLID = t.SALESDTLID AND s.SASETTLEDTLID = t.SASETTLEDTLID AND s.DW_ID = t.DW_ID) AND ((t.`SALES_CREDATE` is not null AND t.`SALES_CREDATE` > date_sub(CURDATE(), INTERVAL 360 DAY)) OR (t.`SETTLE_CREDATE` is not null AND t.`SETTLE_CREDATE` > date_sub(CURDATE(), INTERVAL 360 DAY)) OR ((t.`SALES_CREDATE` is null) AND (t.`SETTLE_CREDATE` is null)));
+        INSERT INTO bms_sa_doctoset (`SALESDTLID`,`SASETTLEDTLID`,`GOODSQTY`,`TOTAL_LINE`,`SALES_CREDATE`,`SETTLE_CREDATE`,`dw_id`,`is_active`,`dw_createtime`,`dw_updatetime`)
+        SELECT s.`SALESDTLID`,s.`SASETTLEDTLID`,s.`GOODSQTY`,s.`TOTAL_LINE`,s.`SALES_CREDATE`,s.`SETTLE_CREDATE`,s.`dw_id`,s.`is_active`,s.`dw_createtime`,s.`dw_updatetime`
         FROM bms_sa_doctoset_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM bms_sa_doctoset WHERE s.SALESDTLID = BMS_SA_DOCTOSET.SALESDTLID AND s.SASETTLEDTLID = BMS_SA_DOCTOSET.SASETTLEDTLID AND s.DW_ID = BMS_SA_DOCTOSET.DW_ID);
         DROP TABLE bms_sa_doctoset_doristmp;
@@ -97,7 +97,7 @@ tasks:
             user = "lyerp"
             password = "lyerp"
             table_path = "lyerp.BMS_SA_SETTOREC"
-            query = """select t.SASETTLEDTLID,t.SARECDTLID, ora_hash(substr(coalesce(substr(to_char(t.SASETTLEDTLID), 1,255), '') || coalesce(substr(to_char(t.SARECDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTAL_LINE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.GOODSQTY,t.TOTAL_LINE,t2.CREDATE from BMS_SA_SETTOREC t LEFT JOIN BMS_SA_SETTLE_DTL t1 ON t.SASETTLEDTLID=t1.SASETTLEDTLID LEFT JOIN BMS_SA_SETTLE_DOC t2 ON t1.SASETTLEID=t2.SASETTLEID  WHERE (t2.CREDATE is not NULL AND t2.CREDATE >= TRUNC(SYSDATE-360)) OR t2.CREDATE is NULL"""
+            query = """select t.SASETTLEDTLID,t.SARECDTLID, ora_hash(substr(coalesce(substr(to_char(t.SASETTLEDTLID), 1,255), '') || coalesce(substr(to_char(t.SARECDTLID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TOTAL_LINE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.GOODSQTY,t.TOTAL_LINE,t2.CREDATE as SETTLE_CREDATE, t4.CREDATE as REC_CREDATE from BMS_SA_SETTOREC t LEFT JOIN BMS_SA_SETTLE_DTL t1 ON t.SASETTLEDTLID=t1.SASETTLEDTLID LEFT JOIN BMS_SA_SETTLE_DOC t2 ON t1.SASETTLEID=t2.SASETTLEID LEFT JOIN BMS_SA_REC_DTL t3 ON t.SARECDTLID=t3.SARECDTLID LEFT JOIN BMS_SA_REC_DOC t4 ON t3.SARECID=t4.SARECID WHERE (t2.CREDATE is not NULL AND t2.CREDATE >= TRUNC(SYSDATE-360)) OR (t4.CREDATE is not NULL AND t4.CREDATE >= TRUNC(SYSDATE-360)) OR (t2.CREDATE is NULL AND t4.CREDATE is NULL)"""
           }
         }
         sink{
@@ -136,11 +136,11 @@ tasks:
     flag: YES
     deps: [BMS_SA_SETTOREC_ods_tmp]
     sql: |
-        -- UPDATE bms_sa_settorec t
-        -- SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
-        -- WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM bms_sa_settorec_doristmp s WHERE s.SASETTLEDTLID = t.SASETTLEDTLID AND s.SARECDTLID = t.SARECDTLID AND s.DW_ID = t.DW_ID) ;
-        INSERT INTO bms_sa_settorec (`SASETTLEDTLID`,`SARECDTLID`,`GOODSQTY`,`TOTAL_LINE`,`dw_id`,`is_active`,`dw_createtime`,`dw_updatetime`)
-        SELECT s.`SASETTLEDTLID`,s.`SARECDTLID`,s.`GOODSQTY`,s.`TOTAL_LINE`,s.`dw_id`,s.`is_active`,s.`dw_createtime`,s.`dw_updatetime`
+        UPDATE bms_sa_settorec t
+        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM bms_sa_settorec_doristmp s WHERE s.SASETTLEDTLID = t.SASETTLEDTLID AND s.SARECDTLID = t.SARECDTLID AND s.DW_ID = t.DW_ID)  AND ((t.`SETTLE_CREDATE` is not null AND t.`SETTLE_CREDATE` > date_sub(CURDATE(), INTERVAL 360 DAY)) OR (t.`REC_CREDATE` is not null AND t.`REC_CREDATE` > date_sub(CURDATE(), INTERVAL 360 DAY)) OR ((t.`SETTLE_CREDATE` is null) AND (t.`REC_CREDATE` is null)));
+        INSERT INTO bms_sa_settorec (`SASETTLEDTLID`,`SARECDTLID`,`GOODSQTY`,`TOTAL_LINE`,`SETTLE_CREDATE`,`REC_CREDATE`,`dw_id`,`is_active`,`dw_createtime`,`dw_updatetime`)
+        SELECT s.`SASETTLEDTLID`,s.`SARECDTLID`,s.`GOODSQTY`,s.`TOTAL_LINE`,s.`SETTLE_CREDATE`,s.`REC_CREDATE`,s.`dw_id`,s.`is_active`,s.`dw_createtime`,s.`dw_updatetime`
         FROM bms_sa_settorec_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM bms_sa_settorec WHERE s.SASETTLEDTLID = BMS_SA_SETTOREC.SASETTLEDTLID AND s.SARECDTLID = BMS_SA_SETTOREC.SARECDTLID AND s.DW_ID = BMS_SA_SETTOREC.DW_ID);
         DROP TABLE bms_sa_settorec_doristmp;
@@ -775,7 +775,7 @@ tasks:
     startup_script: "seatunnel.sh"
     use_custom: true
     deploy_mode: "cluster"
-    flag: NO
+    flag: YES
     deps: [GRESA_SA_DTL_d_ods_update]
     raw_script: |
         env{
@@ -827,7 +827,7 @@ tasks:
     fail_retry_times: 1
     fail_retry_interval: 5
     datasource_name: "ods_erp"
-    flag: NO
+    flag: YES
     deps: [BMS_ST_IO_DTL_d_ods_tmp]
     sql: |
         UPDATE bms_st_io_dtl t
@@ -859,7 +859,7 @@ tasks:
     startup_script: "seatunnel.sh"
     use_custom: true
     deploy_mode: "cluster"
-    flag: NO
+    flag: YES
     deps: [BMS_ST_IO_DTL_d_ods_update]
     raw_script: |
         env{
@@ -911,7 +911,7 @@ tasks:
     fail_retry_times: 1
     fail_retry_interval: 5
     datasource_name: "ods_erp"
-    flag: NO
+    flag: YES
     deps: [GPCS_REQSUPPLYDTL_d_ods_tmp]
     sql: |
         UPDATE gpcs_reqsupplydtl t

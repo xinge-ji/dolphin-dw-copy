@@ -9,6 +9,7 @@ INSERT INTO ads.wholesale_task_customer_m (
     customertype_task,
     area_name,
     city_name,
+    reputation_days,
     sales_amount,
     avg_3m_sales_amount,
     is_abnormal_sales,
@@ -111,6 +112,7 @@ SELECT
     ms.customertype_task,
     ms.area_name,
     ms.city_name,
+    ecx.reputation_days,
     ms.sales_amount,
     COALESCE(p3m.avg_3m_sales_amount, 0) AS avg_3m_sales_amount,
     -- 是否异常备货：本月销售额超出近三个月平均销售额的3倍
@@ -156,4 +158,10 @@ LEFT JOIN
     ON ms.stat_yearmonth = p3m.stat_yearmonth 
     AND ms.entryid = p3m.entryid 
     AND ms.docid = p3m.docid 
-    AND ms.customid = p3m.customid;
+    AND ms.customid = p3m.customid
+LEFT JOIN
+    dim.entry_customer_xinyu ecx
+    ON ms.entryid = ecx.entryid
+    AND ms.customid = ecx.customid
+    AND ms.stat_yearmonth >= ecx.dw_starttime
+    AND ms.stat_yearmonth < ecx.dw_endtime;

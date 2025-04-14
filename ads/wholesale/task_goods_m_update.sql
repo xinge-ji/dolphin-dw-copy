@@ -13,14 +13,18 @@ INSERT INTO ads.wholesale_task_goods_m (
     retention_customer_count
 )
 WITH 
--- 月度销售数据（仅包含当前月和上个月）
+-- 月度销售数据
 monthly_sales AS (
     SELECT
         DATE_TRUNC(sg.stat_date, 'month') AS stat_yearmonth,
         sg.entryid,
+        sg.entry_name,
+        sg.area_name,
         ts.docid,
+        ts.task_name,
         sg.goodsid,
-        IFNULL(SUM(sg.sales_amount), 0) AS sales_amount
+        sg.goods_name,
+        SUM(sg.sales_amount) AS sales_amount
     FROM
         dws.wholesale_sales_goods_d sg
     JOIN
@@ -37,19 +41,27 @@ monthly_sales AS (
     GROUP BY
         DATE_TRUNC(sg.stat_date, 'month'),
         sg.entryid,
+        sg.entry_name,
+        sg.area_name,
         ts.docid,
-        sg.goodsid
+        ts.task_name,
+        sg.goodsid,
+        sg.goods_name
 ),
 
--- 客户购买记录（仅包含当前月和上个月）
+-- 客户购买记录
 customer_purchase AS (
     SELECT
         DATE_TRUNC(sg.stat_date, 'month') AS stat_yearmonth,
         sg.entryid,
-        ts.docid,
-        sg.goodsid,
+        sg.entry_name,
+        sg.area_name,
         sg.customid,
-        IFNULL(COUNT(sg.sales_amount>0), 0) AS purchase_count,
+        ts.docid,
+        ts.task_name,
+        sg.goodsid,
+        sg.goods_name,
+        IFNULL(SUM(CASE WHEN sg.sales_amount > 0 THEN 1 ELSE 0 END), 0) AS purchase_count,
         IFNULL(SUM(sg.sales_amount), 0) AS sales_amount
     FROM
         dws.wholesale_sales_goods_d sg
@@ -67,26 +79,38 @@ customer_purchase AS (
     GROUP BY
         DATE_TRUNC(sg.stat_date, 'month'),
         sg.entryid,
+        sg.entry_name,
+        sg.area_name,
+        sg.customid,
         ts.docid,
+        ts.task_name,
         sg.goodsid,
-        sg.customid
+        sg.goods_name
 ),
 
--- 历史购买记录（用于判断是否为新客户）
+-- 历史购买记录
 historical_purchase AS (
     SELECT
         cp.entryid,
-        cp.docid,
-        cp.goodsid,
+        cp.entry_name,
+        cp.area_name,
         cp.customid,
+        cp.docid,
+        cp.task_name,
+        cp.goodsid,
+        cp.goods_name,
         MIN(cp.stat_yearmonth) AS first_purchase_month
     FROM
         customer_purchase cp
     GROUP BY
         cp.entryid,
+        cp.entry_name,
+        cp.area_name,
+        cp.customid,
         cp.docid,
+        cp.task_name,
         cp.goodsid,
-        cp.customid
+        cp.goods_name
 ),
 
 -- 客户统计
@@ -94,8 +118,13 @@ customer_stats AS (
     SELECT
         cp.stat_yearmonth,
         cp.entryid,
+        cp.entry_name,
+        cp.area_name,
+        cp.customid,
         cp.docid,
+        cp.task_name,
         cp.goodsid,
+        cp.goods_name,
         -- 新客户数：本月是首次购买该商品的客户数
         COUNT(DISTINCT CASE 
             WHEN hp.first_purchase_month = cp.stat_yearmonth 
@@ -123,8 +152,13 @@ customer_stats AS (
     GROUP BY
         cp.stat_yearmonth,
         cp.entryid,
+        cp.entry_name,
+        cp.area_name,
+        cp.customid,
         cp.docid,
-        cp.goodsid
+        cp.task_name,
+        cp.goodsid,
+        cp.goods_name
 )
 
 -- 最终结果
@@ -133,31 +167,23 @@ SELECT
     ms.entryid,
     ms.docid,
     ms.goodsid,
-    ts.task_name,
-    e.entry_name,
-    g.goods_name,
-    e.area_name,
+    ms.task_name,
+    ms.entry_name,
+    ms.goods_name,
+    ms.area_name,
     ms.sales_amount,
     COALESCE(cs.new_customer_sales_amount, 0) AS new_customer_sales_amount,
     COALESCE(cs.new_customer_count, 0) AS new_customer_count,
     COALESCE(cs.retention_customer_count, 0) AS retention_customer_count
 FROM
     monthly_sales ms
-JOIN
-    dim.wholesale_task_set ts 
-    ON ms.entryid = ts.entryid 
-    AND ms.docid = ts.docid
-JOIN
-    dim.entry e 
-    ON ms.entryid = e.entryid
-    AND e.is_active = 1
-JOIN
-    dim.goods g 
-    ON ms.goodsid = g.goodsid
-    AND g.is_active = 1
 LEFT JOIN
     customer_stats cs 
     ON ms.stat_yearmonth = cs.stat_yearmonth 
     AND ms.entryid = cs.entryid 
     AND ms.docid = cs.docid 
-    AND ms.goodsid = cs.goodsid;
+    AND ms.goodsid = cs.goodsid
+    AND ms.entry_name = cs.entry_name
+    AND ms.task_name = cs.task_name
+    AND ms.goods_name = cs.goods_name
+    AND ms.area_name = cs.area_name;
