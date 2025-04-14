@@ -1,0 +1,22 @@
+Manifest-Version: 1.0
+Created-By: Maven Archiver 3.6.2
+Build-Jdk-Spec: 21
+Bundle-ManifestVersion: 2
+Bundle-Name: GIS bundle
+Bundle-SymbolicName: org.jkiss.bundle.gis;singleton:=true
+Bundle-Version: 2.0.7
+Bundle-ClassPath: lib/cts-1.5.2.jar,lib/ejml-core-0.41.jar,lib/ejml-dden
+ se-0.41.jar,lib/json-simple-1.1.1.jar,lib/jts-core-1.19.0.jar,lib/jts-i
+ o-common-1.19.0.jar,lib/wkg-0.1-SNAPSHOT.jar,.
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-Vendor: DBeaver Corp, Locationtech.org, CTS.org
+Eclipse-BundleShape: dir
+Export-Package: org.locationtech.jts,org.locationtech.jts.algorithm,org.
+ locationtech.jts.geom,org.locationtech.jts.geom.impl,org.locationtech.j
+ ts.io,org.locationtech.jts.io.geojson,org.locationtech.jts.io.twkb,org.
+ cts,org.cts.crs,org.cts.cs,org.cts.datum,org.cts.op,org.cts.op.projecti
+ on,org.cts.parser,org.cts.registry,org.cts.units,org.cts.util,org.cugos
+ .wkg,org.ejml.data,org.ejml.dense.row.decomposition.lu,org.ejml.dense.r
+ ow.linsol.lu
+Import-Package: org.slf4j
+

@@ -1,0 +1,25 @@
+Manifest-Version: 1.0
+Created-By: Maven Archiver 3.6.2
+Build-Jdk-Spec: 21
+Bundle-ManifestVersion: 2
+Bundle-Name: JFreeChart bundle
+Bundle-SymbolicName: org.jkiss.bundle.jfreechart;singleton:=true
+Bundle-Version: 1.5.5
+Bundle-ClassPath: lib/jfreechart-1.5.3.jar,lib/jfreechart-swt-1.1.0.jar,
+ lib/swtgraphics2d-1.1.0.jar,.
+Bundle-Vendor: DBeaver Corp
+Eclipse-BundleShape: dir
+Import-Package: org.eclipse.swt,org.eclipse.swt.events,org.eclipse.swt.g
+ raphics,org.eclipse.swt.layout,org.eclipse.swt.printing,org.eclipse.swt
+ .widgets
+Export-Package: org.jfree.chart,org.jfree.chart.annotations,org.jfree.ch
+ art.axis,org.jfree.chart.block,org.jfree.chart.labels,org.jfree.chart.s
+ wt,org.jfree.chart.swt.editor,org.jfree.chart.panel,org.jfree.chart.plo
+ t,org.jfree.chart.renderer,org.jfree.chart.renderer.category,org.jfree.
+ chart.renderer.xy,org.jfree.chart.title,org.jfree.chart.ui,org.jfree.ch
+ art.util,org.jfree.data,org.jfree.data.category,org.jfree.data.function
+ ,org.jfree.data.gantt,org.jfree.data.general,org.jfree.data.statistics,
+ org.jfree.data.time,org.jfree.data.xml,org.jfree.data.xy,org.jfree.swt,
+ org.jfree.ui,org.jfree.util
+Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"
+

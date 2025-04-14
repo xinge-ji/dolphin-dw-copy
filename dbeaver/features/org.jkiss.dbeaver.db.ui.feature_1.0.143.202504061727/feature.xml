@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="org.jkiss.dbeaver.db.ui.feature"
+      label="%featureName"
+      version="1.0.143.202504061727"
+      provider-name="%providerName">
+
+   <description>
+      %description
+   </description>
+
+   <copyright>
+      %copyright
+   </copyright>
+
+   <includes id="org.jkiss.dbeaver.db.feature" version="1.0.143.202504061727"/>
+
+   <plugin id="org.jkiss.dbeaver.ext.mysql.ui" version="1.0.144.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.dameng.ui" version="1.0.36.202504061727"/>
+   <plugin id="org.jkiss.dbeaver.ext.db2.ui" version="1.0.77.202504061727"/>
+   <plugin id="org.jkiss.dbeaver.ext.exasol.ui" version="1.0.121.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.hana.ui" version="1.0.105.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.mssql.ui" version="1.0.151.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.oracle.ui" version="1.0.139.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.oceanbase.ui" version="1.0.90.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.tidb.ui" version="1.0.32.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.postgresql.ui" version="1.0.128.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.databend.ui" version="1.0.7.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.generic.ui" version="1.0.128.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.vertica.ui" version="1.0.143.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.athena.ui" version="1.0.122.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.clickhouse.ui" version="1.0.156.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.cubrid.ui" version="1.0.12.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.bigquery.ui" version="1.0.122.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.spanner.ui" version="1.0.122.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.snowflake.ui" version="1.0.172.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.sqlite.ui" version="1.0.122.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.wmi" os="win32" version="2.0.254.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.altibase.ui" version="1.0.13.202504061727" />
+   <plugin id="org.jkiss.dbeaver.ext.gaussdb.ui" version="1.0.13.202504061727" />
+
+</feature>
