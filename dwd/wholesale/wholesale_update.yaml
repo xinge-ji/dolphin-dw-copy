@@ -133,3 +133,10 @@ tasks:
     flag: NO
     deps: [order_repay_dtl]
     sql: $FILE{"sales_receivable_doc_update.sql"}
+
+  - name: order_approval
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: NO
+    deps: [sales_receivable_doc]
+    sql: $FILE{"order_approval_update.sql"}

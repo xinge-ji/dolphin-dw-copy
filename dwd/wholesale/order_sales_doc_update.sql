@@ -31,6 +31,8 @@ INSERT INTO dwd.wholesale_order_sales_doc (
     memo,
     
     -- 来源相关
+    salesdeptid,
+    sales_dept_name,
     comefrom,
     pt_orderid,
     is_haixi,
@@ -90,6 +92,8 @@ SELECT
     memo,                                      -- 备注
     
     -- 来源相关
+    a.salesdeptid,
+    company.company_name as sales_dept_name,
     b.ddlname as comefrom,                      -- 订单来源
     a.pt_orderid,                               -- 海西订单号
     CASE 
@@ -174,6 +178,9 @@ LEFT JOIN
 LEFT JOIN
     dim.employee inputman ON a.inputmanid = inputman.employeeid
     AND a.credate >= inputman.dw_starttime AND a.credate < inputman.dw_endtime   -- 制单人维度表
+LEFT JOIN
+    dim.company company ON a.salesdeptid = company.companyid
+    AND a.credate >= company.dw_starttime AND a.credate < company.dw_endtime  -- 销售部门维度表
 WHERE 
     a.is_active = 1
     AND a.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.wholesale_order_sales_doc)

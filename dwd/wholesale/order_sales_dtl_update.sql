@@ -34,9 +34,11 @@ INSERT INTO dwd.wholesale_order_sales_dtl (
 
     -- 业务部门
     salesdeptid,
+    sales_dept_name,
 
     -- 订单状态
     use_status,
+    dtl_memo,
     
     -- 销售模式
     peihuojiekuan_mode,
@@ -136,9 +138,11 @@ SELECT
 
     -- 业务部门
     a.salesdeptid,
+    a.sales_dept_name,
     
     -- 订单状态
     a.use_status,
+    b.dtlmemo as dtl_memo,
     
     -- 销售模式
     a.peihuojiekuan_mode,

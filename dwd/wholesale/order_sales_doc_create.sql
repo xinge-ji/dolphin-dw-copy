@@ -26,6 +26,8 @@ CREATE TABLE dwd.wholesale_order_sales_doc (
     memo varchar COMMENT '备注',
     
     -- 来源相关
+    salesdeptid bigint COMMENT '销售部门ID',
+    sales_dept_name varchar COMMENT '销售部门名称',
     comefrom varchar COMMENT '订单来源',
     pt_orderid decimal(38,18) COMMENT '海西订单号',
     is_haixi tinyint COMMENT '是否海西订单',
@@ -89,6 +91,8 @@ INSERT INTO dwd.wholesale_order_sales_doc (
     memo,
     
     -- 来源相关
+    salesdeptid,
+    sales_dept_name,
     comefrom,
     pt_orderid,
     is_haixi,
@@ -148,6 +152,8 @@ SELECT
     memo,                                       -- 备注
     
     -- 来源相关
+    a.salesdeptid,
+    company.company_name as sales_dept_name,
     b.ddlname as comefrom,                      -- 订单来源
     a.pt_orderid,                               -- 海西订单号
     CASE 
@@ -232,6 +238,9 @@ LEFT JOIN
 LEFT JOIN
     dim.employee inputman ON a.inputmanid = inputman.employeeid
     AND a.credate >= inputman.dw_starttime AND a.credate < inputman.dw_endtime   -- 制单人维度表
+LEFT JOIN
+    dim.company company ON a.salesdeptid = company.companyid
+    AND a.credate >= company.dw_starttime AND a.credate < company.dw_endtime  -- 销售部门维度表
 WHERE 
     a.is_active = 1;
 

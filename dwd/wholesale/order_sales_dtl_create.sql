@@ -27,9 +27,11 @@ CREATE TABLE dwd.wholesale_order_sales_dtl (
 
     -- 业务部门
     salesdeptid bigint COMMENT '业务部门ID',
+    sales_dept_name varchar COMMENT '业务部门名称',
 
     -- 订单状态
     use_status varchar COMMENT '使用状态:正式/临时',
+    dtl_memo varchar COMMENT '订单细单备注',
 
     -- 销售模式
     peihuojiekuan_mode varchar COMMENT '配货结款模式',
@@ -134,9 +136,11 @@ INSERT INTO dwd.wholesale_order_sales_dtl (
 
     -- 业务部门
     salesdeptid,
+    sales_dept_name,
     
     -- 订单状态
     use_status,
+    dtl_memo,
     
     -- 销售模式
     peihuojiekuan_mode,
@@ -236,9 +240,11 @@ SELECT
 
     -- 业务部门
     a.salesdeptid,
+    a.sales_dept_name,
     
     -- 订单状态
     a.use_status,
+    b.dtlmemo as dtl_memo,
     
     -- 销售模式
     a.peihuojiekuan_mode,

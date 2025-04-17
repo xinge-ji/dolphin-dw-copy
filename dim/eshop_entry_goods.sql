@@ -24,17 +24,23 @@ INSERT INTO dim.eshop_entry_goods (
     dw_endtime
 )
 SELECT 
-        t1.entryid,
-        t1.goodsid,
-        MAX(t2.product_id),
-        MAX(t2.org_id),
-        MIN(IFNULL(t1.credate, t2.create_time)) AS dw_starttime,
-        CAST('9999-12-31 23:59:59' AS DATETIME) AS dw_endtime
-    FROM ods_erp.eshop_entry_goods t1
-    LEFT JOIN (SELECT entryid, MAX(org_id) as org_id FROM dim.entry group by entryid) e ON t1.entryid = e.entryid
-    LEFT JOIN ods_dsys.prd_product t2 on t1.goodsid = t2.PRODUCT_CODE AND e.org_id = t2.org_id
-    WHERE t1.is_active = 1 and t1.entryid is not null and t1.goodsid is not null
-    GROUP BY t1.entryid, t1.goodsid;
+    t1.entryid,
+    t1.goodsid,
+    MAX(t2.product_id),
+    MAX(t2.org_id),
+    MIN(IFNULL(t1.credate, t2.create_time)) AS dw_starttime,
+    CASE 
+        WHEN MAX(CASE WHEN t1.is_active = 1 THEN 1 ELSE 0 END) = 1 THEN 
+            CAST('9999-12-31 23:59:59' AS DATETIME)
+        ELSE 
+            MAX(t1.dw_updatetime) 
+    END AS dw_endtime
+FROM ods_erp.eshop_entry_goods t1
+LEFT JOIN (SELECT entryid, MAX(org_id) as org_id FROM dim.entry group by entryid) e ON t1.entryid = e.entryid
+LEFT JOIN ods_dsys.prd_product t2 on t1.goodsid = t2.PRODUCT_CODE AND e.org_id = t2.org_id
+WHERE t1.entryid is not null and t1.goodsid is not null
+AND NOT EXISTS (SELECT 1 FROM ods_erp.eshop_entry_prohibit_goods p WHERE t1.goodsid = p.goodsid AND t1.entryid = p.entryid AND p.is_active=1)
+GROUP BY t1.entryid, t1.goodsid;
 
 
 CREATE INDEX IF NOT EXISTS idx_entryid ON dim.eshop_entry_goods (entryid);
