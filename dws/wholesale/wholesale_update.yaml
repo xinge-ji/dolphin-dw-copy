@@ -59,11 +59,18 @@ tasks:
     deps: [sales_receivable_aging_d]
     sql: $FILE{"settle_goods_d_update.sql"}
 
-  - name: eshop_sales_customer_d
+  - name: approval_d
     task_type: Sql
     datasource_name: "dwd"
     flag: YES
     deps: [settle_goods_d]
+    sql: $FILE{"approval_d_update.sql"}
+
+  - name: eshop_sales_customer_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [approval_d]
     sql: $FILE{"eshop_sales_customer_d_update.sql"}
   
   - name: eshop_sales_goods_d
