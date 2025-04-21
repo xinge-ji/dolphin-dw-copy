@@ -31,46 +31,29 @@ sales_summary AS (
         wos.customid,
         wos.customer_name,
         COUNT(DISTINCT wos.salesid) AS order_count,
-        SUM(wos.sales_amount) AS sales_amount
+        SUM(wosd.sales_amount) AS sales_amount
     FROM dwd.wholesale_order_sales_doc wos
-    INNER JOIN (SELECT entryid, MIN(dw_starttime) as dw_starttime FROM dim.eshop_entry_customer group by entryid) ecb 
-    ON  wos.entryid = ecb.entryid AND wos.create_date >= ecb.dw_starttime
+    JOIN dwd.wholesale_order_sales_dtl wosd ON wos.salesid = wosd.salesid
     CROSS JOIN date_range dr
-    WHERE wos.use_status in ('正式','临时')
-    AND sale_type = '销售'
-    AND IFNULL(is_haixi,0) = 0
+    WHERE (
+        (wos.entryid=1 AND wos.salesdeptid = 26) -- 厦门
+        OR (wos.entryid=164 AND wos.salesdeptid = 157688) -- 龙岩
+        OR (wos.entryid=204 AND wos.salesdeptid = 62263) -- 三明
+        OR (wos.entryid=124 AND wos.salesdeptid = 157615) -- 南平
+        OR (wos.entryid=224 AND wos.salesdeptid = 35063) -- 宁德
+        OR (wos.entryid=2 AND wos.salesdeptid = 158948) -- 福州
+        OR (wos.entryid=104 AND wos.salesdeptid = 28806) -- 莆田
+        OR (wos.entryid=144 AND wos.salesdeptid = 30676) -- 泉州
+        OR (wos.entryid=5 AND wos.salesdeptid = 92038) -- 漳州
+    )
+        AND wos.comefrom in ('手工录入', '订单生成')
+        AND IFNULL(wos.is_haixi, 0) = 0
+        AND IFNULL(wos.is_yaoxiewang, 0) = 0
+        AND IFNULL(wosd.storage_name, '') in ('', '三明鹭燕合格保管帐','漳州鹭燕大库保管帐','泉州鹭燕大库保管帐','莆田鹭燕大库保管帐','福州鹭燕大库保管帐','宁德鹭燕大库保管帐','龙岩新鹭燕大库保管帐','南平鹭燕大库保管帐','股份厦门大库保管帐')
     AND DATE(wos.create_date) >= dr.start_date AND DATE(wos.create_date) < dr.end_date
-    GROUP BY DATE(wos.create_date), wos.entryid, wos.entry_name, wos.customid, wos.customer_name
+    GROUP BY DATE(wos.create_date), wos.entryid, wos.entry_name,wos.customid,wos.customer_name
 ),
 -- 计算可转化为b2b的手工订单信息
--- potential_b2b AS (
---     SELECT 
---         DATE(wosd.create_date) AS stat_date,
---         wosd.entryid,
---         wosd.entry_name,
---         wosd.customid,
---         wosd.customer_name,
---         COUNT(DISTINCT wosd.salesid) AS potential_b2b_order_count,
---         SUM(wosd.sales_amount) AS potential_b2b_sales_amount
---     FROM dwd.wholesale_order_sales_dtl wosd
---     JOIN dim.eshop_entry_goods eeg ON wosd.entryid = eeg.entryid 
---         AND wosd.goodsid = eeg.goodsid
---         AND wosd.create_date >= eeg.dw_starttime AND wosd.create_date < eeg.dw_endtime
---     JOIN dim.eshop_entry_customer ecb ON wosd.customid = ecb.customid
---         AND wosd.entryid = ecb.entryid
---         AND wosd.create_date >= ecb.dw_starttime AND wosd.create_date < ecb.dw_endtime
---     CROSS JOIN date_range dr
---     WHERE wosd.comefrom = '手工录入'
---         AND (wosd.storageid IS NULL 
---              OR wosd.storage_name in ('三明鹭燕合格保管帐','漳州鹭燕大库保管帐','泉州鹭燕大库保管帐','莆田鹭燕大库保管帐','福州鹭燕大库保管帐','宁德鹭燕大库保管帐','龙岩新鹭燕大库保管帐','南平鹭燕大库保管帐','股份厦门大库保管帐')
---              )
---         AND wosd.use_status in ('正式','临时')
---         AND wosd.sale_type = '销售'
---         AND wosd.is_dianshang = 0
---         AND wosd.discount >= 1
---         AND DATE(wosd.create_date) >= dr.start_date AND DATE(wosd.create_date) < dr.end_date
---     GROUP BY DATE(wosd.create_date), wosd.entryid, wosd.entry_name, wosd.customid, wosd.customer_name
--- ),
 potential_b2b AS (
     WITH valid_salesids AS (
         SELECT 
@@ -97,11 +80,22 @@ potential_b2b AS (
     JOIN dim.eshop_entry_customer ecb ON wos.customid = ecb.customid
         AND wos.entryid = ecb.entryid
         AND wos.create_date >= ecb.dw_starttime AND wos.create_date < ecb.dw_endtime
-    WHERE (wos.entryid=1 AND wos.salesdeptid = 26)
+    CROSS JOIN date_range dr
+    WHERE (
+        (wos.entryid=1 AND wos.salesdeptid = 26) -- 厦门
+        OR (wos.entryid=164 AND wos.salesdeptid = 157688) -- 龙岩
+        OR (wos.entryid=204 AND wos.salesdeptid = 62263) -- 三明
+        OR (wos.entryid=124 AND wos.salesdeptid = 157615) -- 南平
+        OR (wos.entryid=224 AND wos.salesdeptid = 35063) -- 宁德
+        OR (wos.entryid=2 AND wos.salesdeptid = 158948) -- 福州
+        OR (wos.entryid=104 AND wos.salesdeptid = 28806) -- 莆田
+        OR (wos.entryid=144 AND wos.salesdeptid = 30676) -- 泉州
+        OR (wos.entryid=5 AND wos.salesdeptid = 92038) -- 漳州
+    )
         AND wos.comefrom in ('手工录入', '订单生成')
         AND IFNULL(wos.is_haixi, 0) = 0
         AND IFNULL(wos.is_yaoxiewang, 0) = 0
-        AND IFNULL(wosd.storage_name, '') in ('', '股份厦门大库保管帐')
+        AND IFNULL(wosd.storage_name, '') in ('', '三明鹭燕合格保管帐','漳州鹭燕大库保管帐','泉州鹭燕大库保管帐','莆田鹭燕大库保管帐','福州鹭燕大库保管帐','宁德鹭燕大库保管帐','龙岩新鹭燕大库保管帐','南平鹭燕大库保管帐','股份厦门大库保管帐')
         AND DATE(wosd.create_date) >= dr.start_date AND DATE(wosd.create_date) < dr.end_date
     GROUP BY DATE(wos.create_date), wos.entryid, wos.entry_name, wos.customid, wos.customer_name
 ),
