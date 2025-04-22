@@ -3,6 +3,8 @@ INSERT INTO ads.eshop_sales_goods_m (
     entryid,
     goodsid,
     entry_name,
+    city_name,
+    city_order,
     goods_name,
     nianbao_type,
     group_manage_type,
@@ -26,6 +28,8 @@ current_month_data AS (
         entryid,
         goodsid,
         MAX(entry_name) AS entry_name,
+        MAX(city_name) AS city_name,
+        MAX(city_order) AS city_order,
         MAX(goods_name) AS goods_name,
         MAX(nianbao_type) AS nianbao_type,
         MAX(group_manage_type) AS group_manage_type,
@@ -53,6 +57,8 @@ SELECT
     cm.entryid,
     cm.goodsid,
     cm.entry_name,
+    cm.city_name,
+    cm.city_order,
     cm.goods_name,
     cm.nianbao_type,
     cm.group_manage_type,
@@ -75,5 +81,4 @@ SELECT
     -- b2b自主下单订单信息
     cm.b2b_self_initiated_order_item_count,
     cm.b2b_self_initiated_sales_amount
-FROM current_month_data cm
-WHERE cm.entryid in (1,2,5,104,124,144,164,204,224) and cm.stat_yearmonth is not null;
+FROM current_month_data cm;

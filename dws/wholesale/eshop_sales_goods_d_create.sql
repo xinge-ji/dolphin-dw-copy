@@ -8,6 +8,8 @@ CREATE TABLE dws.eshop_sales_goods_d (
 
     -- 组织信息
     entry_name varchar COMMENT "独立单元名称",
+    city_name varchar COMMENT "城市名称",
+    city_order int COMMENT "城市顺序",
 
     -- 商品信息
     goods_name varchar,
@@ -48,6 +50,8 @@ INSERT INTO dws.eshop_sales_goods_d (
     entryid,
     goodsid,
     entry_name,
+    city_name,
+    city_order,
     goods_name,
     nianbao_type,
     group_manage_type,
@@ -214,6 +218,28 @@ SELECT
     bd.entryid,
     bd.goodsid,
     MAX(bd.entry_name) AS entry_name,
+    CASE
+        WHEN bd.entryid = 1 THEN '厦门'
+        WHEN bd.entryid = 2 THEN '福州'
+        WHEN bd.entryid = 5 THEN '漳州'
+        WHEN bd.entryid = 104 THEN '莆田'
+        WHEN bd.entryid = 124 THEN '南平'
+        WHEN bd.entryid = 144 THEN '泉州'
+        WHEN bd.entryid = 164 THEN '龙岩'
+        WHEN bd.entryid = 204 THEN '三明'
+        WHEN bd.entryid = 224 THEN '宁德'
+    END AS city_name,
+    CASE
+        WHEN bd.entryid = 1   THEN 1
+        WHEN bd.entryid = 2   THEN 5
+        WHEN bd.entryid = 5   THEN 2
+        WHEN bd.entryid = 104 THEN 4
+        WHEN bd.entryid = 124 THEN 7
+        WHEN bd.entryid = 144 THEN 3
+        WHEN bd.entryid = 164 THEN 8
+        WHEN bd.entryid = 204 THEN 9
+        WHEN bd.entryid = 224 THEN 6
+    END AS city_order,
     MAX(bd.goods_name) AS goods_name,
     MAX(bd.nianbao_type) AS nianbao_type,
     MAX(bd.group_manage_type) AS group_manage_type,
@@ -238,5 +264,6 @@ LEFT JOIN b2b_orders bo ON bd.stat_date = bo.stat_date AND bd.entryid = bo.entry
 LEFT JOIN b2b_self_initiated bs ON bd.stat_date = bs.stat_date AND bd.entryid = bs.entryid 
     AND bd.customid = bs.customid AND bd.goodsid = bs.goodsid
 WHERE bd.stat_date>=date('1970-01-01')
+AND bd.entryid in (1,2,5,104,124,144,164,204,224)
 GROUP BY 
     bd.stat_date, bd.entryid, bd.goodsid;

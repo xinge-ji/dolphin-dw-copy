@@ -9,6 +9,8 @@ CREATE TABLE ads.eshop_sales_customer_m (
 
     -- 组织信息
     entry_name varchar COMMENT "独立单元名称",
+    city_name varchar COMMENT "城市名称",
+    city_order int COMMENT "城市顺序",
 
     -- 客户信息
     customer_name varchar COMMENT "客户名称",
@@ -60,6 +62,8 @@ INSERT INTO ads.eshop_sales_customer_m (
     entryid,
     customid,
     entry_name,
+    city_name,
+    city_order,
     customer_name,
     order_count,
     sales_amount,
@@ -86,6 +90,8 @@ current_month_data AS (
         entryid,
         customid,
         MAX(entry_name) AS entry_name,
+        MAX(city_name) AS city_name,
+        MAX(city_order) AS city_order,
         MAX(customer_name) AS customer_name,
         SUM(order_count) AS order_count,
         SUM(sales_amount) AS sales_amount,
@@ -104,6 +110,8 @@ SELECT
     cm.entryid,
     cm.customid,
     cm.entry_name,
+    cm.city_name,
+    cm.city_order,
     cm.customer_name,
 
     -- 销售总单信息
@@ -161,5 +169,4 @@ SELECT
         WHEN IFNULL(cm.b2b_sales_amount, 0) = 0 THEN 0
         ELSE ROUND(cm.b2b_self_initiated_sales_amount / cm.b2b_sales_amount, 4)
     END AS b2b_self_initiated_sales_amount_proportion
-FROM current_month_data cm
-WHERE cm.entryid in (1,2,5,104,124,144,164,204,224) and cm.stat_yearmonth is not null;
+FROM current_month_data cm;

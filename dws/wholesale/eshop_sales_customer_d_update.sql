@@ -7,6 +7,8 @@ INSERT INTO dws.eshop_sales_customer_d (
     entryid,
     customid,
     entry_name,
+    city_name,
+    city_order,
     customer_name,
     order_count,
     sales_amount,
@@ -169,6 +171,28 @@ SELECT
     bd.entryid,
     bd.customid,
     MAX(bd.entry_name) as entry_name,
+    CASE
+        WHEN bd.entryid = 1 THEN '厦门'
+        WHEN bd.entryid = 2 THEN '福州'
+        WHEN bd.entryid = 5 THEN '漳州'
+        WHEN bd.entryid = 104 THEN '莆田'
+        WHEN bd.entryid = 124 THEN '南平'
+        WHEN bd.entryid = 144 THEN '泉州'
+        WHEN bd.entryid = 164 THEN '龙岩'
+        WHEN bd.entryid = 204 THEN '三明'
+        WHEN bd.entryid = 224 THEN '宁德'
+    END AS city_name,
+    CASE
+        WHEN bd.entryid = 1   THEN 1
+        WHEN bd.entryid = 2   THEN 5
+        WHEN bd.entryid = 5   THEN 2
+        WHEN bd.entryid = 104 THEN 4
+        WHEN bd.entryid = 124 THEN 7
+        WHEN bd.entryid = 144 THEN 3
+        WHEN bd.entryid = 164 THEN 8
+        WHEN bd.entryid = 204 THEN 9
+        WHEN bd.entryid = 224 THEN 6
+    END AS city_order,
     MAX(bd.customer_name) as customer_name,
     SUM(COALESCE(ss.order_count, 0)) AS order_count,
     SUM(COALESCE(ss.sales_amount, 0)) AS sales_amount,
@@ -183,4 +207,5 @@ LEFT JOIN sales_summary ss ON bd.stat_date = ss.stat_date AND bd.entryid = ss.en
 LEFT JOIN potential_b2b pb ON bd.stat_date = pb.stat_date AND bd.entryid = pb.entryid AND bd.customid = pb.customid
 LEFT JOIN b2b_orders bo ON bd.stat_date = bo.stat_date AND bd.entryid = bo.entryid AND bd.customid = bo.customid
 LEFT JOIN b2b_self_initiated bs ON bd.stat_date = bs.stat_date AND bd.entryid = bs.entryid AND bd.customid = bs.customid
+WHERE bd.entryid in (1,2,5,104,124,144,164,204,224)
 GROUP BY bd.stat_date, bd.entryid, bd.customid;

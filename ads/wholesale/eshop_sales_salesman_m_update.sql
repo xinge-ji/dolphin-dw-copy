@@ -3,6 +3,8 @@ INSERT INTO ads.eshop_sales_salesman_m (
     entryid,
     salerid,
     entry_name,
+    city_name,
+    city_order,
     saler_name,
     potential_b2b_order_count,
     potential_b2b_sales_amount,
@@ -25,6 +27,8 @@ current_month_data AS (
         entryid,
         salerid,
         MAX(entry_name) AS entry_name,
+        MAX(city_name) AS city_name,
+        MAX(city_order) AS city_order,
         MAX(saler_name) AS saler_name,
         SUM(potential_b2b_order_count) AS potential_b2b_order_count,
         SUM(potential_b2b_sales_amount) AS potential_b2b_sales_amount,
@@ -45,6 +49,8 @@ SELECT
     cm.entryid,
     cm.salerid,
     cm.entry_name,
+    cm.city_name,
+    cm.city_order,
     cm.saler_name,
     
     -- 可转化为b2b的手工订单信息
@@ -88,5 +94,4 @@ SELECT
         WHEN IFNULL(cm.b2b_sales_amount, 0) = 0 THEN 0
         ELSE ROUND(cm.b2b_self_initiated_sales_amount / cm.b2b_sales_amount, 4)
     END AS b2b_self_initiated_sales_amount_proportion
-FROM current_month_data cm
-WHERE cm.entryid in (1,2,5,104,124,144,164,204,224) and cm.stat_yearmonth is not null;
+FROM current_month_data cm;
