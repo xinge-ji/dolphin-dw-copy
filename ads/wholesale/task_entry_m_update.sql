@@ -230,7 +230,7 @@ customer_lifecycle AS (
         -- 平均本月开单客户生命周期（月）
         AVG(CASE 
             WHEN mcp_curr.customid IS NOT NULL
-            THEN TIMESTAMPDIFF(MONTH, cph.first_purchase_date, cph.last_purchase_date) + 1
+            THEN TIMESTAMPDIFF(MONTH, cph.first_purchase_date, ms.stat_yearmonth) + 1
         END) AS avg_customer_lifecycle_months
     FROM
         monthly_sales ms

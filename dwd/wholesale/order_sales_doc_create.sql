@@ -248,3 +248,7 @@ WHERE
 CREATE INDEX IF NOT EXISTS idx_sales_doc_entryid ON dwd.wholesale_order_sales_doc (entryid);
 CREATE INDEX IF NOT EXISTS idx_sales_doc_customid ON dwd.wholesale_order_sales_doc (customid);
 CREATE INDEX IF NOT EXISTS idx_sales_doc_create_date ON dwd.wholesale_order_sales_doc (create_date);
+
+UPDATE dwd.wholesale_order_sales_doc
+SET create_date = confirm_date
+WHERE create_date < date('2012-01-01');
