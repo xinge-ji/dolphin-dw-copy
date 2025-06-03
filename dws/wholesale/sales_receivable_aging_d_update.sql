@@ -1,5 +1,5 @@
 DELETE FROM dws.wholesale_sales_receivable_aging_d
-where stat_date > CURRENT_DATE() - INTERVAL 60 DAY;
+where stat_date > CURRENT_DATE() - INTERVAL 30 DAY;
 
 insert into dws.wholesale_sales_receivable_aging_d (
     stat_date,
@@ -23,7 +23,7 @@ WITH all_dates AS (
     FROM dwd.wholesale_order_sales_doc 
     WHERE create_date IS NOT NULL 
     AND sale_mode = '普通销售'
-    AND create_date >= CURRENT_DATE() - INTERVAL 60 DAY
+    AND create_date >= CURRENT_DATE() - INTERVAL 30 DAY
     
     UNION
     
@@ -35,7 +35,7 @@ WITH all_dates AS (
     JOIN dwd.wholesale_order_repay_dtl b ON a.salesdtlid = b.salesdtlid
     WHERE a.sale_mode = '普通销售'
     AND b.payment_date IS NOT NULL 
-    AND b.confirm_date >= CURRENT_DATE() - INTERVAL 60 DAY
+    AND b.confirm_date >= CURRENT_DATE() - INTERVAL 30 DAY
 ),
 
 -- 合并销售和回款事件

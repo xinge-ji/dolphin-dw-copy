@@ -41,45 +41,36 @@ insert into dwd.wholesale_sales_receivable_doc (
     received_time,
     is_received
 )
-WITH fully_settled_order AS (
-    -- 计算销售单是否完全结算
+WITH sales_doc_summary AS (
+    -- 直接从 dwd.wholesale_sales_receivable_dtl 按销售单汇总
     SELECT 
-        a.salesid,
-        CASE
-            WHEN MIN(IFNULL(b.is_settled, 0)) = 1 THEN MAX(b.settle_time) 
-            ELSE NULL
-        END AS settle_time,
-        SUM(b.settle_amount) AS settle_amount
-    FROM dwd.wholesale_order_sales_doc a
-    LEFT JOIN dwd.wholesale_sales_receivable_dtl b ON a.salesid = b.salesid
-    GROUP BY a.salesid
-),
-fully_paid_order AS (
-    -- 计算销售单是否完全还款
-    SELECT 
-        a.salesid,
-        CASE
-            WHEN MIN(IFNULL(b.is_received, 0)) = 1 THEN MAX(b.received_time) 
-            ELSE NULL
-        END AS received_time,
-        SUM(b.received_amount) AS received_amount
-    FROM dwd.wholesale_order_sales_doc a
-    LEFT JOIN dwd.wholesale_sales_receivable_dtl b ON a.salesid = b.salesid
-    GROUP BY a.salesid
+        salesid,
+        MIN(create_date) as create_date,
+        MIN(yewu_date) as yewu_date,
+        MAX(sale_mode) as sale_mode,
+        SUM(IFNULL(sales_amount, 0)) as total_sales_amount,
+        SUM(IFNULL(settle_amount, 0)) as total_settle_amount,
+        MAX(settle_time) as max_settle_time,
+        SUM(IFNULL(received_amount, 0)) as total_received_amount,
+        MAX(received_time) as max_received_time,
+        -- 判断销售单是否完全结算：所有明细都已结算
+        CASE WHEN MIN(is_settled) = 1 THEN 1 ELSE 0 END as is_fully_settled,
+        -- 判断销售单是否完全还款：所有明细都已还款
+        CASE WHEN MIN(is_received) = 1 THEN 1 ELSE 0 END as is_fully_received
+    FROM dwd.wholesale_sales_receivable_dtl
+    GROUP BY salesid
 )
-SELECT
-    a.salesid,
-    a.create_date,
-    d.yewu_date,
-    a.sale_mode,
-    a.sales_amount,
-    IFNULL(b.settle_amount, 0) AS settle_amount,
-    b.settle_time,
-    CASE WHEN b.settle_time IS NOT NULL THEN 1 ELSE 0 END AS is_settled,
-    IFNULL(c.received_amount, 0) AS received_amount,
-    c.received_time,
-    CASE WHEN c.received_time IS NOT NULL THEN 1 ELSE 0 END AS is_received
-FROM dwd.wholesale_order_sales_doc a
-LEFT JOIN (SELECT salesid, MIN(yewu_date) AS yewu_date FROM dwd.wholesale_order_sales_dtl GROUP BY salesid) d ON a.salesid = d.salesid
-LEFT JOIN fully_settled_order b ON a.salesid = b.salesid
-LEFT JOIN fully_paid_order c ON a.salesid = c.salesid;
+select
+    salesid,
+    create_date,
+    yewu_date,
+    sale_mode,
+    total_sales_amount as sales_amount,
+    total_settle_amount as settle_amount,
+    CASE WHEN is_fully_settled = 1 THEN max_settle_time ELSE NULL END as settle_time,
+    is_fully_settled as is_settled,
+    total_received_amount as received_amount,
+    CASE WHEN is_fully_received = 1 THEN max_received_time ELSE NULL END as received_time,
+    is_fully_received as is_received
+from sales_doc_summary;
+

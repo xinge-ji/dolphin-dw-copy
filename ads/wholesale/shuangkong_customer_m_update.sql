@@ -61,17 +61,17 @@ current_period AS (
 -- 销售数据月度汇总
 sales_monthly AS (
     SELECT
-        DATE_TRUNC(stat_date, 'month') AS stat_yearmonth,
-        entryid,
-        customid,
-        MAX(entry_name) AS entry_name,
-        MAX(province_name) AS province_name,
-        MAX(customer_name) AS customer_name,
-        MAX(customertype_name) AS customertype_name,
+        DATE_TRUNC(wos.stat_date, 'month') AS stat_yearmonth,
+        wos.entryid,
+        wos.customid,
+        MAX(wos.entry_name) AS entry_name,
+        MAX(wos.province_name) AS province_name,
+        MAX(wos.customer_name) AS customer_name,
+        MAX(wos.customertype_name) AS customertype_name,
         COALESCE(c.is_shuangwanjia, 0) AS is_shuangwanjia,
-        MAX(customertype_group) AS customertype_group,
-        SUM(sales_amount) AS sales_amount,
-        SUM(sales_gross_profit) AS sales_gross_profit
+        MAX(wos.customertype_group) AS customertype_group,
+        SUM(wos.sales_amount) AS sales_amount,
+        SUM(wos.sales_gross_profit) AS sales_gross_profit
     FROM
         dws.wholesale_sales_detail_d wos
     LEFT JOIN

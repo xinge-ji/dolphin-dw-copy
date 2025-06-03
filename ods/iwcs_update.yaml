@@ -1,0 +1,778 @@
+workflow:
+    name: iwcs_manual_update
+    project: wms_ods
+    schedule: 0 0 3 ? * * *
+
+tasks:
+  - name: ssc_receive_goods
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: []
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from ssc_receive_goods@iwcs where receive_date >= TRUNC(SYSDATE-60)
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_ssc_receive_goods"
+            data_save_mode = APPEND_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(ssc_receive_goods_id)
+              DISTRIBUTED BY HASH (ssc_receive_goods_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: ssc_receive_goods_lines
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [ssc_receive_goods]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select a.* from ssc_receive_goods_lines@iwcs a 
+            join ssc_receive_goods@iwcs b ON a.ssc_receive_goods_id = b.ssc_receive_goods_id
+            where b.receive_date >= TRUNC(SYSDATE-60)
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_ssc_receive_goods_lines"
+            data_save_mode = APPEND_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(ssc_receive_goods_lines_id)
+              DISTRIBUTED BY HASH (ssc_receive_goods_lines_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: ssc_receive_goods_locate
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [ssc_receive_goods_lines]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from ssc_receive_goods_locate@iwcs where create_timestamp >= TRUNC(SYSDATE-60)
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_ssc_receive_goods_locate"
+            data_save_mode = APPEND_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(ssc_receive_goods_locate_id)
+              DISTRIBUTED BY HASH (ssc_receive_goods_locate_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: com_stock_pos
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [ssc_receive_goods_locate]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from com_stock_pos@iwcs
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_com_stock_pos"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(stock_pos_id)
+              DISTRIBUTED BY HASH (stock_pos_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: com_depot
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [com_stock_pos]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from com_depot@iwcs
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_com_depot"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(com_depot_id)
+              DISTRIBUTED BY HASH (com_depot_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: com_goods
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [com_depot]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from com_goods@iwcs where last_modify_date >= TRUNC(SYSDATE-60)
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_com_goods"
+            data_save_mode = APPEND_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(com_goods_id)
+              DISTRIBUTED BY HASH (com_goods_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: com_lot
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [com_goods]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from com_lot@iwcs where last_modify_date >= TRUNC(SYSDATE-60)
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_com_lot"
+            data_save_mode = APPEND_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(com_lot_id)
+              DISTRIBUTED BY HASH (com_lot_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: sys_userlist
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [com_lot]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from sys_userlist@iwcs
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_sys_userlist"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(userid)
+              DISTRIBUTED BY HASH (userid)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: com_party
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [sys_userlist]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from com_party@iwcs where create_date >= TRUNC(SYSDATE-60) or (last_modify_date is not null and last_modify_date >= TRUNC(SYSDATE-60))
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_com_party"
+            data_save_mode = APPEND_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(com_party_id)
+              DISTRIBUTED BY HASH (com_party_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: com_goods_package
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [com_party]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from com_goods_package@iwcs
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_com_goods_package"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(com_goods_package_id)
+              DISTRIBUTED BY HASH (com_goods_package_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: iwcs_com_inv_case_v
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [com_party]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            SELECT b.com_inv_case_id,b.case_nbr,b.case_type,b.tool_code,b.ssc_rec_goods_lines_id,
+                  b.ssc_rec_goods_locate_id,b.stock_pos_id,b.rec_qty,b.qty,b.qc_status,b.case_status,
+                  b.from_stock_pos_id,b.carton_nbr,b.vender_id,b.com_goods_id,b.com_lot_id,b.rec_case_qty,
+                  b.case_qty,b.send_bill_id,b.create_date,b.last_modify_date,b.inv_owner,b.warehouse_id,
+                  b.ssc_picking_stock_id,b.rec_type,b.upload_flag,b.upload_time,b.scaner,b.scan_time,
+                  b.modifier,b.pack_type,b.com_inv_fact_id,b.source_lines_id,b.source_type,b.unit_num,
+                  b.com_unit_id,b.ssc_receive_goods_id,b.com_depot_id,b.sn_number,b.ssc_hc_cost_id,
+                  b.from_lines_id,b.ssc_surgery_order_id,b.price,b.goods_invoice_type,b.ts,b.is_lyuserid,
+                  b.lyuserid_job_id,b.udi_gtin,b.udi_lot_no,b.udi_prodate,b.udi_expdate,b.udi_sn,
+                  b.package_id,b.package_num,b.is_rfid,b.rfid_job_id,b.ref_inv_case_id,b.com_station_id,
+                  b.change_ref_tool_code,b.c_case_type,b.case_location,b.tool_code_a_no
+            FROM (
+                SELECT a.com_inv_case_id,a.case_nbr,a.case_type,a.tool_code,a.ssc_rec_goods_lines_id,
+                      a.ssc_rec_goods_locate_id,a.stock_pos_id,a.rec_qty,a.qty,a.qc_status,a.case_status,
+                      a.from_stock_pos_id,a.carton_nbr,a.vender_id,a.com_goods_id,a.com_lot_id,a.rec_case_qty,
+                      a.case_qty,a.send_bill_id,a.create_date,a.last_modify_date,a.inv_owner,a.warehouse_id,
+                      a.ssc_picking_stock_id,a.rec_type,a.upload_flag,a.upload_time,a.scaner,a.scan_time,
+                      a.modifier,a.pack_type,a.com_inv_fact_id,a.source_lines_id,a.source_type,a.unit_num,
+                      a.com_unit_id,a.ssc_receive_goods_id,a.com_depot_id,a.sn_number,a.ssc_hc_cost_id,
+                      a.from_lines_id,a.ssc_surgery_order_id,a.price,a.goods_invoice_type,a.ts,a.is_lyuserid,
+                      a.lyuserid_job_id,a.udi_gtin,a.udi_lot_no,a.udi_prodate,a.udi_expdate,a.udi_sn,
+                      a.package_id,a.package_num,a.is_rfid,a.rfid_job_id,a.ref_inv_case_id,a.com_station_id,
+                      a.change_ref_tool_code,a.c_case_type,a.case_location,a.tool_code_a_no,
+                      ROW_NUMBER() OVER (
+                          PARTITION BY a.com_inv_case_id 
+                          ORDER BY a.scan_time DESC
+                      ) AS rn
+                FROM (
+                    SELECT * FROM com_inv_case@iwcs where scan_time >= TRUNC(SYSDATE-60) OR (last_modify_date is not NULL AND last_modify_date >= TRUNC(SYSDATE-60))
+                    UNION ALL
+                    SELECT * FROM com_inv_case_bak@iwcs where scan_time >= TRUNC(SYSDATE-60) OR (last_modify_date is not NULL AND last_modify_date >= TRUNC(SYSDATE-60))
+                ) a
+            ) b
+            WHERE b.rn = 1
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_com_inv_case_v"
+            data_save_mode = APPEND_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(com_inv_case_id)
+              DISTRIBUTED BY HASH (com_inv_case_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: zx_19007_v
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_wms"
+    flag: YES
+    deps: [iwcs_com_inv_case_v]
+    sql: |
+        TRUNCATE TABLE zx_19007_v;
+        INSERT INTO zx_19007_v (
+          ssc_receive_goods_locate_id,
+          com_inv_case_id,
+          stock_pos_id,
+          credate,
+          goodsownerid,
+          goodsownername,
+          companyid,
+          companyname,
+          indtlid,
+          receiveid,
+          scanerid,
+          scaner,
+          ownergoodsid,
+          goodsname,
+          goodsengname,
+          goodstype,
+          tradepackname,
+          factname,
+          prodarea,
+          lotid,
+          lotno,
+          ownerpackid,
+          packname,
+          packsize,
+          goodsqty,
+          dtlgoodsqty,
+          depot_name,
+          scattercount,
+          wholecount,
+          wholeqty
+        )
+        SELECT 
+                c.ssc_receive_goods_locate_id, 
+                g.com_inv_case_id,
+                c.stock_pos_id,
+                c.create_timestamp AS credate,
+                a.inv_owner AS goodsownerid, 
+                party_owner.party_name AS goodsownername,
+                a.send_party_id AS companyid, 
+                party_company.party_name AS companyname,
+                b.external_bill_id AS indtlid,
+                b.external_bill_lines_id AS receiveid, 
+                g.scaner AS scanerid, 
+                i.employeecode AS scaner, 
+                b.com_goods_id AS ownergoodsid, 
+                f.goods_name AS goodsname,
+                f.english_name AS goodsengname, 
+                f.goods_desc AS goodstype,
+                goods_package.package_name AS tradepackname, 
+                party_factory.party_name AS factname,
+                f.product_location AS prodarea,
+                b.com_lot_id AS lotid,
+                h.lot_no AS lotno,
+                b.package_id AS ownerpackid, 
+                b.package_name AS packname,
+                b.package_num AS packsize,
+                c.locate_qty AS goodsqty, 
+                g.rec_qty AS dtlgoodsqty, 
+                e.depot_name,
+                IF(e.com_depot_id = 100, 0, 1) AS scattercount,
+                IF(e.com_depot_id = 100, 1, 0) AS wholecount,
+                IF(e.com_depot_id = 100 AND g.package_num != 0, g.rec_qty / g.package_num, 0) AS wholeqty
+            FROM 
+                iwcs_ssc_receive_goods a
+            JOIN 
+                iwcs_ssc_receive_goods_lines b 
+                ON a.ssc_receive_goods_id = cast(b.ssc_receive_goods_id as decimal(38,18))
+            JOIN 
+                iwcs_ssc_receive_goods_locate c 
+                ON b.ssc_receive_goods_lines_id = c.ssc_receive_goods_lines_id
+            LEFT JOIN 
+                iwcs_com_stock_pos d 
+                ON c.stock_pos_id = d.stock_pos_id
+            LEFT JOIN 
+                iwcs_com_depot e 
+                ON d.depot_id = e.com_depot_id
+            JOIN 
+                iwcs_com_goods f 
+                ON b.com_goods_id = f.com_goods_id
+            JOIN 
+                iwcs_com_inv_case_v g 
+                ON c.ssc_receive_goods_locate_id = g.ssc_rec_goods_locate_id AND c.case_nbr = g.case_nbr
+            LEFT JOIN 
+                iwcs_com_lot h 
+                ON b.com_lot_id = h.com_lot_id
+            LEFT JOIN 
+                iwcs_sys_userlist i 
+                ON g.scaner = i.userid
+            -- goodsowner name from com_party type = 1
+            LEFT JOIN (
+                SELECT com_party_id, MAX(party_name) AS party_name
+                FROM iwcs_com_party
+                WHERE com_party_type_id = 1
+                GROUP BY com_party_id
+            ) party_owner 
+                ON party_owner.com_party_id = a.inv_owner
+            -- company name from com_party type <> 1
+            LEFT JOIN (
+                SELECT com_party_id, MAX(party_name) AS party_name
+                FROM iwcs_com_party
+                WHERE com_party_type_id <> 1
+                GROUP BY com_party_id
+            ) party_company 
+                ON party_company.com_party_id = a.send_party_id
+            -- trade pack name
+            LEFT JOIN (
+                SELECT com_goods_id, MAX(package_name) AS package_name
+                FROM iwcs_com_goods_package
+                WHERE package_type = 'UNIT'
+                GROUP BY com_goods_id
+            ) goods_package 
+                ON goods_package.com_goods_id = b.com_goods_id
+            -- factory name from com_party type = 4
+            LEFT JOIN (
+                SELECT com_party_id, MAX(party_name) AS party_name
+                FROM iwcs_com_party
+                WHERE com_party_type_id = 4
+                GROUP BY com_party_id
+            ) party_factory 
+                ON party_factory.com_party_id = f.factory_id
+            WHERE 
+                a.receive_bill_type IN ('PURCHASE', 'SALE_RTN', 'TRANSFER');

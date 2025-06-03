@@ -1,6 +1,6 @@
 workflow:
     name: wms_manual_update
-    schedule: 0 0 0 ? * * *
+    schedule: 0 0 3 ? * * *
     project: wms_ods
 
 tasks:
@@ -216,3 +216,88 @@ tasks:
         FROM pub_ddl_dtl_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM pub_ddl_dtl WHERE s.SYSDTLID = PUB_DDL_DTL.SYSDTLID AND s.DW_ID = PUB_DDL_DTL.DW_ID);
         DROP TABLE pub_ddl_dtl_doristmp;
+
+
+  - name: TMS_DISPATCH_DTL_d_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [TMS_DISPATCH_DOC_d_ods_update]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            table_path = "lywms.TMS_DISPATCH_DTL"
+            query = """select t.DISPATCHDTLID, ora_hash(substr(coalesce(substr(to_char(t.DISPATCHID), 1,255), '') || coalesce(substr(to_char(t.DISPATCHDTLID), 1,255), '') || coalesce(substr(to_char(t.TASKTYPE), 1,255), '') || coalesce(substr(to_char(t.TRID), 1,255), '') || coalesce(substr(to_char(t.SCATTERPACKS), 1,255), '') || coalesce(substr(to_char(t.WHOLEPACKS), 1,255), '') || coalesce(substr(to_char(t.WEIGHT), 1,255), '') || coalesce(substr(to_char(t.CUBAGE), 1,255), '') || coalesce(substr(to_char(t.BACKMAN), 1,255), '') || coalesce(substr(to_char(t.BACKTIME), 1,255), '') || coalesce(substr(to_char(t.BACKDESCR), 1,255), '') || coalesce(substr(to_char(t.MEMO), 1,255), '') || coalesce(substr(to_char(t.STEVEDORE), 1,255), '') || coalesce(substr(to_char(t.USESTATUS), 1,255), '') || coalesce(substr(to_char(t.FIXQTY), 1,255), '') || coalesce(substr(to_char(t.EMPLOYEENAMES), 1,255), '') || coalesce(substr(to_char(t.INPUTMANID), 1,255), '') || coalesce(substr(to_char(t.CREDATE), 1,255), '') || coalesce(substr(to_char(t.BACKQTY), 1,255), '') || coalesce(substr(to_char(t.RECEIVEMONEY), 1,255), '') || coalesce(substr(to_char(t.SIGNFLAG), 1,255), '') || coalesce(substr(to_char(t.CHAINFLAG), 1,255), '') || coalesce(substr(to_char(t.FILEGROUPID), 1,255), '') || coalesce(substr(to_char(t.WAYBILLNO), 1,255), '') || coalesce(substr(to_char(t.CHAINHZFLAG), 1,255), '') || coalesce(substr(to_char(t.FFZJHZFLAG), 1,255), '') || coalesce(substr(to_char(t.CHAINUSESTATUS), 1,255), '') || coalesce(substr(to_char(t.SIGNDATE), 1,255), '') || coalesce(substr(to_char(t.DEVNUM), 1,255), '') || coalesce(substr(to_char(t.STARTDATE), 1,255), '') || coalesce(substr(to_char(t.ENDDATE), 1,255), '') || coalesce(substr(to_char(t.CARFLAG), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.DISPATCHID,t.TASKTYPE,t.TRID,t.SCATTERPACKS,t.WHOLEPACKS,t.WEIGHT,t.CUBAGE,t.BACKMAN,t.BACKTIME,t.BACKDESCR,t.MEMO,t.STEVEDORE,t.USESTATUS,t.FIXQTY,t.EMPLOYEENAMES,t.INPUTMANID,t.CREDATE,t.BACKQTY,t.RECEIVEMONEY,t.SIGNFLAG,t.CHAINFLAG,t.FILEGROUPID,t.WAYBILLNO,t.CHAINHZFLAG,t.FFZJHZFLAG,t.CHAINUSESTATUS,t.SIGNDATE,t.DEVNUM,t.STARTDATE,t.ENDDATE,t.CARFLAG,t1.CREDATE from TMS_DISPATCH_DTL t LEFT JOIN TMS_DISPATCH_DOC t1 ON t.DISPATCHID=t1.DISPATCHID WHERE (t.BACKTIME is not NULL AND t.BACKTIME >= TRUNC(SYSDATE-60)) OR (t.CREDATE is not NULL AND t.CREDATE >= TRUNC(SYSDATE-60)) OR (t.SIGNDATE is not NULL AND t.SIGNDATE >= TRUNC(SYSDATE-60)) OR (t.STARTDATE is not NULL AND t.STARTDATE >= TRUNC(SYSDATE-60)) OR (t.ENDDATE is not NULL AND t.ENDDATE >= TRUNC(SYSDATE-60)) OR (t1.CREDATE is not NULL AND (t1.CREDATE >= TRUNC(SYSDATE-60)) OR (t.BACKTIME is NULL AND t.CREDATE is NULL AND t.SIGNDATE is NULL AND t.STARTDATE is NULL AND t.ENDDATE is NULL AND t1.CREDATE is NULL)"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(DISPATCHDTLID,DW_ID)
+              DISTRIBUTED BY HASH (DISPATCHDTLID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: TMS_DISPATCH_DTL_d_ods_update
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_wms"
+    flag: YES
+    deps: [TMS_DISPATCH_DTL_d_ods_tmp]
+    sql: |
+        UPDATE tms_dispatch_dtl t
+        SET t.dw_updatetime = NOW(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM tms_dispatch_dtl_doristmp s WHERE s.DISPATCHDTLID = t.DISPATCHDTLID AND s.DW_ID = t.DW_ID)  AND ((t.`BACKTIME` is not null AND t.`BACKTIME` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`CREDATE` is not null AND t.`CREDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`SIGNDATE` is not null AND t.`SIGNDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`STARTDATE` is not null AND t.`STARTDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`ENDDATE` is not null AND t.`ENDDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`CREDATE` is not null AND t.`CREDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR ((t.`BACKTIME` is null) AND (t.`CREDATE` is null) AND (t.`SIGNDATE` is null) AND (t.`STARTDATE` is null) AND (t.`ENDDATE` is null) AND (t.`CREDATE` is null)));
+        INSERT INTO tms_dispatch_dtl (`DISPATCHID`,`DISPATCHDTLID`,`TASKTYPE`,`TRID`,`SCATTERPACKS`,`WHOLEPACKS`,`WEIGHT`,`CUBAGE`,`BACKMAN`,`BACKTIME`,`BACKDESCR`,`MEMO`,`STEVEDORE`,`USESTATUS`,`FIXQTY`,`EMPLOYEENAMES`,`INPUTMANID`,`CREDATE`,`BACKQTY`,`RECEIVEMONEY`,`SIGNFLAG`,`CHAINFLAG`,`FILEGROUPID`,`WAYBILLNO`,`CHAINHZFLAG`,`FFZJHZFLAG`,`CHAINUSESTATUS`,`SIGNDATE`,`DEVNUM`,`STARTDATE`,`ENDDATE`,`CARFLAG`,`CREDATE`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
+        SELECT s.`DISPATCHID`,s.`DISPATCHDTLID`,s.`TASKTYPE`,s.`TRID`,s.`SCATTERPACKS`,s.`WHOLEPACKS`,s.`WEIGHT`,s.`CUBAGE`,s.`BACKMAN`,s.`BACKTIME`,s.`BACKDESCR`,s.`MEMO`,s.`STEVEDORE`,s.`USESTATUS`,s.`FIXQTY`,s.`EMPLOYEENAMES`,s.`INPUTMANID`,s.`CREDATE`,s.`BACKQTY`,s.`RECEIVEMONEY`,s.`SIGNFLAG`,s.`CHAINFLAG`,s.`FILEGROUPID`,s.`WAYBILLNO`,s.`CHAINHZFLAG`,s.`FFZJHZFLAG`,s.`CHAINUSESTATUS`,s.`SIGNDATE`,s.`DEVNUM`,s.`STARTDATE`,s.`ENDDATE`,s.`CARFLAG`,s.`CREDATE`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
+        FROM tms_dispatch_dtl_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM tms_dispatch_dtl WHERE s.DISPATCHDTLID = TMS_DISPATCH_DTL.DISPATCHDTLID AND s.DW_ID = TMS_DISPATCH_DTL.DW_ID);
+        DROP TABLE tms_dispatch_dtl_doristmp;
+        UPDATE TMS_DISPATCH_DTL SET is_active = 0;
+        CREATE TABLE IF NOT EXISTS TMS_DISPATCH_DTL_latest_records AS
+        SELECT 
+            DISPATCHDTLID,
+            MAX(dw_createtime) AS dw_createtime
+        FROM TMS_DISPATCH_DTL
+        GROUP BY DISPATCHDTLID;
+        UPDATE TMS_DISPATCH_DTL SET is_active = 1
+        FROM TMS_DISPATCH_DTL_latest_records
+        WHERE TMS_DISPATCH_DTL.dw_createtime = TMS_DISPATCH_DTL_latest_records.dw_createtime AND 
+        TMS_DISPATCH_DTL.dw_createtime = TMS_DISPATCH_DTL.dw_updatetime AND 
+            TMS_DISPATCH_DTL.DISPATCHDTLID=TMS_DISPATCH_DTL_latest_records.DISPATCHDTLID;
+        DROP TABLE IF EXISTS TMS_DISPATCH_DTL_latest_records;

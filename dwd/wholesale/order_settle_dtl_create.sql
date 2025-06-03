@@ -49,7 +49,7 @@ CREATE TABLE dwd.wholesale_order_settle_dtl (
     create_date datetime COMMENT "生成日期",
     confirm_date datetime COMMENT "确认日期",
     use_status varchar COMMENT '使用状态: 作废/正式/临时',
-    received_status varchar COMMENT "结算状态: 未收完/已收完/不收款",
+    received_status varchar COMMENT "结算状态: 需要收款/不收款",
     inputmanid bigint COMMENT '制单人id',
     inputman_name varchar COMMENT '制单人名称',
     
@@ -62,7 +62,6 @@ CREATE TABLE dwd.wholesale_order_settle_dtl (
     settle_amount decimal(18, 4) COMMENT "结算金额",
     notax_amount decimal(18, 4) COMMENT "不含税金额",
     cost_amount decimal(18, 4) COMMENT "成本金额",
-    received_amount decimal(18, 4) COMMENT "已收款金额",
     
     -- 利润信息
     batch_gross_profit decimal(18, 4) COMMENT "批次毛利",
@@ -142,7 +141,6 @@ INSERT INTO dwd.wholesale_order_settle_dtl (
     settle_amount,
     notax_amount,
     cost_amount,
-    received_amount,
     
     -- 利润信息
     batch_gross_profit,
@@ -199,10 +197,8 @@ SELECT
     a.confirm_date,                         
     a.use_status,
     CASE                                 
-        WHEN IFNULL(b.recfinflag, 0) = 1 OR abs(b.total_line) <= abs(b.totalrecmoney) THEN '已收完'   
-        WHEN IFNULL(b.recfinflag, 0) = 0 THEN '未收完'
         WHEN IFNULL(b.recfinflag, 0) = 2 THEN '不收款'
-        ELSE ''
+        ELSE '需要收款'
     END AS received_status,
     a.inputmanid,
     a.inputman_name,
@@ -216,7 +212,6 @@ SELECT
     b.total_line AS settle_amount,
     b.notaxmoney AS notax_amount,
     IFNULL(b.costingmoney, 0) AS cost_amount,
-    b.totalrecmoney AS received_amount,
     
     -- 利润信息
     b.notaxmoney - IFNULL(b.goodsqty, 0) * IFNULL(batch.notax_price, 0) AS batch_gross_profit,

@@ -76,7 +76,7 @@ CREATE TABLE dwd.wholesale_order_sales_dtl (
     goods_qty decimal(16,6) COMMENT '数量',
     unit_price decimal(20,10) COMMENT '单价',
     sales_amount decimal(18,4) COMMENT '销售额',
-    settle_status varchar COMMENT '结算状态',
+    settle_status varchar COMMENT '结算状态:不结算/需要结算',
     priceid bigint COMMENT '价格ID',
     price_name varchar COMMENT '价格名称',
     tax_rate decimal(3,2) COMMENT '税率',
@@ -86,8 +86,6 @@ CREATE TABLE dwd.wholesale_order_sales_dtl (
     reference_price decimal(18,4) COMMENT '参考价',
     sales_gross_profit float COMMENT '销售额毛利(销售额-批次成本)',
     sales_gross_profit_rate float COMMENT '销售额毛利率(销售额-批次成本)/销售额',
-    settle_amount decimal(18,4) COMMENT '结算金额',
-    received_amount decimal(18,4) COMMENT '实收金额',
 
     -- 仓储相关
     storageid bigint COMMENT '保管帐ID',
@@ -195,8 +193,6 @@ INSERT INTO dwd.wholesale_order_sales_dtl (
     reference_price,
     sales_gross_profit,
     sales_gross_profit_rate,
-    settle_amount,
-    received_amount,
     
     -- 仓储相关
     storageid,
@@ -303,9 +299,8 @@ SELECT
     b.unitprice,
     b.total_line,
     CASE
-        WHEN IFNULL(b.settleflag, 0) = 1 OR abs(b.total_line) <= abs(b.settlemoney) THEN '结算完成'
-        WHEN IFNULL(b.settleflag, 0) = 0 THEN '未结算完成'
         WHEN IFNULL(b.settleflag, 0) = 2 THEN '不结算'
+        ELSE '需要结算'
     END AS settle_status,
     b.priceid,
     pt1.price_name,
@@ -320,8 +315,6 @@ SELECT
             WHEN b.unitprice = 0 THEN 0 
             ELSE (b.unitprice - batch.unit_price) / b.unitprice 
         END, 4), 0) AS sales_gross_profit_rate,
-    b.settlemoney, 
-    b.totalrecmoney,
     
     -- 仓储相关
     b.storageid,

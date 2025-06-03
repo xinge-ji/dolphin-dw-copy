@@ -1,4 +1,3 @@
--- 插入最近60天的审批数据
 INSERT INTO dwd.wholesale_order_approval (
     salesid,
     entryid,
