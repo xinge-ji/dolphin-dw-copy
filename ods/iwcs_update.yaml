@@ -564,7 +564,7 @@ tasks:
     use_custom: true
     deploy_mode: "cluster"
     flag: YES
-    deps: [com_party]
+    deps: [com_goods_package]
     raw_script: |
         env{
           parallelism = 2
@@ -776,3 +776,113 @@ tasks:
                 ON party_factory.com_party_id = f.factory_id
             WHERE 
                 a.receive_bill_type IN ('PURCHASE', 'SALE_RTN', 'TRANSFER');
+
+  - name: ssc_picking_carton
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [zx_19007_v]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from ssc_picking_carton@iwcs where create_date >= TRUNC(SYSDATE-60)
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_ssc_picking_carton"
+            data_save_mode = APPEND_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(ssc_picking_carton_id)
+              DISTRIBUTED BY HASH (ssc_picking_carton_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: ssc_picking_carton_detail_udi
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [ssc_picking_carton]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            query = """
+            select * from ssc_picking_carton_detail_udi@iwcs
+            """
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "iwcs_ssc_picking_carton_detail_udi"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(ssc_picking_carton_detail_id)
+              DISTRIBUTED BY HASH (ssc_picking_carton_detail_id)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }

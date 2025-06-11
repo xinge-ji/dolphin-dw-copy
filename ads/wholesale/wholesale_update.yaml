@@ -45,25 +45,11 @@ tasks:
     deps: [eshop_sales_goods_m]
     sql: $FILE{"eshop_sales_salesman_m_update.sql"}
 
-  - name: shuangkong_entry_m
-    task_type: Sql
-    datasource_name: "dwd"
-    flag: YES
-    deps: [eshop_sales_salesman_m]
-    sql: $FILE{"shuangkong_entry_m_update.sql"}
-
-  - name: shuangkong_customer_m
-    task_type: Sql
-    datasource_name: "dwd"
-    flag: YES
-    deps: [shuangkong_entry_m]
-    sql: $FILE{"shuangkong_customer_m_update.sql"}
-
   - name: task_entry_m
     task_type: Sql
     datasource_name: "dwd"
     flag: YES
-    deps: [shuangkong_customer_m]
+    deps: [eshop_sales_salesman_m]
     sql: $FILE{"task_entry_m_update.sql"}
 
   - name: task_customer_m

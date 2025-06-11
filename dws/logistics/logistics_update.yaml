@@ -1,0 +1,32 @@
+workflow:
+  name: "logistics_update"
+  project: "dws"
+  schedule: 0 0 6 ? * * *
+
+tasks:
+  - name: dependent
+    task_type: Dependent
+    flag: YES
+    denpendence:
+    op: and
+    groups:
+      - op: and
+        groups:
+          - project_name: dwd
+            workflow_name: logistics_update
+            dependent_task_name: '0'
+            dependent_date: today
+  
+  - name: warehouse_in_goodsowner_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [dependent]
+    sql: $FILE{"warehouse_in_goodsowner_d_update.sql"}
+  
+  - name: warehouse_out_goodsowner_d
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_in_goodsowner_d]
+    sql: $FILE{"warehouse_out_goodsowner_d_update.sql"}

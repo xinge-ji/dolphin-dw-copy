@@ -42,8 +42,8 @@ JOIN
     ods_wms.wms_in_order_dtl b ON a.inid = b.inid
 LEFT JOIN 
     dim.goods g ON b.goodsid = g.goodsid AND a.create_time >= g.dw_starttime AND a.create_time < g.dw_endtime
-LEFT JOIN 
-    dim.wms_goods_feature d ON a.warehid = d.warehid AND b.goodsid = d.goodsid
+JOIN 
+    dim.wms_goods_feature d ON a.warehid = d.warehid AND b.goodsid = d.goodsid AND a.create_time >= d.dw_starttime AND a.create_time < d.dw_endtime
 WHERE 
     b.is_active=1
     AND b.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_order_in_dtl);

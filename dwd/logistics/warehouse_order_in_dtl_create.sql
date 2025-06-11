@@ -64,8 +64,8 @@ SELECT
     b.shdate AS receive_time,
     b.goodsid,
     g.goods_name,
-    d.is_coldchain,
-    d.is_chinese_medicine,
+    IFNULL(d.is_coldchain, 0),
+    IFNULL(d.is_chinese_medicine, 0),
     b.shrid,
     COALESCE(b.recheckflag, 0) AS is_recheck
 FROM 
@@ -74,8 +74,8 @@ JOIN
     ods_wms.wms_in_order_dtl b ON a.inid = b.inid
 LEFT JOIN 
     dim.goods g ON b.goodsid = g.goodsid AND a.create_time >= g.dw_starttime AND a.create_time < g.dw_endtime
-LEFT JOIN 
-    dim.wms_goods_feature d ON a.warehid = d.warehid AND b.goodsid = d.goodsid
+JOIN 
+    dim.wms_goods_feature d ON a.warehid = d.warehid AND b.goodsid = d.goodsid AND a.create_time >= d.dw_starttime AND a.create_time < d.dw_endtime
 WHERE 
     b.is_active=1;
 

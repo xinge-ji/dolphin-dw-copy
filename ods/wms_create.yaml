@@ -1,0 +1,111 @@
+workflow:
+    name: wms_manual_create
+    project: wms_ods
+    run: true
+
+tasks:
+  - name: TMS_DISPATCH_DTL
+    task_type: SeaTunnel
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: NO
+    deps: []
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            table_path = "lywms.TMS_DISPATCH_DTL"
+            query = """SELECT t.DISPATCHDTLID, ora_hash(substr(coalesce(substr(to_char(t.DISPATCHID), 1,255), '') || coalesce(substr(to_char(t.DISPATCHDTLID), 1,255), '') || coalesce(substr(to_char(t.TASKTYPE), 1,255), '') || coalesce(substr(to_char(t.TRID), 1,255), '') || coalesce(substr(to_char(t.SCATTERPACKS), 1,255), '') || coalesce(substr(to_char(t.WHOLEPACKS), 1,255), '') || coalesce(substr(to_char(t.WEIGHT), 1,255), '') || coalesce(substr(to_char(t.CUBAGE), 1,255), '') || coalesce(substr(to_char(t.BACKMAN), 1,255), '') || coalesce(substr(to_char(t.BACKTIME), 1,255), '') || coalesce(substr(to_char(t.BACKDESCR), 1,255), '') || coalesce(substr(to_char(t.MEMO), 1,255), '') || coalesce(substr(to_char(t.STEVEDORE), 1,255), '') || coalesce(substr(to_char(t.USESTATUS), 1,255), '') || coalesce(substr(to_char(t.FIXQTY), 1,255), '') || coalesce(substr(to_char(t.EMPLOYEENAMES), 1,255), '') || coalesce(substr(to_char(t.INPUTMANID), 1,255), '') || coalesce(substr(to_char(t.BACKQTY), 1,255), '') || coalesce(substr(to_char(t.RECEIVEMONEY), 1,255), '') || coalesce(substr(to_char(t.SIGNFLAG), 1,255), '') || coalesce(substr(to_char(t.CHAINFLAG), 1,255), '') || coalesce(substr(to_char(t.FILEGROUPID), 1,255), '') || coalesce(substr(to_char(t.WAYBILLNO), 1,255), '') || coalesce(substr(to_char(t.CHAINHZFLAG), 1,255), '') || coalesce(substr(to_char(t.FFZJHZFLAG), 1,255), '') || coalesce(substr(to_char(t.CHAINUSESTATUS), 1,255), '') || coalesce(substr(to_char(t.SIGNDATE), 1,255), '') || coalesce(substr(to_char(t.DEVNUM), 1,255), '') || coalesce(substr(to_char(t.STARTDATE), 1,255), '') || coalesce(substr(to_char(t.ENDDATE), 1,255), '') || coalesce(substr(to_char(t.CARFLAG), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active, t.DISPATCHID, t.TASKTYPE, t.TRID, t.SCATTERPACKS, t.WHOLEPACKS, t.WEIGHT, t.CUBAGE, t.BACKMAN, t.BACKTIME, t.BACKDESCR, t.MEMO, t.STEVEDORE, t.USESTATUS, t.FIXQTY, t.EMPLOYEENAMES, t.INPUTMANID, t.BACKQTY, t.RECEIVEMONEY, t.SIGNFLAG, t.CHAINFLAG, t.FILEGROUPID, t.WAYBILLNO, t.CHAINHZFLAG, t.FFZJHZFLAG, t.CHAINUSESTATUS, t.SIGNDATE, t.DEVNUM, t.STARTDATE, t.ENDDATE, t.CARFLAG, t1.CREDATE FROM TMS_DISPATCH_DTL t LEFT JOIN TMS_DISPATCH_DOC t1 ON t.DISPATCHID = t1.DISPATCHID"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "${table_name}"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(DISPATCHDTLID,DW_ID)
+              DISTRIBUTED BY HASH (DISPATCHDTLID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+  - name: WMS_ECODE_RECORD_ods
+    task_type: SeaTunnel
+    fail_retry_times: 2
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: NO
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            table_path = "lywms.WMS_ECODE_RECORD"
+            query = """select t.RECORDID, ora_hash(substr(coalesce(substr(to_char(t.RECORDID), 1,255), '') || coalesce(substr(to_char(t.INOUTID), 1,255), '') || coalesce(substr(to_char(t.ECODE), 1,255), '') || coalesce(substr(to_char(t.CREDATE), 1,255), '') || coalesce(substr(to_char(t.EXPFLAG), 1,255), '') || coalesce(substr(to_char(t.QTY), 1,255), '') || coalesce(substr(to_char(t.SOURCEID), 1,255), '') || coalesce(substr(to_char(t.INOUTFLAG), 1,255), '') || coalesce(substr(to_char(t.INPUTMANID), 1,255), '') || coalesce(substr(to_char(t.EXPDATE), 1,255), '') || coalesce(substr(to_char(t.EXPMANID), 1,255), '') || coalesce(substr(to_char(t.GOODSID), 1,255), '') || coalesce(substr(to_char(t.COMEFROM), 1,255), '') || coalesce(substr(to_char(t.SPECIALFLAG), 1,255), '') || coalesce(substr(to_char(t.AUTOTASKFLAG), 1,255), '') || coalesce(substr(to_char(t.SOURCERECORDID), 1,255), '') || coalesce(substr(to_char(t.OWNERGOODSID), 1,255), '') || coalesce(substr(to_char(t.LOTID), 1,255), '') || coalesce(substr(to_char(t.OPERATIONTYPE), 1,255), '') || coalesce(substr(to_char(t.WAREHID), 1,255), '') || coalesce(substr(to_char(t.GOODSOWNERID), 1,255), '') || coalesce(substr(to_char(t.COMPANYID), 1,255), '') || coalesce(substr(to_char(t.INID), 1,255), '') || coalesce(substr(to_char(t.INDTLID), 1,255), '') || coalesce(substr(to_char(t.RECEIVEID), 1,255), '') || coalesce(substr(to_char(t.OUTID), 1,255), '') || coalesce(substr(to_char(t.OUTDTLID), 1,255), '') || coalesce(substr(to_char(t.WAVEDTLID), 1,255), '') || coalesce(substr(to_char(t.SRCEXPNO), 1,255), '') || coalesce(substr(to_char(t.UPDATEFLAG), 1,255), '') || coalesce(substr(to_char(t.UPDATEDATE), 1,255), '') || coalesce(substr(to_char(t.UPDATEMSG), 1,255), '') || coalesce(substr(to_char(t.GOODSPACKID), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.INOUTID,t.ECODE,t.CREDATE,t.EXPFLAG,t.QTY,t.SOURCEID,t.INOUTFLAG,t.INPUTMANID,t.EXPDATE,t.EXPMANID,t.GOODSID,t.COMEFROM,t.SPECIALFLAG,t.AUTOTASKFLAG,t.SOURCERECORDID,t.OWNERGOODSID,t.LOTID,t.OPERATIONTYPE,t.WAREHID,t.GOODSOWNERID,t.COMPANYID,t.INID,t.INDTLID,t.RECEIVEID,t.OUTID,t.OUTDTLID,t.WAVEDTLID,t.SRCEXPNO,t.UPDATEFLAG,t.UPDATEDATE,t.UPDATEMSG,t.GOODSPACKID from WMS_ECODE_RECORD t"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "${table_name}"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(RECORDID,DW_ID)
+              DISTRIBUTED BY HASH (RECORDID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 3",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }

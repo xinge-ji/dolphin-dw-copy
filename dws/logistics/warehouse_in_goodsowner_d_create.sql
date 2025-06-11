@@ -4,64 +4,28 @@ CREATE TABLE dws.logistics_warehouse_in_goodsowner_d(
     stat_date date COMMENT '统计日期',
     warehid bigint COMMENT '仓库ID',
     goodsownerid bigint COMMENT '货主ID',
+    category varchar COMMENT '类别:总数/冷链/中药/其他',
 
-    -- 维度
+    -- 描述
     warehouse_name varchar COMMENT '仓库名称',
     goodsowner_name varchar COMMENT '货主名称',
 
     -- 指标
-    receive_item_count int COMMENT '收货条目数',
-    receive_coldchain_item_count int COMMENT '冷链收货条目数',
-    receive_chinesemedicine_item_count int COMMENT '中药收货条目数',
-    receive_other_item_count int COMMENT '其他收货条目数',
-
-    check_item_count int COMMENT '验收条目数',
-    check_coldchain_item_count int COMMENT '冷链验收条目数',
-    check_chinesemedicine_item_count int COMMENT '中药验收条目数',
-    check_other_item_count int COMMENT '其他验收条目数',
-
+    receive_count int COMMENT '收货条目数',
+    check_count int COMMENT '验收条目数',
+    check_scatter_count int COMMENT '散件验收条目数',
+    check_whole_count int COMMENT '整件验收条目数',
+    check_scatter_qty decimal(16,6) COMMENT '散件验收件数',
+    check_whole_qty decimal COMMENT '整件验收件数',
     flat_shelf_whole_qty decimal COMMENT '平库上架整件件数',
-    flat_shelf_coldchain_whole_qty int COMMENT '冷链平库上架整件件数',
-    flat_shelf_chinesemedicine_whole_qty int COMMENT '中药平库上架整件件数',
-    flat_shelf_other_whole_qty int COMMENT '其他平库上架整件件数',
-
-    flat_shelf_scatter_qty decimal(16, 6) COMMENT '平库上架散件条目数',
-    flat_shelf_coldchain_scatter_qty int COMMENT '冷链平库上架散件条目数',
-    flat_shelf_chinesemedicine_scatter_qty int COMMENT '中药平库上架散件条目数',
-    flat_shelf_other_scatter_qty int COMMENT '其他平库上架散件条目数',
-
-    flat_ecode_count int COMMENT '平库电子监管码',
-    flat_coldchain_ecode_count int COMMENT '冷链平库电子监管码',
-    flat_chinesemedicine_ecode_count int COMMENT '中药平库电子监管码',
-    flat_other_ecode_count int COMMENT '其他平库电子监管码',
-
-    flat_udicode_count int COMMENT '平库UDI码',
-    flat_coldchain_udicode_count int COMMENT '冷链平库UDI码',
-    flat_chinesemedicine_udicode_count int COMMENT '中药平库UDI码码',
-    flat_other_udicode_count int COMMENT '其他平库UDI码',
-
+    flat_shelf_scatter_count int COMMENT '平库上架散件条目数',
     auto_shelf_whole_qty decimal COMMENT '立库上架整件件数',
-    auto_shelf_coldchain_whole_qty int COMMENT '冷链立库上架整件件数',
-    auto_shelf_chinesemedicine_whole_qty int COMMENT '中药立库上架整件件数',
-    auto_shelf_other_whole_qty int COMMENT '其他立库上架整件件数',
-
-    auto_shelf_scatter_qty decimal(16, 6) COMMENT '立库上架散件条目数',
-    auto_shelf_coldchain_scatter_qty int COMMENT '冷链立库上架散件条目数',
-    auto_shelf_chinesemedicine_scatter_qty int COMMENT '中药立库上架散件条目数',
-    auto_shelf_other_scatter_qty int COMMENT '其他立库上架散件条目数',
-
-    auto_ecode_count int COMMENT '立库电子监管码',
-    auto_coldchain_ecode_count int COMMENT '冷链立库电子监管码',
-    auto_chinesemedicine_ecode_count int COMMENT '中药立库电子监管码',
-    auto_other_ecode_count int COMMENT '其他立库电子监管码',
-
-    auto_udicode_count int COMMENT '立库UDI码',
-    auto_coldchain_udicode_count int COMMENT '冷链立库UDI码',
-    auto_chinesemedicine_udicode_count int COMMENT '中药立库UDI码码',
-    auto_other_udicode_count int COMMENT '其他立库UDI码'
+    auto_shelf_scatter_count int COMMENT '立库上架散件条目数',
+    ecode_count int COMMENT '电子监管码',
+    udicode_count int COMMENT 'UDI码'
 )
-UNIQUE KEY(stat_date, warehid, goodsownerid) 
-DISTRIBUTED BY HASH(stat_date, warehid, goodsownerid) 
+UNIQUE KEY(stat_date, warehid, goodsownerid, category) 
+DISTRIBUTED BY HASH(stat_date, warehid, goodsownerid, category) 
 PROPERTIES (
     "replication_allocation" = "tag.location.default: 3",
     "in_memory" = "false",
@@ -74,68 +38,25 @@ INSERT INTO dws.logistics_warehouse_in_goodsowner_d (
     stat_date,
     warehid,
     goodsownerid,
-    
-    -- 维度
+    category,
+
+    -- 描述
     warehouse_name,
     goodsowner_name,
     
-    -- 指标 - 收货相关
-    receive_item_count,
-    receive_coldchain_item_count,
-    receive_chinesemedicine_item_count,
-    receive_other_item_count,
-    
-    -- 指标 - 验收相关
-    check_item_count,
-    check_coldchain_item_count,
-    check_chinesemedicine_item_count,
-    check_other_item_count,
-    
-    -- 指标 - 平库上架相关
+    -- 指标
+    receive_count,
+    check_count,
+    check_scatter_count,
+    check_whole_count,
+    check_scatter_qty,
+    check_whole_qty,
     flat_shelf_whole_qty,
-    flat_shelf_coldchain_whole_qty,
-    flat_shelf_chinesemedicine_whole_qty,
-    flat_shelf_other_whole_qty,
-    
-    flat_shelf_scatter_qty,
-    flat_shelf_coldchain_scatter_qty,
-    flat_shelf_chinesemedicine_scatter_qty,
-    flat_shelf_other_scatter_qty,
-    
-    -- 指标 - 立库上架相关
+    flat_shelf_scatter_count,
     auto_shelf_whole_qty,
-    auto_shelf_coldchain_whole_qty,
-    auto_shelf_chinesemedicine_whole_qty,
-    auto_shelf_other_whole_qty,
-    
-    auto_shelf_scatter_qty,
-    auto_shelf_coldchain_scatter_qty,
-    auto_shelf_chinesemedicine_scatter_qty,
-    auto_shelf_other_scatter_qty,
-
-    -- 指标 - 平库电子监管码相关
-    flat_ecode_count,
-    flat_coldchain_ecode_count,
-    flat_chinesemedicine_ecode_count,
-    flat_other_ecode_count,
-
-    -- 指标 - 立库电子监管码相关
-    auto_ecode_count,
-    auto_coldchain_ecode_count,
-    auto_chinesemedicine_ecode_count,
-    auto_other_ecode_count,
-
-    -- 指标 - 平库UDI码相关
-    flat_udicode_count,
-    flat_coldchain_udicode_count,
-    flat_chinesemedicine_udicode_count,
-    flat_other_udicode_count,
-
-    -- 指标 - 立库UDI码相关
-    auto_udicode_count,
-    auto_coldchain_udicode_count,
-    auto_chinesemedicine_udicode_count,
-    auto_other_udicode_count
+    auto_shelf_scatter_count,
+    ecode_count,
+    udicode_count
 )
 WITH in_data AS (
     SELECT
@@ -157,6 +78,7 @@ WITH in_data AS (
         d.is_recheck = 0
         AND doc.is_autotask = 0
         AND doc.usestatus = 3
+        AND d.receive_time is not NULL
 ),
 receive_data AS (
     SELECT 
@@ -165,10 +87,36 @@ receive_data AS (
         d.goodsownerid,
         d.warehouse_name,
         d.goodsowner_name,
-        COUNT(1) AS receive_item_count,
-        SUM(d.is_coldchain) AS receive_coldchain_item_count,
-        SUM(d.is_chinese_medicine) AS receive_chinesemedicine_item_count,
-        COUNT(1) - SUM(d.is_coldchain) - SUM(d.is_chinese_medicine) AS receive_other_item_count
+        CASE 
+            WHEN d.is_coldchain = 1 THEN '冷链'
+            WHEN d.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END AS category,
+        COUNT(1) AS receive_count
+    FROM 
+        in_data d
+    GROUP BY 
+        DATE(d.receive_time),
+        d.warehid,
+        d.goodsownerid,
+        d.warehouse_name,
+        d.goodsowner_name,
+        CASE 
+            WHEN d.is_coldchain = 1 THEN '冷链'
+            WHEN d.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END
+    
+    UNION ALL
+    
+    SELECT 
+        DATE(d.receive_time) AS stat_date,
+        d.warehid,
+        d.goodsownerid,
+        d.warehouse_name,
+        d.goodsowner_name,
+        '总数' AS category,
+        COUNT(1) AS receive_count
     FROM 
         in_data d
     GROUP BY 
@@ -185,10 +133,38 @@ check_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        COUNT(1) AS check_item_count,
-        SUM(d.is_coldchain) AS check_coldchain_item_count,
-        SUM(d.is_chinese_medicine) AS check_chinesemedicine_item_count,
-        COUNT(1) - SUM(d.is_coldchain) - SUM(d.is_chinese_medicine) AS check_other_item_count
+        CASE 
+            WHEN d.is_coldchain = 1 THEN '冷链'
+            WHEN d.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END AS category,
+        COUNT(1) AS check_count
+    FROM 
+        dwd.logistics_warehouse_order_receive_dtl r
+    JOIN 
+        in_data d ON r.indtlid = d.indtlid
+    GROUP BY 
+        DATE(d.receive_time),
+        r.warehid,
+        d.goodsownerid,
+        r.warehouse_name,
+        d.goodsowner_name,
+        CASE 
+            WHEN d.is_coldchain = 1 THEN '冷链'
+            WHEN d.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END
+    
+    UNION ALL
+    
+    SELECT 
+        DATE(d.receive_time) AS stat_date,
+        r.warehid,
+        d.goodsownerid,
+        r.warehouse_name,
+        d.goodsowner_name,
+        '总数' AS category,
+        COUNT(1) AS check_count
     FROM 
         dwd.logistics_warehouse_order_receive_dtl r
     JOIN 
@@ -200,55 +176,171 @@ check_data AS (
         r.warehouse_name,
         d.goodsowner_name
 ),
-shelf_data AS (
+check_scatter_data AS (
+    SELECT 
+        DATE(d.receive_time) AS stat_date,
+        r.warehid,
+        d.goodsownerid,
+        r.warehouse_name,
+        d.goodsowner_name,
+        CASE 
+            WHEN d.is_coldchain = 1 THEN '冷链'
+            WHEN d.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END AS category,
+        COUNT(1) AS check_scatter_count,
+        SUM(r.scatter_qty) as check_scatter_qty
+    FROM 
+        dwd.logistics_warehouse_order_receive_dtl r
+    JOIN 
+        in_data d ON r.indtlid = d.indtlid
+    WHERE r.scatter_qty is not null
+    GROUP BY 
+        DATE(d.receive_time),
+        r.warehid,
+        d.goodsownerid,
+        r.warehouse_name,
+        d.goodsowner_name,
+        CASE 
+            WHEN d.is_coldchain = 1 THEN '冷链'
+            WHEN d.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END
+    
+    UNION ALL
+    
+    SELECT 
+        DATE(d.receive_time) AS stat_date,
+        r.warehid,
+        d.goodsownerid,
+        r.warehouse_name,
+        d.goodsowner_name,
+        '总数' AS category,
+        COUNT(1) AS check_scatter_count,
+        SUM(r.scatter_qty) as check_scatter_qty
+    FROM 
+        dwd.logistics_warehouse_order_receive_dtl r
+    JOIN 
+        in_data d ON r.indtlid = d.indtlid
+    WHERE r.scatter_qty is not null
+    GROUP BY 
+        DATE(d.receive_time),
+        r.warehid,
+        d.goodsownerid,
+        r.warehouse_name,
+        d.goodsowner_name
+),
+check_whole_data AS (
+    SELECT 
+        DATE(d.receive_time) AS stat_date,
+        r.warehid,
+        d.goodsownerid,
+        r.warehouse_name,
+        d.goodsowner_name,
+        CASE 
+            WHEN d.is_coldchain = 1 THEN '冷链'
+            WHEN d.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END AS category,
+        COUNT(1) AS check_whole_count,
+        SUM(r.whole_qty) as check_whole_qty
+    FROM 
+        dwd.logistics_warehouse_order_receive_dtl r
+    JOIN 
+        in_data d ON r.indtlid = d.indtlid
+    WHERE r.whole_qty is not null AND d.receive_time is not null
+    GROUP BY 
+        DATE(d.receive_time),
+        r.warehid,
+        d.goodsownerid,
+        r.warehouse_name,
+        d.goodsowner_name,
+        CASE 
+            WHEN d.is_coldchain = 1 THEN '冷链'
+            WHEN d.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END
+    
+    UNION ALL
+    
+    SELECT 
+        DATE(d.receive_time) AS stat_date,
+        r.warehid,
+        d.goodsownerid,
+        r.warehouse_name,
+        d.goodsowner_name,
+        '总数' AS category,
+        COUNT(1) AS check_whole_count,
+        SUM(r.whole_qty) as check_whole_qty
+    FROM 
+        dwd.logistics_warehouse_order_receive_dtl r
+    JOIN 
+        in_data d ON r.indtlid = d.indtlid
+    WHERE r.whole_qty is not null AND d.receive_time is not null
+    GROUP BY 
+        DATE(d.receive_time),
+        r.warehid,
+        d.goodsownerid,
+        r.warehouse_name,
+        d.goodsowner_name
+),
+flat_shelf_data AS (
     SELECT 
         DATE(io.finish_time) AS stat_date,
         io.warehid,
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        -- 平库上架整件件数
-        SUM(CASE WHEN io.sectionid != 8515 THEN io.whole_qty ELSE 0 END) AS flat_shelf_whole_qty,
-        SUM(CASE WHEN io.sectionid != 8515 AND io.is_coldchain = 1 THEN io.whole_qty ELSE 0 END) AS flat_shelf_coldchain_whole_qty,
-        SUM(CASE WHEN io.sectionid != 8515 AND io.is_chinese_medicine = 1 THEN io.whole_qty ELSE 0 END) AS flat_shelf_chinesemedicine_whole_qty,
-        SUM(CASE 
-            WHEN io.sectionid != 8515 AND io.is_coldchain = 0 AND io.is_chinese_medicine = 0 
-            THEN io.whole_qty ELSE 0 
-        END) AS flat_shelf_other_whole_qty,
-        
-        -- 平库上架散件件数
-        COUNT(CASE WHEN io.sectionid != 8515 AND io.scatter_qty is not null THEN 1 ELSE NULL END) AS flat_shelf_scatter_qty,
-        COUNT(CASE WHEN io.sectionid != 8515 AND io.is_coldchain = 1 AND io.scatter_qty is not null THEN 1 ELSE NULL END) AS flat_shelf_coldchain_scatter_qty,
-        COUNT(CASE WHEN io.sectionid != 8515 AND io.is_chinese_medicine = 1 AND io.scatter_qty is not null THEN 1 ELSE NULL END) AS flat_shelf_chinesemedicine_scatter_qty,
-        COUNT(CASE 
-            WHEN io.sectionid != 8515 AND io.is_coldchain = 0 AND io.is_chinese_medicine = 0 AND io.scatter_qty is not null
-            THEN 1 ELSE NULL 
-        END) AS flat_shelf_other_scatter_qty,
-        
-        -- 立库上架整件件数
-        SUM(CASE WHEN io.sectionid = 8515 THEN io.whole_qty ELSE 0 END) AS auto_shelf_whole_qty,
-        SUM(CASE WHEN io.sectionid = 8515 AND io.is_coldchain = 1 THEN io.whole_qty ELSE 0 END) AS auto_shelf_coldchain_whole_qty,
-        SUM(CASE WHEN io.sectionid = 8515 AND io.is_chinese_medicine = 1 THEN io.whole_qty ELSE 0 END) AS auto_shelf_chinesemedicine_whole_qty,
-        SUM(CASE 
-            WHEN io.sectionid = 8515 AND io.is_coldchain = 0 AND io.is_chinese_medicine = 0 
-            THEN io.whole_qty ELSE 0 
-        END) AS auto_shelf_other_whole_qty,
-        
-        -- 立库上架散件件数
-        COUNT(CASE WHEN io.sectionid = 8515 AND io.scatter_qty is not null THEN 1 ELSE NULL END) AS auto_shelf_scatter_qty,
-        COUNT(CASE WHEN io.sectionid = 8515 AND io.is_coldchain = 1 AND io.scatter_qty is not null THEN 1 ELSE NULL END) AS auto_shelf_coldchain_scatter_qty,
-        COUNT(CASE WHEN io.sectionid = 8515 AND io.is_chinese_medicine = 1 AND io.scatter_qty is not null THEN 1 ELSE NULL END) AS auto_shelf_chinesemedicine_scatter_qty,
-        COUNT(CASE 
-            WHEN io.sectionid = 8515 AND io.is_coldchain = 0 AND io.is_chinese_medicine = 0 AND io.scatter_qty is not null
-            THEN 1 ELSE NULL 
-        END) AS auto_shelf_other_scatter_qty
+        CASE 
+            WHEN io.is_coldchain = 1 THEN '冷链'
+            WHEN io.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END AS category,
+        SUM(io.whole_qty) AS flat_shelf_whole_qty,
+        SUM(CASE WHEN io.scatter_qty is not NULL THEN 1 ELSE 0 END) AS flat_shelf_scatter_count
     FROM 
         dwd.logistics_warehouse_st_io_doc io
+    JOIN
+        dwd.logistics_warehouse_order_receive_dtl e ON io.sourceid = e.receiveid
     WHERE 
         io.is_out = 0  -- 入库单
         AND io.comefrom = 1  -- 来源为收货
         AND io.rfmanid != 0  -- 非系统管理员
         AND io.finish_time IS NOT NULL  -- 已完成的单据
+        AND io.sectionid != 8515  -- 非立库
+    GROUP BY 
+        DATE(io.finish_time),
+        io.warehid,
+        io.goodsownerid,
+        io.warehouse_name,
+        io.goodsowner_name,
+        CASE 
+            WHEN io.is_coldchain = 1 THEN '冷链'
+            WHEN io.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END
+    
+    UNION ALL
+    
+    SELECT 
+        DATE(io.finish_time) AS stat_date,
+        io.warehid,
+        io.goodsownerid,
+        io.warehouse_name,
+        io.goodsowner_name,
+        '总数' AS category,
+        SUM(io.whole_qty) AS flat_shelf_whole_qty,
+        SUM(CASE WHEN io.scatter_qty is not NULL THEN 1 ELSE 0 END) AS flat_shelf_scatter_count
+    FROM 
+        dwd.logistics_warehouse_st_io_doc io
+    JOIN
+        dwd.logistics_warehouse_order_receive_dtl e ON io.sourceid = e.receiveid
+    WHERE 
+        io.is_out = 0  -- 入库单
+        AND io.comefrom = 1  -- 来源为收货
+        AND io.rfmanid != 0  -- 非系统管理员
+        AND io.finish_time IS NOT NULL  -- 已完成的单据
+        AND io.sectionid != 8515   -- 非立库
     GROUP BY 
         DATE(io.finish_time),
         io.warehid,
@@ -256,149 +348,206 @@ shelf_data AS (
         io.warehouse_name,
         io.goodsowner_name
 ),
+auto_shelf_data AS (
+    SELECT 
+        DATE(d.receive_time) AS stat_date,
+        d.warehid,
+        d.goodsownerid,
+        d.warehouse_name,
+        d.goodsowner_name,
+        CASE 
+            WHEN d.is_coldchain = 1 THEN '冷链'
+            WHEN d.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END AS category,
+        SUM(z.wholeqty) AS auto_shelf_whole_qty,
+        SUM(z.scattercount) AS auto_shelf_scatter_count
+    FROM 
+        dwd.logistics_warehouse_order_in_dtl d
+    JOIN
+        ods_wms.zx_19007_v z ON d.indtlid = z.indtlid
+    WHERE d.receive_time is not null
+    GROUP BY 
+        DATE(d.receive_time),
+        d.warehid,
+        d.goodsownerid,
+        d.warehouse_name,
+        d.goodsowner_name,
+        CASE 
+            WHEN d.is_coldchain = 1 THEN '冷链'
+            WHEN d.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END
+    
+    UNION ALL
+    
+    SELECT 
+        DATE(d.receive_time) AS stat_date,
+        d.warehid,
+        d.goodsownerid,
+        d.warehouse_name,
+        d.goodsowner_name,
+        '总数' AS category,
+        SUM(z.wholeqty) AS auto_shelf_whole_qty,
+        SUM(z.scattercount) AS auto_shelf_scatter_count
+    FROM 
+        dwd.logistics_warehouse_order_in_dtl d
+    JOIN
+        ods_wms.zx_19007_v z ON d.indtlid = z.indtlid
+    WHERE d.receive_time is not null
+    GROUP BY 
+        DATE(d.receive_time),
+        d.warehid,
+        d.goodsownerid,
+        d.warehouse_name,
+        d.goodsowner_name
+),
 ecode_data AS (
     SELECT 
-        DATE(r.check_time) AS stat_date,
-        r.warehid,
-        d.goodsownerid,
-        r.warehouse_name,
-        d.goodsowner_name,
-        -- 平库电子监管码
-        COUNT(DISTINCT CASE WHEN r.sectionid != 8515 THEN e.ecode ELSE NULL END) AS flat_ecode_count,
-        COUNT(DISTINCT CASE WHEN r.sectionid != 8515 AND d.is_coldchain = 1 THEN e.ecode ELSE NULL END) AS flat_coldchain_ecode_count,
-        COUNT(DISTINCT CASE WHEN r.sectionid != 8515 AND d.is_chinese_medicine = 1 THEN e.ecode ELSE NULL END) AS flat_chinesemedicine_ecode_count,
-        COUNT(DISTINCT CASE 
-            WHEN r.sectionid != 8515 AND d.is_coldchain = 0 AND d.is_chinese_medicine = 0 
-            THEN e.ecode ELSE NULL END) AS flat_other_ecode_count,
-        
-        -- 立库电子监管码
-        COUNT(DISTINCT CASE WHEN r.sectionid = 8515 THEN e.ecode ELSE NULL END) AS auto_ecode_count,
-        COUNT(DISTINCT CASE WHEN r.sectionid = 8515 AND d.is_coldchain = 1 THEN e.ecode ELSE NULL END) AS auto_coldchain_ecode_count,
-        COUNT(DISTINCT CASE WHEN r.sectionid = 8515 AND d.is_chinese_medicine = 1 THEN e.ecode ELSE NULL END) AS auto_chinesemedicine_ecode_count,
-        COUNT(DISTINCT CASE 
-            WHEN r.sectionid = 8515 AND d.is_coldchain = 0 AND d.is_chinese_medicine = 0 
-            THEN e.ecode ELSE NULL END) AS auto_other_ecode_count
+        DATE(e.create_time) AS stat_date,
+        e.warehid,
+        e.goodsownerid,
+        e.warehouse_name,
+        e.goodsowner_name,
+        CASE 
+            WHEN e.is_coldchain = 1 THEN '冷链'
+            WHEN e.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END AS category,
+        COUNT(1) AS ecode_count
+    FROM 
+        dwd.logistics_warehouse_ecode e 
+    WHERE 
+        e.is_out = 0
+    GROUP BY 
+        DATE(e.create_time),
+        e.warehid,
+        e.goodsownerid,
+        e.warehouse_name,
+        e.goodsowner_name,
+        CASE 
+            WHEN e.is_coldchain = 1 THEN '冷链'
+            WHEN e.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END
+    
+    UNION ALL
+    
+    SELECT 
+        DATE(e.create_time) AS stat_date,
+        e.warehid,
+        e.goodsownerid,
+        e.warehouse_name,
+        e.goodsowner_name,
+        '总数' AS category,
+        COUNT(1) AS ecode_count
     FROM 
         dwd.logistics_warehouse_ecode e
-    JOIN 
-        dwd.logistics_warehouse_order_receive_dtl r ON e.sourceid = r.indtlid
-    JOIN 
-        in_data d ON r.indtlid = d.indtlid
+    WHERE 
+        e.is_out = 0  -- 入库单
     GROUP BY 
-        DATE(r.check_time),
-        r.warehid,
-        d.goodsownerid,
-        r.warehouse_name,
-        d.goodsowner_name
+        DATE(e.create_time),
+        e.warehid,
+        e.goodsownerid,
+        e.warehouse_name,
+        e.goodsowner_name
 ),
 udicode_data AS (
     SELECT 
-        DATE(r.check_time) AS stat_date,
-        r.warehid,
-        d.goodsownerid,
-        r.warehouse_name,
-        d.goodsowner_name,
-        -- 平库UDI码
-        COUNT(DISTINCT CASE WHEN r.sectionid != 8515 THEN u.udicode ELSE NULL END) AS flat_udicode_count,
-        COUNT(DISTINCT CASE WHEN r.sectionid != 8515 AND d.is_coldchain = 1 THEN u.udicode ELSE NULL END) AS flat_coldchain_udicode_count,
-        COUNT(DISTINCT CASE WHEN r.sectionid != 8515 AND d.is_chinese_medicine = 1 THEN u.udicode ELSE NULL END) AS flat_chinesemedicine_udicode_count,
-        COUNT(DISTINCT CASE 
-            WHEN r.sectionid != 8515 AND d.is_coldchain = 0 AND d.is_chinese_medicine = 0 
-            THEN u.udicode ELSE NULL END) AS flat_other_udicode_count,
-        
-        -- 立库UDI码
-        COUNT(DISTINCT CASE WHEN r.sectionid = 8515 THEN u.udicode ELSE NULL END) AS auto_udicode_count,
-        COUNT(DISTINCT CASE WHEN r.sectionid = 8515 AND d.is_coldchain = 1 THEN u.udicode ELSE NULL END) AS auto_coldchain_udicode_count,
-        COUNT(DISTINCT CASE WHEN r.sectionid = 8515 AND d.is_chinese_medicine = 1 THEN u.udicode ELSE NULL END) AS auto_chinesemedicine_udicode_count,
-        COUNT(DISTINCT CASE 
-            WHEN r.sectionid = 8515 AND d.is_coldchain = 0 AND d.is_chinese_medicine = 0 
-            THEN u.udicode ELSE NULL END) AS auto_other_udicode_count
+        DATE(e.create_time) AS stat_date,
+        e.warehid,
+        e.goodsownerid,
+        e.warehouse_name,
+        e.goodsowner_name,
+        CASE 
+            WHEN e.is_coldchain = 1 THEN '冷链'
+            WHEN e.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END AS category,
+        COUNT(1) AS udicode_count
     FROM 
-        dwd.logistics_warehouse_udicode u
-    JOIN 
-        dwd.logistics_warehouse_order_receive_dtl r ON u.sourceid = r.indtlid
-    JOIN 
-        in_data d ON r.indtlid = d.indtlid
+        dwd.logistics_warehouse_udicode e
+    WHERE 
+        e.is_out = 0  -- 入库单
+        AND e.create_time IS NOT NULL
     GROUP BY 
-        DATE(r.check_time),
-        r.warehid,
-        d.goodsownerid,
-        r.warehouse_name,
-        d.goodsowner_name
+        DATE(e.create_time),
+        e.warehid,
+        e.goodsownerid,
+        e.warehouse_name,
+        e.goodsowner_name,
+        CASE 
+            WHEN e.is_coldchain = 1 THEN '冷链'
+            WHEN e.is_chinese_medicine = 1 THEN '中药'
+            ELSE '其他'
+        END
+    
+    UNION ALL
+    
+    SELECT 
+        DATE(e.create_time) AS stat_date,
+        e.warehid,
+        e.goodsownerid,
+        e.warehouse_name,
+        e.goodsowner_name,
+        '总数' AS category,
+        COUNT(1) AS udicode_count
+    FROM 
+        dwd.logistics_warehouse_udicode e
+    WHERE 
+        e.is_out = 0  -- 入库单
+        AND e.create_time IS NOT NULL
+    GROUP BY 
+        DATE(e.create_time),
+        e.warehid,
+        e.goodsownerid,
+        e.warehouse_name,
+        e.goodsowner_name
+),
+union_keys AS (
+    SELECT stat_date, warehid, goodsownerid, category, warehouse_name, goodsowner_name FROM receive_data
+    UNION
+    SELECT stat_date, warehid, goodsownerid, category, warehouse_name, goodsowner_name FROM check_data
+    UNION
+    SELECT stat_date, warehid, goodsownerid, category, warehouse_name, goodsowner_name FROM check_scatter_data
+    UNION
+    SELECT stat_date, warehid, goodsownerid, category, warehouse_name, goodsowner_name FROM check_whole_data
+    UNION
+    SELECT stat_date, warehid, goodsownerid, category, warehouse_name, goodsowner_name FROM flat_shelf_data
+    UNION
+    SELECT stat_date, warehid, goodsownerid, category, warehouse_name, goodsowner_name FROM auto_shelf_data
+    UNION
+    SELECT stat_date, warehid, goodsownerid, category, warehouse_name, goodsowner_name FROM ecode_data
+    UNION
+    SELECT stat_date, warehid, goodsownerid, category, warehouse_name, goodsowner_name FROM udicode_data
 )
+-- 最终SELECT部分：
 SELECT 
-    COALESCE(r.stat_date, COALESCE(c.stat_date, COALESCE(s.stat_date, COALESCE(e.stat_date, u.stat_date)))) AS stat_date,
-    COALESCE(r.warehid, COALESCE(c.warehid, COALESCE(s.warehid, COALESCE(e.warehid, u.warehid)))) AS warehid,
-    COALESCE(r.goodsownerid, COALESCE(c.goodsownerid, COALESCE(s.goodsownerid, COALESCE(e.goodsownerid, u.goodsownerid)))) AS goodsownerid,
-    COALESCE(r.warehouse_name, COALESCE(c.warehouse_name, COALESCE(s.warehouse_name, COALESCE(e.warehouse_name, u.warehouse_name)))) AS warehouse_name,
-    COALESCE(r.goodsowner_name, COALESCE(c.goodsowner_name, COALESCE(s.goodsowner_name, COALESCE(e.goodsowner_name, u.goodsowner_name)))) AS goodsowner_name,
-    
-    -- 收货指标
-    COALESCE(r.receive_item_count, 0) AS receive_item_count,
-    COALESCE(r.receive_coldchain_item_count, 0) AS receive_coldchain_item_count,
-    COALESCE(r.receive_chinesemedicine_item_count, 0) AS receive_chinesemedicine_item_count,
-    COALESCE(r.receive_other_item_count, 0) AS receive_other_item_count,
-    
-    -- 验收指标
-    COALESCE(c.check_item_count, 0) AS check_item_count,
-    COALESCE(c.check_coldchain_item_count, 0) AS check_coldchain_item_count,
-    COALESCE(c.check_chinesemedicine_item_count, 0) AS check_chinesemedicine_item_count,
-    COALESCE(c.check_other_item_count, 0) AS check_other_item_count,
-    
-    -- 平库上架指标 - 整件
-    COALESCE(s.flat_shelf_whole_qty, 0) AS flat_shelf_whole_qty,
-    COALESCE(s.flat_shelf_coldchain_whole_qty, 0) AS flat_shelf_coldchain_whole_qty,
-    COALESCE(s.flat_shelf_chinesemedicine_whole_qty, 0) AS flat_shelf_chinesemedicine_whole_qty,
-    COALESCE(s.flat_shelf_other_whole_qty, 0) AS flat_shelf_other_whole_qty,
-    
-    -- 平库上架指标 - 散件
-    COALESCE(s.flat_shelf_scatter_qty, 0) AS flat_shelf_scatter_qty,
-    COALESCE(s.flat_shelf_coldchain_scatter_qty, 0) AS flat_shelf_coldchain_scatter_qty,
-    COALESCE(s.flat_shelf_chinesemedicine_scatter_qty, 0) AS flat_shelf_chinesemedicine_scatter_qty,
-    COALESCE(s.flat_shelf_other_scatter_qty, 0) AS flat_shelf_other_scatter_qty,
-    
-    -- 立库上架指标 - 整件
-    COALESCE(s.auto_shelf_whole_qty, 0) AS auto_shelf_whole_qty,
-    COALESCE(s.auto_shelf_coldchain_whole_qty, 0) AS auto_shelf_coldchain_whole_qty,
-    COALESCE(s.auto_shelf_chinesemedicine_whole_qty, 0) AS auto_shelf_chinesemedicine_whole_qty,
-    COALESCE(s.auto_shelf_other_whole_qty, 0) AS auto_shelf_other_whole_qty,
-    
-    -- 立库上架指标 - 散件
-    COALESCE(s.auto_shelf_scatter_qty, 0) AS auto_shelf_scatter_qty,
-    COALESCE(s.auto_shelf_coldchain_scatter_qty, 0) AS auto_shelf_coldchain_scatter_qty,
-    COALESCE(s.auto_shelf_chinesemedicine_scatter_qty, 0) AS auto_shelf_chinesemedicine_scatter_qty,
-    COALESCE(s.auto_shelf_other_scatter_qty, 0) AS auto_shelf_other_scatter_qty,
-        
-    -- 平库电子监管码指标
-    COALESCE(e.flat_ecode_count, 0) AS flat_ecode_count,
-    COALESCE(e.flat_coldchain_ecode_count, 0) AS flat_coldchain_ecode_count,
-    COALESCE(e.flat_chinesemedicine_ecode_count, 0) AS flat_chinesemedicine_ecode_count,
-    COALESCE(e.flat_other_ecode_count, 0) AS flat_other_ecode_count,
-    
-    -- 立库电子监管码指标
-    COALESCE(e.auto_ecode_count, 0) AS auto_ecode_count,
-    COALESCE(e.auto_coldchain_ecode_count, 0) AS auto_coldchain_ecode_count,
-    COALESCE(e.auto_chinesemedicine_ecode_count, 0) AS auto_chinesemedicine_ecode_count,
-    COALESCE(e.auto_other_ecode_count, 0) AS auto_other_ecode_count,
-    
-    -- 平库UDI码指标
-    COALESCE(u.flat_udicode_count, 0) AS flat_udicode_count,
-    COALESCE(u.flat_coldchain_udicode_count, 0) AS flat_coldchain_udicode_count,
-    COALESCE(u.flat_chinesemedicine_udicode_count, 0) AS flat_chinesemedicine_udicode_count,
-    COALESCE(u.flat_other_udicode_count, 0) AS flat_other_udicode_count,
-    
-    -- 立库UDI码指标
-    COALESCE(u.auto_udicode_count, 0) AS auto_udicode_count,
-    COALESCE(u.auto_coldchain_udicode_count, 0) AS auto_coldchain_udicode_count,
-    COALESCE(u.auto_chinesemedicine_udicode_count, 0) AS auto_chinesemedicine_udicode_count,
-    COALESCE(u.auto_other_udicode_count, 0) AS auto_other_udicode_count
-FROM 
-    receive_data r
-FULL JOIN 
-    check_data c ON r.stat_date = c.stat_date AND r.warehid = c.warehid AND r.goodsownerid = c.goodsownerid
-FULL JOIN 
-    shelf_data s ON r.stat_date = s.stat_date AND r.warehid = s.warehid AND r.goodsownerid = s.goodsownerid
-FULL JOIN 
-    ecode_data e ON r.stat_date = e.stat_date AND r.warehid = e.warehid AND r.goodsownerid = e.goodsownerid
-FULL JOIN 
-    udicode_data u ON r.stat_date = u.stat_date AND r.warehid = u.warehid AND r.goodsownerid = u.goodsownerid;
+    k.stat_date,
+    k.warehid,
+    k.goodsownerid,
+    k.category,
+    k.warehouse_name,
+    k.goodsowner_name,
+    COALESCE(r.receive_count, 0) AS receive_count,
+    COALESCE(c.check_count, 0) AS check_count,
+    COALESCE(cs.check_scatter_count, 0) AS check_scatter_count,
+    COALESCE(cw.check_whole_count, 0) AS check_whole_count,
+    COALESCE(cs.check_scatter_qty, 0) AS check_scatter_qty,
+    COALESCE(cw.check_whole_qty, 0) AS check_whole_qty,
+    COALESCE(fsd.flat_shelf_whole_qty, 0) AS flat_shelf_whole_qty,
+    COALESCE(fsd.flat_shelf_scatter_count, 0) AS flat_shelf_scatter_count,
+    COALESCE(asd.auto_shelf_whole_qty, 0) AS auto_shelf_whole_qty,
+    COALESCE(asd.auto_shelf_scatter_count, 0) AS auto_shelf_scatter_count,
+    COALESCE(e.ecode_count, 0) AS ecode_count,
+    COALESCE(u.udicode_count, 0) AS udicode_count
+FROM union_keys k
+LEFT JOIN receive_data r ON k.stat_date = r.stat_date AND k.warehid = r.warehid AND k.goodsownerid = r.goodsownerid AND k.category = r.category
+LEFT JOIN check_data c ON k.stat_date = c.stat_date AND k.warehid = c.warehid AND k.goodsownerid = c.goodsownerid AND k.category = c.category
+LEFT JOIN check_scatter_data cs ON k.stat_date = cs.stat_date AND k.warehid = cs.warehid AND k.goodsownerid = cs.goodsownerid AND k.category = cs.category
+LEFT JOIN check_whole_data cw ON k.stat_date = cw.stat_date AND k.warehid = cw.warehid AND k.goodsownerid = cw.goodsownerid AND k.category = cw.category
+LEFT JOIN flat_shelf_data fsd ON k.stat_date = fsd.stat_date AND k.warehid = fsd.warehid AND k.goodsownerid = fsd.goodsownerid AND k.category = fsd.category
+LEFT JOIN auto_shelf_data asd ON k.stat_date = asd.stat_date AND k.warehid = asd.warehid AND k.goodsownerid = asd.goodsownerid AND k.category = asd.category
+LEFT JOIN ecode_data e ON k.stat_date = e.stat_date AND k.warehid = e.warehid AND k.goodsownerid = e.goodsownerid AND k.category = e.category
+LEFT JOIN udicode_data u ON k.stat_date = u.stat_date AND k.warehid = u.warehid AND k.goodsownerid = u.goodsownerid AND k.category = u.category
+WHERE k.warehid is not NULL and k.goodsownerid is not NULL;

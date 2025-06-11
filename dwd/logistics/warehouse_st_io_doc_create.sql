@@ -20,6 +20,7 @@ CREATE TABLE
         -- 状态
         is_out int COMMENT '是否出库单',
         comefrom int COMMENT '来源',
+        rfflag tinyint COMMENT '状态:2-待完成;3-已完成',
 
         -- 仓库
         warehid bigint COMMENT '仓库ID',
@@ -49,6 +50,7 @@ INSERT INTO
         finish_time,
         is_out,
         comefrom,
+        rfflag,
         sourceid,
         goodsownerid,
         goodsowner_name,
@@ -70,6 +72,7 @@ SELECT
     io.rffindate AS finish_time,
     io.inoutflag AS is_out,
     io.comefrom,
+    io.rfflag,
     io.sourceid,
     io.goodsownerid,
     c.goodsownername,
@@ -89,8 +92,8 @@ LEFT JOIN
     ods_wms.tpl_warehouse w ON io.warehid = w.warehid AND w.is_active = 1
 LEFT JOIN 
     dim.goods g ON io.goodsid = g.goodsid AND io.credate >= g.dw_starttime AND io.credate < g.dw_endtime
-LEFT JOIN 
-    dim.wms_goods_feature d ON io.warehid = d.warehid AND io.goodsid = d.goodsid
+JOIN 
+    dim.wms_goods_feature d ON io.warehid = d.warehid AND io.goodsid = d.goodsid AND io.credate >= d.dw_starttime AND io.credate < d.dw_endtime
 LEFT JOIN ods_wms.tpl_goodsowner c ON io.goodsownerid = c.goodsownerid AND c.is_active = 1
 WHERE 
     io.is_active = 1;

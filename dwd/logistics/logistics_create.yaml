@@ -1,0 +1,54 @@
+workflow:
+  name: "logistics_create"
+  project: "dwd"
+  run: true
+
+tasks:
+  - name: warehouse_ecode
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: []
+    sql: $FILE{"warehouse_ecode_create.sql"}
+  
+  - name: warehouse_udicode
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_ecode]
+    sql: $FILE{"warehouse_udicode_create.sql"}
+  
+  - name: warehouse_iwcs_picking
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_udicode]
+    sql: $FILE{"warehouse_iwcs_picking_create.sql"}
+  
+  - name: warehouse_order_in_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_iwcs_picking]
+    sql: $FILE{"warehouse_iwcs_picking_create.sql"}
+
+  - name: warehouse_order_in_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_order_in_doc]
+    sql: $FILE{"warehouse_order_in_dtl_create.sql"}
+
+  - name: warehouse_order_receive_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_order_in_dtl]
+    sql: $FILE{"warehouse_order_receive_dtl_create.sql"}
+  
+  - name: warehouse_st_io_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_order_receive_dtl]
+    sql: $FILE{"warehouse_st_io_doc_create.sql"}

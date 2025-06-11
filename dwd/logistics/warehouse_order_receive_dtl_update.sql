@@ -16,7 +16,9 @@ INSERT INTO
         sectionid,
         check_time,
         goodsid,
-        goods_name
+        goods_name,
+        scatter_qty,
+        whole_qty
     )
 SELECT 
     r.receiveid,
@@ -28,7 +30,9 @@ SELECT
     r.sectionid,
     r.checkdate AS check_time,
     r.goodsid,
-    g.goods_name
+    g.goods_name,
+    r.scatterqty,
+    r.wholeqty
 FROM 
     ods_wms.wms_receive_dtl r
 JOIN 
@@ -37,4 +41,4 @@ LEFT JOIN ods_wms.tpl_warehouse b ON r.warehid = b.warehid AND b.is_active = 1
 LEFT JOIN 
     dim.goods g ON r.goodsid = g.goodsid AND r.checkdate >= g.dw_starttime AND r.checkdate < g.dw_endtime
 WHERE r.is_active = 1
-AND r.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_order_receive_dtl);;
+AND r.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_order_receive_dtl);

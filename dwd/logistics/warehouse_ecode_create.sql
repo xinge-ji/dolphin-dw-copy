@@ -9,8 +9,23 @@ CREATE TABLE
         -- 时间
         create_time datetime COMMENT '建立时间',
 
+        -- 仓库
+        warehid bigint COMMENT '仓库ID',
+        warehouse_name varchar COMMENT '仓库名称',
+
+        -- 货主
+        goodsownerid bigint COMMENT '货主ID',
+        goodsowner_name varchar COMMENT '货主名称',
+
+        -- 商品
+        goodsid bigint COMMENT '商品ID',
+        goods_name varchar COMMENT '商品名称',
+        is_coldchain tinyint COMMENT '是否冷链',
+        is_chinese_medicine tinyint COMMENT '是否中药',
+
         -- 关联单据
         sourceid bigint COMMENT '来源单据ID',
+        is_out tinyint COMMENT '是否出库',
 
         -- 监管码
         ecode bigint COMMENT '监管码'
@@ -21,27 +36,40 @@ CREATE TABLE
         "disable_auto_compaction" = "false"
     );
 
-INSERT INTO 
-    dwd.logistics_warehouse_ecode (
-        recordid,
-        dw_updatetime,
-        create_time,
-        sourceid,
-        ecode
-    )
+INSERT INTO dwd.logistics_warehouse_ecode (
+    recordid,
+    dw_updatetime,
+    create_time,
+    warehid,
+    warehouse_name,
+    goodsownerid,
+    goodsowner_name,
+    goodsid,
+    goods_name,
+    is_coldchain,
+    is_chinese_medicine,
+    sourceid,
+    is_out,
+    ecode
+)
 SELECT 
-    e.recordid,
-    e.dw_updatetime AS dw_updatetime,
-    e.credate AS create_time,
-    e.sourceid,
-    e.ecode
-FROM 
-    ods_wms.wms_ecode_record e
-WHERE 
-    e.is_active = 1;
-
--- 创建索引
-CREATE INDEX IF NOT EXISTS idx_recordid ON dwd.logistics_warehouse_ecode (recordid);
-CREATE INDEX IF NOT EXISTS idx_sourceid ON dwd.logistics_warehouse_ecode (sourceid);
-CREATE INDEX IF NOT EXISTS idx_ecode ON dwd.logistics_warehouse_ecode (ecode);
-CREATE INDEX IF NOT EXISTS idx_create_time ON dwd.logistics_warehouse_ecode (create_time);
+    a.recordid,
+    a.dw_updatetime,
+    a.credate AS create_time,
+    a.warehid,
+    b.warehname AS warehouse_name,
+    a.goodsownerid,
+    c.goodsownername AS goodsowner_name,
+    d.waregoodsid AS goodsid,
+    d.goodsname AS goods_name,
+    CAST(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(IFNULL(a.srcexpno, CAST(a.sourceid AS STRING)), '\n', ''), '\r', ''), '\t', '') AS BIGINT) AS sourceid,
+    IFNULL(e.is_coldchain, 0),
+    IFNULL(e.is_chinese_medicine, 0),
+    a.inoutflag AS is_out, -- 1=出库, 0=入库
+    a.ecode
+FROM ods_wms.wms_ecode_record a
+LEFT JOIN ods_wms.tpl_warehouse b ON a.warehid = b.warehid AND b.is_active = 1
+LEFT JOIN ods_wms.tpl_goodsowner c ON a.goodsownerid = c.goodsownerid AND c.is_active = 1
+LEFT JOIN ods_wms.tpl_goods d ON a.ownergoodsid = d.ownergoodsid AND d.is_active = 1
+LEFT JOIN dim.wms_goods_feature e ON a.warehid = e.warehid AND d.waregoodsid = e.goodsid AND a.credate >= e.dw_starttime AND a.credate < e.dw_endtime
+WHERE a.is_active = 1;

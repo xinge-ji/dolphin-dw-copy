@@ -20,7 +20,9 @@ CREATE TABLE
 
         -- 商品
         goodsid bigint COMMENT '商品ID',
-        goods_name varchar COMMENT '商品名称'
+        goods_name varchar COMMENT '商品名称',
+        scatter_qty decimal(16, 6) COMMENT '散件数量',
+        whole_qty decimal COMMENT '整件数量'
     ) UNIQUE KEY (receiveid, dw_updatetime) DISTRIBUTED BY HASH (receiveid) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",
@@ -40,7 +42,9 @@ INSERT INTO
         sectionid,
         check_time,
         goodsid,
-        goods_name
+        goods_name,
+        scatter_qty,
+        whole_qty
     )
 SELECT 
     r.receiveid,
@@ -52,7 +56,9 @@ SELECT
     r.sectionid,
     r.checkdate AS check_time,
     r.goodsid,
-    g.goods_name
+    g.goods_name,
+    r.scatterqty,
+    r.wholeqty
 FROM 
     ods_wms.wms_receive_dtl r
 JOIN 

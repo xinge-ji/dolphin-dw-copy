@@ -1,7 +1,7 @@
 workflow:
   name: "wholesale_create"
   project: "ads"
-  schedule: 0 0 0 ? * * *
+  run: true
 
 tasks:
   - name: eshop_sales_entry_m
