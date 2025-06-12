@@ -7,6 +7,7 @@ WHERE a.is_active = 0 AND a.dw_updatetime >= b.dw_updatetime;
 
 INSERT INTO dwd.logistics_warehouse_ecode (
     recordid,
+    dw_updatetime,
     create_time,
     warehid,
     warehouse_name,

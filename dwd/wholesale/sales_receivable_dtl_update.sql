@@ -103,5 +103,7 @@ select
     c.max_payment_date as received_time,
     CASE WHEN c.max_payment_date IS NOT NULL THEN 1 ELSE 0 END as is_received
 from dwd.wholesale_order_sales_dtl a
+INNER JOIN unsettled_salesdtlids x on a.salesdtlid = x.salesdtlid
+INNER JOIN unpaid_salesdtlids y on a.salesdtlid = y.salesdtlid
 left join fully_settled_order_dtl b on a.salesdtlid = b.salesdtlid
 left join fully_paid_order_dtl c on a.salesdtlid = c.salesdtlid;

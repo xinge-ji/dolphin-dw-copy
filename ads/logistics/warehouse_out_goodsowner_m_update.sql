@@ -39,8 +39,8 @@ SELECT
 FROM 
     dws.logistics_warehouse_out_goodsowner_d
 WHERE 
-    WHERE DATE_FORMAT(stat_date, '%Y%m') IN (
-        DATE_FORMAT(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), 'MONTH'), INTERVAL 1 MONTH), '%Y%m')
+    DATE_FORMAT(stat_date, '%Y%m') IN (
+        DATE_FORMAT(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), 'MONTH'), INTERVAL 1 MONTH), '%Y%m'),
         DATE_FORMAT(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), 'MONTH'), INTERVAL 2 MONTH), '%Y%m')
     )
 GROUP BY 

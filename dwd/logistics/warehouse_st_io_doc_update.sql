@@ -54,10 +54,9 @@ LEFT JOIN
     ods_wms.tpl_warehouse w ON io.warehid = w.warehid AND w.is_active = 1
 LEFT JOIN 
     dim.goods g ON io.goodsid = g.goodsid AND io.credate >= g.dw_starttime AND io.credate < g.dw_endtime
-LEFT JOIN 
-    dim.wms_goods_feature d ON io.warehid = d.warehid AND io.goodsid = d.goodsid
 JOIN 
     dim.wms_goods_feature d ON io.warehid = d.warehid AND io.goodsid = d.goodsid AND io.credate >= d.dw_starttime AND io.credate < d.dw_endtime
+LEFT JOIN ods_wms.tpl_goodsowner c ON io.goodsownerid = c.goodsownerid AND c.is_active = 1
 WHERE 
     io.is_active = 1
-    AND a.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_st_io_doc);
+    AND io.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_st_io_doc);

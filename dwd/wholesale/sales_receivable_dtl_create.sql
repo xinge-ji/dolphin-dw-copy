@@ -53,6 +53,7 @@ WITH settle_summary AS (
         SUM(IFNULL(b.settle_amount, 0)) as total_settle_amount
     FROM dwd.wholesale_order_sales_dtl a
     LEFT JOIN dwd.wholesale_order_settle_dtl b ON a.salesdtlid = b.salesdtlid
+    WHERE a.yewu_date >= date('2025-01-01') AND a.yewu_date < date('2030-01-01') 
     GROUP BY a.salesdtlid, a.sales_amount, a.settle_status, a.yewu_date
 ),
 fully_settled_order_dtl AS (
@@ -68,17 +69,19 @@ fully_settled_order_dtl AS (
 repay_summary AS (
     -- 先计算每个结算单明细的还款汇总
     SELECT 
-        s.sasettledtlid,
-        s.salesid,
-        s.salesdtlid,
-        s.settle_amount,
-        s.received_status,
-        s.confirm_date,
-        MAX(IFNULL(r.payment_date, s.confirm_date)) AS max_payment_date,
+        b.sasettledtlid,
+        a.salesid,
+        a.salesdtlid,
+        b.settle_amount,
+        b.received_status,
+        b.confirm_date,
+        MAX(IFNULL(r.payment_date, b.confirm_date)) AS max_payment_date,
         SUM(IFNULL(r.payment_amount, 0)) as total_received_amount
-    FROM dwd.wholesale_order_settle_dtl s
-    LEFT JOIN dwd.wholesale_order_repay_dtl r ON s.sasettledtlid = r.sasettledtlid
-    GROUP BY s.sasettledtlid, s.salesid, s.salesdtlid, s.settle_amount, s.received_status, s.confirm_date
+    FROM dwd.wholesale_order_sales_dtl a
+    LEFT JOIN dwd.wholesale_order_settle_dtl b ON a.salesdtlid = b.salesdtlid
+    LEFT JOIN dwd.wholesale_order_repay_dtl r ON b.sasettledtlid = r.sasettledtlid
+    WHERE a.yewu_date >= date('2025-01-01') AND a.yewu_date < date('2030-01-01') 
+    GROUP BY b.sasettledtlid, a.salesid, a.salesdtlid, b.settle_amount, b.received_status, b.confirm_date
 ),
 fully_paid_settle_dtl AS (
     -- 基于还款汇总判断是否结清
@@ -121,4 +124,5 @@ select
     CASE WHEN c.max_payment_date IS NOT NULL THEN 1 ELSE 0 END as is_received
 from dwd.wholesale_order_sales_dtl a
 left join fully_settled_order_dtl b on a.salesdtlid = b.salesdtlid
-left join fully_paid_order_dtl c on a.salesdtlid = c.salesdtlid;
+left join fully_paid_order_dtl c on a.salesdtlid = c.salesdtlid
+WHERE a.yewu_date >= date('2025-01-01') AND a.yewu_date < date('2030-01-01') ;
