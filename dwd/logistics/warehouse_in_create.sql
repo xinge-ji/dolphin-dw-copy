@@ -1,0 +1,417 @@
+DROP TABLE IF EXISTS dwd.logistics_warehouse_in;
+CREATE TABLE dwd.logistics_warehouse_in(
+    inid bigint COMMENT '入库单ID',
+    indtlid bigint COMMENT '入库细单ID',
+    receiveid bigint COMMENT '验收细单ID',
+    inoutid bigint COMMENT '出入库单ID',
+    ssc_receive_goods_locate_id decimal(38,0) COMMENT 'iwcs货品入库ID',
+    warehid bigint COMMENT '仓库ID',
+    warehouse_name varchar COMMENT '仓库名称',
+    goodsownerid bigint COMMENT '货主ID',
+    goodsowner_name varchar COMMENT '货主名称',
+    is_autotask tinyint COMMENT '是否自动任务',
+    operationtype_name varchar COMMENT '操作类型名称',
+    create_time datetime COMMENT '入库单建立时间',
+    receive_time datetime COMMENT '收货时间',
+    is_coldchain tinyint COMMENT '是否冷链',
+    is_chinese_medicine tinyint COMMENT '是否中药',
+    check_time datetime COMMENT '验收时间',
+    sectionid bigint COMMENT '区域ID',
+    finish_time datetime COMMENT '平库单完成时间', 
+    iwcs_finish_time datetime COMMENT 'iwcs完成时间',
+    time_order_to_receive double COMMENT '订单到收货时间',
+    time_receive_to_check double COMMENT '收货到验收时间',
+    time_check_to_flat double COMMENT '验收到平库上架时间',
+    time_check_to_auto double COMMENT '验收到立库上架时间',
+    time_order_to_flat double COMMENT '订单到平库上架时间',
+    time_order_to_auto double COMMENT '订单到立库上架时间',
+    time_receive_to_flat double COMMENT '收货到平库上架时间',
+    time_receive_to_auto double COMMENT '收货到立库上架时间',
+    working_time_order_to_receive double COMMENT '订单到收货工作时间',
+    working_time_receive_to_check double COMMENT '收货到验收工作时间',
+    working_time_check_to_flat double COMMENT '验收到平库上架工作时间',
+    working_time_check_to_auto double COMMENT '验收到立库上架工作时间',
+    working_time_order_to_flat double COMMENT '订单到平库上架工作时间',
+    working_time_order_to_auto double COMMENT '订单到立库上架工作时间',
+    working_time_receive_to_flat double COMMENT '收货到平库上架工作时间',
+    working_time_receive_to_auto double COMMENT '收货到立库上架工作时间'
+)
+UNIQUE KEY(inid,indtlid,receiveid,inoutid,ssc_receive_goods_locate_id) 
+DISTRIBUTED BY HASH(inid,indtlid,receiveid,inoutid,ssc_receive_goods_locate_id) 
+PROPERTIES (
+    "replication_allocation" = "tag.location.default: 3",
+    "in_memory" = "false",
+    "storage_format" = "V2",
+    "disable_auto_compaction" = "false"
+);
+
+INSERT INTO dwd.logistics_warehouse_in (
+    inid,
+    indtlid,
+    receiveid,
+    inoutid,
+    ssc_receive_goods_locate_id,
+    warehid,
+    warehouse_name,
+    goodsownerid,
+    goodsowner_name,
+    is_autotask,
+    operationtype_name,
+    create_time,
+    receive_time,
+    is_coldchain,
+    is_chinese_medicine,
+    check_time,
+    sectionid,
+    finish_time,
+    iwcs_finish_time,
+    time_order_to_receive,
+    time_receive_to_check,
+    time_check_to_flat,
+    time_check_to_auto,
+    time_order_to_flat,
+    time_order_to_auto,
+    time_receive_to_flat,
+    time_receive_to_auto,
+    working_time_order_to_receive,
+    working_time_receive_to_check,
+    working_time_check_to_flat,
+    working_time_check_to_auto,
+    working_time_order_to_flat,
+    working_time_order_to_auto,
+    working_time_receive_to_flat,
+    working_time_receive_to_auto
+)
+WITH full_data AS (
+    SELECT
+        a.inid,
+        b.indtlid,
+        a.warehid,
+        a.warehouse_name,
+        a.goodsownerid,
+        a.goodsowner_name,
+        a.is_autotask,
+        a.operationtype_name,
+        a.create_time,
+        b.receive_time,
+        b.is_coldchain,
+        b.is_chinese_medicine,
+        c.receiveid,
+        c.check_time,
+        c.sectionid,
+        io.finish_time,
+        io.inoutid,
+        z.credate as iwcs_finish_time,
+        z.ssc_receive_goods_locate_id
+    FROM dwd.logistics_warehouse_order_in_doc a
+    JOIN dwd.logistics_warehouse_order_in_dtl b ON a.inid = b.inid
+    LEFT JOIN dwd.logistics_warehouse_order_receive_dtl c ON b.indtlid = c.indtlid
+    LEFT JOIN (SELECT * FROM dwd.logistics_warehouse_st_io_doc i WHERE i.is_out = 0 AND i.rfmanid != 0 AND i.sectionid != 8515) io ON io.sourceid = c.receiveid
+    LEFT JOIN ods_wms.zx_19007_v z ON b.indtlid = z.indtlid
+    WHERE a.create_time >= date('2025-01-01') AND a.create_time < date('2099-01-01')
+),
+time_calculations AS (
+    SELECT 
+        fd.*,
+        -- 普通时间计算（小时）
+        CASE WHEN fd.receive_time IS NOT NULL AND fd.create_time IS NOT NULL 
+            THEN TIMESTAMPDIFF(MINUTE, fd.create_time, fd.receive_time) 
+            ELSE NULL END as time_order_to_receive,
+        
+        CASE WHEN fd.check_time IS NOT NULL AND fd.receive_time IS NOT NULL 
+            THEN TIMESTAMPDIFF(MINUTE, fd.receive_time, fd.check_time) 
+            ELSE NULL END as time_receive_to_check,
+        
+        CASE WHEN fd.finish_time IS NOT NULL AND fd.check_time IS NOT NULL 
+            THEN TIMESTAMPDIFF(MINUTE, fd.check_time, fd.finish_time) 
+            ELSE NULL END as time_check_to_flat,
+        
+        CASE WHEN fd.iwcs_finish_time IS NOT NULL AND fd.check_time IS NOT NULL 
+            THEN TIMESTAMPDIFF(MINUTE, fd.check_time, fd.iwcs_finish_time) 
+            ELSE NULL END as time_check_to_auto,
+        
+        CASE WHEN fd.finish_time IS NOT NULL AND fd.create_time IS NOT NULL 
+            THEN TIMESTAMPDIFF(MINUTE, fd.create_time, fd.finish_time) 
+            ELSE NULL END as time_order_to_flat,
+        
+        CASE WHEN fd.iwcs_finish_time IS NOT NULL AND fd.create_time IS NOT NULL 
+            THEN TIMESTAMPDIFF(MINUTE, fd.create_time, fd.iwcs_finish_time) 
+            ELSE NULL END as time_order_to_auto,
+        
+        CASE WHEN fd.finish_time IS NOT NULL AND fd.receive_time IS NOT NULL 
+            THEN TIMESTAMPDIFF(MINUTE, fd.receive_time, fd.finish_time) 
+            ELSE NULL END as time_receive_to_flat,
+        
+        CASE WHEN fd.iwcs_finish_time IS NOT NULL AND fd.receive_time IS NOT NULL 
+            THEN TIMESTAMPDIFF(MINUTE, fd.receive_time, fd.iwcs_finish_time) 
+            ELSE NULL END as time_receive_to_auto
+    FROM full_data fd
+),
+-- 生成日期范围和工作时间计算
+date_ranges AS (
+    SELECT 
+        tc.inid,
+        tc.indtlid,
+        tc.receiveid,
+        tc.inoutid,
+        tc.ssc_receive_goods_locate_id,
+        -- 订单到收货日期范围
+        CASE WHEN tc.receive_time IS NOT NULL AND tc.create_time IS NOT NULL 
+            THEN DATE(tc.create_time) ELSE NULL END as order_start_date,
+        CASE WHEN tc.receive_time IS NOT NULL AND tc.create_time IS NOT NULL 
+            THEN DATE(tc.receive_time) ELSE NULL END as receive_end_date,
+        tc.create_time as order_start_time,
+        tc.receive_time as receive_end_time,
+        
+        -- 收货到验收日期范围
+        CASE WHEN tc.check_time IS NOT NULL AND tc.receive_time IS NOT NULL 
+            THEN DATE(tc.receive_time) ELSE NULL END as receive_start_date,
+        CASE WHEN tc.check_time IS NOT NULL AND tc.receive_time IS NOT NULL 
+            THEN DATE(tc.check_time) ELSE NULL END as check_end_date,
+        tc.receive_time as receive_start_time,
+        tc.check_time as check_end_time,
+        
+        -- 验收到平库日期范围
+        CASE WHEN tc.finish_time IS NOT NULL AND tc.check_time IS NOT NULL 
+            THEN DATE(tc.check_time) ELSE NULL END as check_start_date,
+        CASE WHEN tc.finish_time IS NOT NULL AND tc.check_time IS NOT NULL 
+            THEN DATE(tc.finish_time) ELSE NULL END as flat_end_date,
+        tc.check_time as check_start_time,
+        tc.finish_time as flat_end_time,
+        
+        -- 验收到立库日期范围
+        CASE WHEN tc.iwcs_finish_time IS NOT NULL AND tc.check_time IS NOT NULL 
+            THEN DATE(tc.check_time) ELSE NULL END as check_start_date2,
+        CASE WHEN tc.iwcs_finish_time IS NOT NULL AND tc.check_time IS NOT NULL 
+            THEN DATE(tc.iwcs_finish_time) ELSE NULL END as auto_end_date,
+        tc.check_time as check_start_time2,
+        tc.iwcs_finish_time as auto_end_time
+    FROM time_calculations tc
+),
+-- 计算各个时间段的工作时间
+working_time_order_to_receive AS (
+    SELECT 
+        dr.inid,
+        dr.indtlid,
+        dr.receiveid,
+        dr.inoutid,
+        dr.ssc_receive_goods_locate_id,
+        SUM(
+            CASE 
+                WHEN d.is_workday = 1 THEN
+                    CASE 
+                        -- 开始和结束在同一工作日
+                        WHEN dr.order_start_date = dr.receive_end_date AND d.date_key = dr.order_start_date THEN
+                            GREATEST(0, 
+                                TIMESTAMPDIFF(MINUTE, 
+                                    GREATEST(dr.order_start_time, CONCAT(d.date_key, ' 08:00:00')),
+                                    LEAST(dr.receive_end_time, CONCAT(d.date_key, ' 21:59:59'))
+                                )
+                            )
+                        -- 开始日期
+                        WHEN d.date_key = dr.order_start_date THEN
+                            GREATEST(0,
+                                TIMESTAMPDIFF(MINUTE,
+                                    GREATEST(dr.order_start_time, CONCAT(d.date_key, ' 08:00:00')),
+                                    CONCAT(d.date_key, ' 21:59:59')
+                                )
+                            )
+                        -- 结束日期
+                        WHEN d.date_key = dr.receive_end_date THEN
+                            GREATEST(0,
+                                TIMESTAMPDIFF(MINUTE,
+                                    CONCAT(d.date_key, ' 08:00:00'),
+                                    LEAST(dr.receive_end_time, CONCAT(d.date_key, ' 21:59:59'))
+                                )
+                            )
+                        -- 中间完整工作日
+                        WHEN d.date_key > dr.order_start_date AND d.date_key < dr.receive_end_date THEN
+                            14.0 * 60
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ) as working_time_order_to_receive
+    FROM date_ranges dr
+    LEFT JOIN dim.date d ON d.date_key >= dr.order_start_date 
+                         AND d.date_key <= dr.receive_end_date
+    WHERE dr.order_start_date IS NOT NULL AND dr.receive_end_date IS NOT NULL
+    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+),
+working_time_receive_to_check AS (
+    SELECT 
+        dr.inid,
+        dr.indtlid,
+        dr.receiveid,
+        dr.inoutid,
+        dr.ssc_receive_goods_locate_id,
+        SUM(
+            CASE 
+                WHEN d.is_workday = 1 THEN
+                    CASE 
+                        WHEN dr.receive_start_date = dr.check_end_date AND d.date_key = dr.receive_start_date THEN
+                            GREATEST(0, 
+                                TIMESTAMPDIFF(MINUTE, 
+                                    GREATEST(dr.receive_start_time, CONCAT(d.date_key, ' 08:00:00')),
+                                    LEAST(dr.check_end_time, CONCAT(d.date_key, ' 21:59:59'))
+                                )
+                            )
+                        WHEN d.date_key = dr.receive_start_date THEN
+                            GREATEST(0,
+                                TIMESTAMPDIFF(MINUTE,
+                                    GREATEST(dr.receive_start_time, CONCAT(d.date_key, ' 08:00:00')),
+                                    CONCAT(d.date_key, ' 21:59:59')
+                                )
+                            )
+                        WHEN d.date_key = dr.check_end_date THEN
+                            GREATEST(0,
+                                TIMESTAMPDIFF(MINUTE,
+                                    CONCAT(d.date_key, ' 08:00:00'),
+                                    LEAST(dr.check_end_time, CONCAT(d.date_key, ' 21:59:59'))
+                                )
+                            )
+                        WHEN d.date_key > dr.receive_start_date AND d.date_key < dr.check_end_date THEN
+                            14.0 * 60
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ) as working_time_receive_to_check
+    FROM date_ranges dr
+    LEFT JOIN dim.date d ON d.date_key >= dr.receive_start_date 
+                         AND d.date_key <= dr.check_end_date
+    WHERE dr.receive_start_date IS NOT NULL AND dr.check_end_date IS NOT NULL
+    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+),
+working_time_check_to_flat AS (
+    SELECT 
+        dr.inid,
+        dr.indtlid,
+        dr.receiveid,
+        dr.inoutid,
+        dr.ssc_receive_goods_locate_id,
+        SUM(
+            CASE 
+                WHEN d.is_workday = 1 THEN
+                    CASE 
+                        WHEN dr.check_start_date = dr.flat_end_date AND d.date_key = dr.check_start_date THEN
+                            GREATEST(0, 
+                                TIMESTAMPDIFF(MINUTE, 
+                                    GREATEST(dr.check_start_time, CONCAT(d.date_key, ' 08:00:00')),
+                                    LEAST(dr.flat_end_time, CONCAT(d.date_key, ' 21:59:59'))
+                                )
+                            ) 
+                        WHEN d.date_key = dr.check_start_date THEN
+                            GREATEST(0,
+                                TIMESTAMPDIFF(MINUTE,
+                                    GREATEST(dr.check_start_time, CONCAT(d.date_key, ' 08:00:00')),
+                                    CONCAT(d.date_key, ' 21:59:59')
+                                )
+                            ) 
+                        WHEN d.date_key = dr.flat_end_date THEN
+                            GREATEST(0,
+                                TIMESTAMPDIFF(MINUTE,
+                                    CONCAT(d.date_key, ' 08:00:00'),
+                                    LEAST(dr.flat_end_time, CONCAT(d.date_key, ' 21:59:59'))
+                                )
+                            ) 
+                        WHEN d.date_key > dr.check_start_date AND d.date_key < dr.flat_end_date THEN
+                            14.0 * 60
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ) as working_time_check_to_flat
+    FROM date_ranges dr
+    LEFT JOIN dim.date d ON d.date_key >= dr.check_start_date 
+                         AND d.date_key <= dr.flat_end_date
+    WHERE dr.check_start_date IS NOT NULL AND dr.flat_end_date IS NOT NULL
+    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+),
+working_time_check_to_auto AS (
+    SELECT 
+        dr.inid,
+        dr.indtlid,
+        dr.receiveid,
+        dr.inoutid,
+        dr.ssc_receive_goods_locate_id,
+        SUM(
+            CASE 
+                WHEN d.is_workday = 1 THEN
+                    CASE 
+                        WHEN dr.check_start_date2 = dr.auto_end_date AND d.date_key = dr.check_start_date2 THEN
+                            GREATEST(0, 
+                                TIMESTAMPDIFF(MINUTE, 
+                                    GREATEST(dr.check_start_time2, CONCAT(d.date_key, ' 08:00:00')),
+                                    LEAST(dr.auto_end_time, CONCAT(d.date_key, ' 21:59:59'))
+                                )
+                            ) 
+                        WHEN d.date_key = dr.check_start_date2 THEN
+                            GREATEST(0,
+                                TIMESTAMPDIFF(MINUTE,
+                                    GREATEST(dr.check_start_time2, CONCAT(d.date_key, ' 08:00:00')),
+                                    CONCAT(d.date_key, ' 21:59:59')
+                                )
+                            ) 
+                        WHEN d.date_key = dr.auto_end_date THEN
+                            GREATEST(0,
+                                TIMESTAMPDIFF(MINUTE,
+                                    CONCAT(d.date_key, ' 08:00:00'),
+                                    LEAST(dr.auto_end_time, CONCAT(d.date_key, ' 21:59:59'))
+                                )
+                            ) 
+                        WHEN d.date_key > dr.check_start_date2 AND d.date_key < dr.auto_end_date THEN
+                            14.0 * 60
+                        ELSE 0
+                    END
+                ELSE 0
+            END
+        ) as working_time_check_to_auto
+    FROM date_ranges dr
+    LEFT JOIN dim.date d ON d.date_key >= dr.check_start_date2 
+                         AND d.date_key <= dr.auto_end_date
+    WHERE dr.check_start_date2 IS NOT NULL AND dr.auto_end_date IS NOT NULL
+    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+)
+SELECT 
+    tc.inid,
+    tc.indtlid,
+    tc.receiveid,
+    tc.inoutid,
+    tc.ssc_receive_goods_locate_id,
+    tc.warehid,
+    tc.warehouse_name,
+    tc.goodsownerid,
+    tc.goodsowner_name,
+    tc.is_autotask,
+    tc.operationtype_name,
+    tc.create_time,
+    tc.receive_time,
+    tc.is_coldchain,
+    tc.is_chinese_medicine,
+    tc.check_time,
+    tc.sectionid,
+    tc.finish_time,
+    tc.iwcs_finish_time,
+    tc.time_order_to_receive,
+    tc.time_receive_to_check,
+    tc.time_check_to_flat,
+    tc.time_check_to_auto,
+    tc.time_order_to_flat,
+    tc.time_order_to_auto,
+    tc.time_receive_to_flat,
+    tc.time_receive_to_auto,
+    COALESCE(wtor.working_time_order_to_receive, 0) as working_time_order_to_receive,
+    COALESCE(wrtc.working_time_receive_to_check, 0) as working_time_receive_to_check,
+    COALESCE(wctf.working_time_check_to_flat, 0) as working_time_check_to_flat,
+    COALESCE(wcta.working_time_check_to_auto, 0) as working_time_check_to_auto,
+    -- 组合计算的工作时间
+    COALESCE(wtor.working_time_order_to_receive, 0) + COALESCE(wctf.working_time_check_to_flat, 0) as working_time_order_to_flat,
+    COALESCE(wtor.working_time_order_to_receive, 0) + COALESCE(wcta.working_time_check_to_auto, 0) as working_time_order_to_auto,
+    COALESCE(wrtc.working_time_receive_to_check, 0) + COALESCE(wctf.working_time_check_to_flat, 0) as working_time_receive_to_flat,
+    COALESCE(wrtc.working_time_receive_to_check, 0) + COALESCE(wcta.working_time_check_to_auto, 0) as working_time_receive_to_auto
+FROM time_calculations tc
+LEFT JOIN working_time_order_to_receive wtor ON tc.inid = wtor.inid AND tc.indtlid = wtor.indtlid AND tc.receiveid = wtor.receiveid AND tc.inoutid = wtor.inoutid AND tc.ssc_receive_goods_locate_id = wtor.ssc_receive_goods_locate_id
+LEFT JOIN working_time_receive_to_check wrtc ON tc.inid = wrtc.inid AND tc.indtlid = wrtc.indtlid AND tc.receiveid = wrtc.receiveid AND tc.inoutid = wrtc.inoutid AND tc.ssc_receive_goods_locate_id = wrtc.ssc_receive_goods_locate_id
+LEFT JOIN working_time_check_to_flat wctf ON tc.inid = wctf.inid AND tc.indtlid = wctf.indtlid AND tc.receiveid = wctf.receiveid AND tc.inoutid = wctf.inoutid AND tc.ssc_receive_goods_locate_id = wctf.ssc_receive_goods_locate_id
+LEFT JOIN working_time_check_to_auto wcta ON tc.inid = wcta.inid AND tc.indtlid = wcta.indtlid AND tc.receiveid = wcta.receiveid AND tc.inoutid = wcta.inoutid AND tc.ssc_receive_goods_locate_id = wcta.ssc_receive_goods_locate_id;
