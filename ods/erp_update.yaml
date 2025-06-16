@@ -500,20 +500,6 @@ tasks:
         FROM bms_mv_dtl_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM bms_mv_dtl WHERE s.MOVEDTLID = BMS_MV_DTL.MOVEDTLID AND s.DW_ID = BMS_MV_DTL.DW_ID AND BMS_MV_DTL.IS_ACTIVE=1);
         DROP TABLE bms_mv_dtl_doristmp;
-        UPDATE BMS_MV_DTL SET is_active = 0;
-        CREATE TABLE IF NOT EXISTS BMS_MV_DTL_latest_records AS
-        SELECT 
-            MOVEDTLID,
-            MAX(dw_createtime) AS dw_createtime
-        FROM BMS_MV_DTL
-        GROUP BY MOVEDTLID;
-        UPDATE BMS_MV_DTL SET is_active = 1
-        FROM BMS_MV_DTL_latest_records
-        WHERE BMS_MV_DTL.dw_createtime = BMS_MV_DTL_latest_records.dw_createtime AND 
-        BMS_MV_DTL.dw_createtime = BMS_MV_DTL.dw_updatetime AND 
-            BMS_MV_DTL.MOVEDTLID=BMS_MV_DTL_latest_records.MOVEDTLID;
-        DROP TABLE IF EXISTS BMS_MV_DTL_latest_records;
-
 
   - name: BMS_SA_CON_DTL_d_ods_tmp
     task_type: SeaTunnel
@@ -585,19 +571,6 @@ tasks:
         FROM bms_sa_con_dtl_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM bms_sa_con_dtl WHERE s.CONDTLID = BMS_SA_CON_DTL.CONDTLID AND s.DW_ID = BMS_SA_CON_DTL.DW_ID AND BMS_SA_CON_DTL.IS_ACTIVE=1);
         DROP TABLE bms_sa_con_dtl_doristmp;
-        UPDATE BMS_SA_CON_DTL SET is_active = 0;
-        CREATE TABLE IF NOT EXISTS BMS_SA_CON_DTL_latest_records AS
-        SELECT 
-            CONDTLID,
-            MAX(dw_createtime) AS dw_createtime
-        FROM BMS_SA_CON_DTL
-        GROUP BY CONDTLID;
-        UPDATE BMS_SA_CON_DTL SET is_active = 1
-        FROM BMS_SA_CON_DTL_latest_records
-        WHERE BMS_SA_CON_DTL.dw_createtime = BMS_SA_CON_DTL_latest_records.dw_createtime AND 
-        BMS_SA_CON_DTL.dw_createtime = BMS_SA_CON_DTL.dw_updatetime AND 
-            BMS_SA_CON_DTL.CONDTLID=BMS_SA_CON_DTL_latest_records.CONDTLID;
-        DROP TABLE IF EXISTS BMS_SA_CON_DTL_latest_records;
 
   - name: BMS_SA_REC_DTL_d_ods_tmp
     task_type: SeaTunnel
@@ -669,20 +642,6 @@ tasks:
         FROM bms_sa_rec_dtl_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM bms_sa_rec_dtl WHERE s.SARECDTLID = BMS_SA_REC_DTL.SARECDTLID AND s.DW_ID = BMS_SA_REC_DTL.DW_ID AND BMS_SA_REC_DTL.IS_ACTIVE=1);
         DROP TABLE bms_sa_rec_dtl_doristmp;
-        UPDATE BMS_SA_REC_DTL SET is_active = 0;
-        CREATE TABLE IF NOT EXISTS BMS_SA_REC_DTL_latest_records AS
-        SELECT 
-            SARECDTLID,
-            MAX(dw_createtime) AS dw_createtime
-        FROM BMS_SA_REC_DTL
-        GROUP BY SARECDTLID;
-        UPDATE BMS_SA_REC_DTL SET is_active = 1
-        FROM BMS_SA_REC_DTL_latest_records
-        WHERE BMS_SA_REC_DTL.dw_createtime = BMS_SA_REC_DTL_latest_records.dw_createtime AND 
-        BMS_SA_REC_DTL.dw_createtime = BMS_SA_REC_DTL.dw_updatetime AND 
-            BMS_SA_REC_DTL.SARECDTLID=BMS_SA_REC_DTL_latest_records.SARECDTLID;
-        DROP TABLE IF EXISTS BMS_SA_REC_DTL_latest_records;
-
 
   - name: GRESA_SA_DTL_d_ods_tmp
     task_type: SeaTunnel
@@ -754,19 +713,6 @@ tasks:
         FROM gresa_sa_dtl_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM gresa_sa_dtl WHERE s.RSADTLID = GRESA_SA_DTL.RSADTLID AND s.DW_ID = GRESA_SA_DTL.DW_ID AND GRESA_SA_DTL.IS_ACTIVE=1);
         DROP TABLE gresa_sa_dtl_doristmp;
-        UPDATE GRESA_SA_DTL SET is_active = 0;
-        CREATE TABLE IF NOT EXISTS GRESA_SA_DTL_latest_records AS
-        SELECT 
-            RSADTLID,
-            MAX(dw_createtime) AS dw_createtime
-        FROM GRESA_SA_DTL
-        GROUP BY RSADTLID;
-        UPDATE GRESA_SA_DTL SET is_active = 1
-        FROM GRESA_SA_DTL_latest_records
-        WHERE GRESA_SA_DTL.dw_createtime = GRESA_SA_DTL_latest_records.dw_createtime AND 
-        GRESA_SA_DTL.dw_createtime = GRESA_SA_DTL.dw_updatetime AND 
-            GRESA_SA_DTL.RSADTLID=GRESA_SA_DTL_latest_records.RSADTLID;
-        DROP TABLE IF EXISTS GRESA_SA_DTL_latest_records;
 
   - name: BMS_ST_IO_DTL_d_ods_tmp
     task_type: SeaTunnel
@@ -775,7 +721,7 @@ tasks:
     startup_script: "seatunnel.sh"
     use_custom: true
     deploy_mode: "cluster"
-    flag: YES
+    flag: NO
     deps: [GRESA_SA_DTL_d_ods_update]
     raw_script: |
         env{
@@ -827,7 +773,7 @@ tasks:
     fail_retry_times: 1
     fail_retry_interval: 5
     datasource_name: "ods_erp"
-    flag: YES
+    flag: NO
     deps: [BMS_ST_IO_DTL_d_ods_tmp]
     sql: |
         UPDATE bms_st_io_dtl t
@@ -838,19 +784,6 @@ tasks:
         FROM bms_st_io_dtl_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM bms_st_io_dtl WHERE s.IODTLID = BMS_ST_IO_DTL.IODTLID AND s.DW_ID = BMS_ST_IO_DTL.DW_ID AND BMS_ST_IO_DTL.IS_ACTIVE=1);
         DROP TABLE bms_st_io_dtl_doristmp;
-        UPDATE BMS_ST_IO_DTL SET is_active = 0;
-        CREATE TABLE IF NOT EXISTS BMS_ST_IO_DTL_latest_records AS
-        SELECT 
-            IODTLID,
-            MAX(dw_createtime) AS dw_createtime
-        FROM BMS_ST_IO_DTL
-        GROUP BY IODTLID;
-        UPDATE BMS_ST_IO_DTL SET is_active = 1
-        FROM BMS_ST_IO_DTL_latest_records
-        WHERE BMS_ST_IO_DTL.dw_createtime = BMS_ST_IO_DTL_latest_records.dw_createtime AND 
-        BMS_ST_IO_DTL.dw_createtime = BMS_ST_IO_DTL.dw_updatetime AND 
-            BMS_ST_IO_DTL.IODTLID=BMS_ST_IO_DTL_latest_records.IODTLID;
-        DROP TABLE IF EXISTS BMS_ST_IO_DTL_latest_records;
 
   - name: GPCS_REQSUPPLYDTL_d_ods_tmp
     task_type: SeaTunnel
@@ -922,17 +855,4 @@ tasks:
         FROM gpcs_reqsupplydtl_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM gpcs_reqsupplydtl WHERE s.REQSUPPLYDTLID = GPCS_REQSUPPLYDTL.REQSUPPLYDTLID AND s.DW_ID = GPCS_REQSUPPLYDTL.DW_ID AND GPCS_REQSUPPLYDTL.IS_ACTIVE=1);
         DROP TABLE gpcs_reqsupplydtl_doristmp;
-        UPDATE GPCS_REQSUPPLYDTL SET is_active = 0;
-        CREATE TABLE IF NOT EXISTS GPCS_REQSUPPLYDTL_latest_records AS
-        SELECT 
-            REQSUPPLYDTLID,
-            MAX(dw_createtime) AS dw_createtime
-        FROM GPCS_REQSUPPLYDTL
-        GROUP BY REQSUPPLYDTLID;
-        UPDATE GPCS_REQSUPPLYDTL SET is_active = 1
-        FROM GPCS_REQSUPPLYDTL_latest_records
-        WHERE GPCS_REQSUPPLYDTL.dw_createtime = GPCS_REQSUPPLYDTL_latest_records.dw_createtime AND 
-        GPCS_REQSUPPLYDTL.dw_createtime = GPCS_REQSUPPLYDTL.dw_updatetime AND 
-            GPCS_REQSUPPLYDTL.REQSUPPLYDTLID=GPCS_REQSUPPLYDTL_latest_records.REQSUPPLYDTLID;
-        DROP TABLE IF EXISTS GPCS_REQSUPPLYDTL_latest_records;
 

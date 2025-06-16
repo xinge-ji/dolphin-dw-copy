@@ -287,21 +287,6 @@ tasks:
         FROM tms_dispatch_dtl_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM tms_dispatch_dtl WHERE s.DISPATCHDTLID = TMS_DISPATCH_DTL.DISPATCHDTLID AND s.DW_ID = TMS_DISPATCH_DTL.DW_ID AND TMS_DISPATCH_DTL.IS_ACTIVE=1);
         DROP TABLE tms_dispatch_dtl_doristmp;
-        UPDATE TMS_DISPATCH_DTL SET is_active = 0;
-        DROP TABLE IF EXISTS TMS_DISPATCH_DTL_latest_records;
-        CREATE TABLE TMS_DISPATCH_DTL_latest_records AS
-        SELECT 
-            DISPATCHDTLID,
-            MAX(dw_createtime) AS dw_createtime
-        FROM TMS_DISPATCH_DTL
-        GROUP BY DISPATCHDTLID;
-        UPDATE TMS_DISPATCH_DTL SET is_active = 1
-        FROM TMS_DISPATCH_DTL_latest_records
-        WHERE TMS_DISPATCH_DTL.dw_createtime = TMS_DISPATCH_DTL_latest_records.dw_createtime AND 
-        TMS_DISPATCH_DTL.dw_createtime = TMS_DISPATCH_DTL.dw_updatetime AND 
-            TMS_DISPATCH_DTL.DISPATCHDTLID=TMS_DISPATCH_DTL_latest_records.DISPATCHDTLID;
-        DROP TABLE IF EXISTS TMS_DISPATCH_DTL_latest_records;
-
 
   - name: WMS_ECODE_RECORD_d_ods_tmp
     task_type: SeaTunnel
