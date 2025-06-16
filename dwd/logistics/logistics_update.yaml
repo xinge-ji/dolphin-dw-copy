@@ -52,3 +52,10 @@ tasks:
     flag: YES
     deps: [warehouse_order_receive_dtl]
     sql: $FILE{"warehouse_st_io_doc_update.sql"}
+  
+  - name: warehouse_in_time
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_st_io_doc]
+    sql: $FILE{"warehouse_in_time_update.sql"}

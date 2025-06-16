@@ -77,7 +77,6 @@ WITH in_data AS (
     WHERE 
         d.is_recheck = 0
         AND doc.is_autotask = 0
-        AND doc.usestatus = 3
         AND d.receive_time is not NULL
 ),
 receive_data AS (

@@ -42,7 +42,6 @@ WITH in_data AS (
     WHERE 
         d.is_recheck = 0
         AND doc.is_autotask = 0
-        AND doc.usestatus = 3
         AND d.receive_time is not NULL
         AND DATE(d.receive_time) >= CURRENT_DATE() - INTERVAL 60 DAY
         AND DATE(d.receive_time) < CURRENT_DATE()

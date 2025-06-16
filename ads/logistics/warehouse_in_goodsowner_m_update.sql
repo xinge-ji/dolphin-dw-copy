@@ -48,6 +48,7 @@ FROM
     dws.logistics_warehouse_in_goodsowner_d
 WHERE 
     DATE_FORMAT(stat_date, '%Y%m') IN (
+        DATE_FORMAT(DATE_TRUNC(CURRENT_DATE(), 'MONTH'), '%Y%m'),
         DATE_FORMAT(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), 'MONTH'), INTERVAL 1 MONTH), '%Y%m'),
         DATE_FORMAT(DATE_SUB(DATE_TRUNC(CURRENT_DATE(), 'MONTH'), INTERVAL 2 MONTH), '%Y%m')
     )

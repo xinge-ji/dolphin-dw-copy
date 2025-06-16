@@ -70,8 +70,6 @@ SELECT
     SUM(out_whole_qty) AS out_whole_qty
 FROM 
     dws.logistics_warehouse_out_goodsowner_d
-WHERE 
-    stat_date < DATE_TRUNC(CURRENT_DATE(), 'MONTH')
 GROUP BY 
     DATE_TRUNC(stat_date,'MONTH'),
     warehid,

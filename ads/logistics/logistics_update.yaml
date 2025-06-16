@@ -24,9 +24,23 @@ tasks:
     deps: [dependent]
     sql: $FILE{"warehouse_in_goodsowner_m_update.sql"}
   
-  - name: warehouse_out_goodsowner_m
+  - name: warehouse_in_operationtype_m
     task_type: Sql
     datasource_name: "dwd"
     flag: YES
     deps: [warehouse_in_goodsowner_m]
+    sql: $FILE{"warehouse_in_operationtype_m_update.sql"}
+  
+  - name: warehouse_in_category_m
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_in_operationtype_m]
+    sql: $FILE{"warehouse_in_category_m_update.sql"}
+  
+  - name: warehouse_out_goodsowner_m
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_in_category_m]
     sql: $FILE{"warehouse_out_goodsowner_m_update.sql"}

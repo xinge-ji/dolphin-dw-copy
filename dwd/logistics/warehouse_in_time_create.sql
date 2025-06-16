@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS dwd.logistics_warehouse_in;
-CREATE TABLE dwd.logistics_warehouse_in(
+DROP TABLE IF EXISTS dwd.logistics_warehouse_in_time;
+CREATE TABLE dwd.logistics_warehouse_in_time (
     inid bigint COMMENT '入库单ID',
     indtlid bigint COMMENT '入库细单ID',
     receiveid bigint COMMENT '验收细单ID',
@@ -45,7 +45,7 @@ PROPERTIES (
     "disable_auto_compaction" = "false"
 );
 
-INSERT INTO dwd.logistics_warehouse_in (
+INSERT INTO dwd.logistics_warehouse_in_time (
     inid,
     indtlid,
     receiveid,
@@ -193,42 +193,35 @@ working_time_order_to_receive AS (
     SELECT 
         dr.inid,
         dr.indtlid,
-        dr.receiveid,
-        dr.inoutid,
-        dr.ssc_receive_goods_locate_id,
         SUM(
             CASE 
-                WHEN d.is_workday = 1 THEN
-                    CASE 
-                        -- 开始和结束在同一工作日
-                        WHEN dr.order_start_date = dr.receive_end_date AND d.date_key = dr.order_start_date THEN
-                            GREATEST(0, 
-                                TIMESTAMPDIFF(MINUTE, 
-                                    GREATEST(dr.order_start_time, CONCAT(d.date_key, ' 08:00:00')),
-                                    LEAST(dr.receive_end_time, CONCAT(d.date_key, ' 21:59:59'))
-                                )
-                            )
-                        -- 开始日期
-                        WHEN d.date_key = dr.order_start_date THEN
-                            GREATEST(0,
-                                TIMESTAMPDIFF(MINUTE,
-                                    GREATEST(dr.order_start_time, CONCAT(d.date_key, ' 08:00:00')),
-                                    CONCAT(d.date_key, ' 21:59:59')
-                                )
-                            )
-                        -- 结束日期
-                        WHEN d.date_key = dr.receive_end_date THEN
-                            GREATEST(0,
-                                TIMESTAMPDIFF(MINUTE,
-                                    CONCAT(d.date_key, ' 08:00:00'),
-                                    LEAST(dr.receive_end_time, CONCAT(d.date_key, ' 21:59:59'))
-                                )
-                            )
-                        -- 中间完整工作日
-                        WHEN d.date_key > dr.order_start_date AND d.date_key < dr.receive_end_date THEN
-                            14.0 * 60
-                        ELSE 0
-                    END
+                -- 开始和结束在同一工作日
+                WHEN dr.order_start_date = dr.receive_end_date AND d.date_key = dr.order_start_date THEN
+                    GREATEST(0, 
+                        TIMESTAMPDIFF(MINUTE, 
+                            GREATEST(dr.order_start_time, STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s')),
+                            LEAST(dr.receive_end_time, STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s'))
+                        )
+                    )
+                -- 开始日期
+                WHEN d.date_key = dr.order_start_date THEN
+                    GREATEST(0,
+                        TIMESTAMPDIFF(MINUTE,
+                            GREATEST(dr.order_start_time, STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s')),
+                            STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s')
+                        )
+                    )
+                -- 结束日期
+                WHEN d.date_key = dr.receive_end_date THEN
+                    GREATEST(0,
+                        TIMESTAMPDIFF(MINUTE,
+                            STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s'),
+                            LEAST(dr.receive_end_time, STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s'))
+                        )
+                    )
+                -- 中间完整工作日
+                WHEN d.date_key > dr.order_start_date AND d.date_key < dr.receive_end_date THEN
+                    14.0 * 60
                 ELSE 0
             END
         ) as working_time_order_to_receive
@@ -236,44 +229,38 @@ working_time_order_to_receive AS (
     LEFT JOIN dim.date d ON d.date_key >= dr.order_start_date 
                          AND d.date_key <= dr.receive_end_date
     WHERE dr.order_start_date IS NOT NULL AND dr.receive_end_date IS NOT NULL
-    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+    GROUP BY dr.inid, dr.indtlid
 ),
 working_time_receive_to_check AS (
     SELECT 
         dr.inid,
         dr.indtlid,
         dr.receiveid,
-        dr.inoutid,
-        dr.ssc_receive_goods_locate_id,
         SUM(
             CASE 
-                WHEN d.is_workday = 1 THEN
-                    CASE 
-                        WHEN dr.receive_start_date = dr.check_end_date AND d.date_key = dr.receive_start_date THEN
-                            GREATEST(0, 
-                                TIMESTAMPDIFF(MINUTE, 
-                                    GREATEST(dr.receive_start_time, CONCAT(d.date_key, ' 08:00:00')),
-                                    LEAST(dr.check_end_time, CONCAT(d.date_key, ' 21:59:59'))
-                                )
-                            )
-                        WHEN d.date_key = dr.receive_start_date THEN
-                            GREATEST(0,
-                                TIMESTAMPDIFF(MINUTE,
-                                    GREATEST(dr.receive_start_time, CONCAT(d.date_key, ' 08:00:00')),
-                                    CONCAT(d.date_key, ' 21:59:59')
-                                )
-                            )
-                        WHEN d.date_key = dr.check_end_date THEN
-                            GREATEST(0,
-                                TIMESTAMPDIFF(MINUTE,
-                                    CONCAT(d.date_key, ' 08:00:00'),
-                                    LEAST(dr.check_end_time, CONCAT(d.date_key, ' 21:59:59'))
-                                )
-                            )
-                        WHEN d.date_key > dr.receive_start_date AND d.date_key < dr.check_end_date THEN
-                            14.0 * 60
-                        ELSE 0
-                    END
+                WHEN dr.receive_start_date = dr.check_end_date AND d.date_key = dr.receive_start_date THEN
+                    GREATEST(0, 
+                        TIMESTAMPDIFF(MINUTE, 
+                            GREATEST(dr.receive_start_time, STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s')),
+                            LEAST(dr.check_end_time, STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s'))
+                        )
+                    )
+                WHEN d.date_key = dr.receive_start_date THEN
+                    GREATEST(0,
+                        TIMESTAMPDIFF(MINUTE,
+                            GREATEST(dr.receive_start_time, STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s')),
+                            STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s')
+                        )
+                    )
+                WHEN d.date_key = dr.check_end_date THEN
+                    GREATEST(0,
+                        TIMESTAMPDIFF(MINUTE,
+                            STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s'),
+                            LEAST(dr.check_end_time, STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s'))
+                        )
+                    )
+                WHEN d.date_key > dr.receive_start_date AND d.date_key < dr.check_end_date THEN
+                    14.0 * 60
                 ELSE 0
             END
         ) as working_time_receive_to_check
@@ -281,7 +268,7 @@ working_time_receive_to_check AS (
     LEFT JOIN dim.date d ON d.date_key >= dr.receive_start_date 
                          AND d.date_key <= dr.check_end_date
     WHERE dr.receive_start_date IS NOT NULL AND dr.check_end_date IS NOT NULL
-    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+    GROUP BY dr.inid, dr.indtlid, dr.receiveid
 ),
 working_time_check_to_flat AS (
     SELECT 
@@ -289,36 +276,31 @@ working_time_check_to_flat AS (
         dr.indtlid,
         dr.receiveid,
         dr.inoutid,
-        dr.ssc_receive_goods_locate_id,
         SUM(
             CASE 
-                WHEN d.is_workday = 1 THEN
-                    CASE 
-                        WHEN dr.check_start_date = dr.flat_end_date AND d.date_key = dr.check_start_date THEN
-                            GREATEST(0, 
-                                TIMESTAMPDIFF(MINUTE, 
-                                    GREATEST(dr.check_start_time, CONCAT(d.date_key, ' 08:00:00')),
-                                    LEAST(dr.flat_end_time, CONCAT(d.date_key, ' 21:59:59'))
-                                )
-                            ) 
-                        WHEN d.date_key = dr.check_start_date THEN
-                            GREATEST(0,
-                                TIMESTAMPDIFF(MINUTE,
-                                    GREATEST(dr.check_start_time, CONCAT(d.date_key, ' 08:00:00')),
-                                    CONCAT(d.date_key, ' 21:59:59')
-                                )
-                            ) 
-                        WHEN d.date_key = dr.flat_end_date THEN
-                            GREATEST(0,
-                                TIMESTAMPDIFF(MINUTE,
-                                    CONCAT(d.date_key, ' 08:00:00'),
-                                    LEAST(dr.flat_end_time, CONCAT(d.date_key, ' 21:59:59'))
-                                )
-                            ) 
-                        WHEN d.date_key > dr.check_start_date AND d.date_key < dr.flat_end_date THEN
-                            14.0 * 60
-                        ELSE 0
-                    END
+                WHEN dr.check_start_date = dr.flat_end_date AND d.date_key = dr.check_start_date THEN
+                    GREATEST(0, 
+                        TIMESTAMPDIFF(MINUTE, 
+                            GREATEST(dr.check_start_time, STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s')),
+                            LEAST(dr.flat_end_time, STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s'))
+                        )
+                    ) 
+                WHEN d.date_key = dr.check_start_date THEN
+                    GREATEST(0,
+                        TIMESTAMPDIFF(MINUTE,
+                            GREATEST(dr.check_start_time, STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s')),
+                            STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s')
+                        )
+                    ) 
+                WHEN d.date_key = dr.flat_end_date THEN
+                    GREATEST(0,
+                        TIMESTAMPDIFF(MINUTE,
+                            STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s'),
+                            LEAST(dr.flat_end_time, STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s'))
+                        )
+                    ) 
+                WHEN d.date_key > dr.check_start_date AND d.date_key < dr.flat_end_date THEN
+                    14.0 * 60
                 ELSE 0
             END
         ) as working_time_check_to_flat
@@ -326,44 +308,39 @@ working_time_check_to_flat AS (
     LEFT JOIN dim.date d ON d.date_key >= dr.check_start_date 
                          AND d.date_key <= dr.flat_end_date
     WHERE dr.check_start_date IS NOT NULL AND dr.flat_end_date IS NOT NULL
-    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid
 ),
 working_time_check_to_auto AS (
     SELECT 
         dr.inid,
         dr.indtlid,
         dr.receiveid,
-        dr.inoutid,
         dr.ssc_receive_goods_locate_id,
         SUM(
             CASE 
-                WHEN d.is_workday = 1 THEN
-                    CASE 
-                        WHEN dr.check_start_date2 = dr.auto_end_date AND d.date_key = dr.check_start_date2 THEN
-                            GREATEST(0, 
-                                TIMESTAMPDIFF(MINUTE, 
-                                    GREATEST(dr.check_start_time2, CONCAT(d.date_key, ' 08:00:00')),
-                                    LEAST(dr.auto_end_time, CONCAT(d.date_key, ' 21:59:59'))
-                                )
-                            ) 
-                        WHEN d.date_key = dr.check_start_date2 THEN
-                            GREATEST(0,
-                                TIMESTAMPDIFF(MINUTE,
-                                    GREATEST(dr.check_start_time2, CONCAT(d.date_key, ' 08:00:00')),
-                                    CONCAT(d.date_key, ' 21:59:59')
-                                )
-                            ) 
-                        WHEN d.date_key = dr.auto_end_date THEN
-                            GREATEST(0,
-                                TIMESTAMPDIFF(MINUTE,
-                                    CONCAT(d.date_key, ' 08:00:00'),
-                                    LEAST(dr.auto_end_time, CONCAT(d.date_key, ' 21:59:59'))
-                                )
-                            ) 
-                        WHEN d.date_key > dr.check_start_date2 AND d.date_key < dr.auto_end_date THEN
-                            14.0 * 60
-                        ELSE 0
-                    END
+                WHEN dr.check_start_date2 = dr.auto_end_date AND d.date_key = dr.check_start_date2 THEN
+                    GREATEST(0, 
+                        TIMESTAMPDIFF(MINUTE, 
+                            GREATEST(dr.check_start_time2, STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s')),
+                            LEAST(dr.auto_end_time, STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s'))
+                        )
+                    ) 
+                WHEN d.date_key = dr.check_start_date2 THEN
+                    GREATEST(0,
+                        TIMESTAMPDIFF(MINUTE,
+                            GREATEST(dr.check_start_time2, STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s')),
+                            STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s')
+                        )
+                    ) 
+                WHEN d.date_key = dr.auto_end_date THEN
+                    GREATEST(0,
+                        TIMESTAMPDIFF(MINUTE,
+                            STR_TO_DATE(CONCAT(d.date_key, ' 08:00:00'), '%Y-%m-%d %H:%i:%s'),
+                            LEAST(dr.auto_end_time, STR_TO_DATE(CONCAT(d.date_key, ' 21:59:59'), '%Y-%m-%d %H:%i:%s'))
+                        )
+                    ) 
+                WHEN d.date_key > dr.check_start_date2 AND d.date_key < dr.auto_end_date THEN
+                    14.0 * 60
                 ELSE 0
             END
         ) as working_time_check_to_auto
@@ -371,7 +348,7 @@ working_time_check_to_auto AS (
     LEFT JOIN dim.date d ON d.date_key >= dr.check_start_date2 
                          AND d.date_key <= dr.auto_end_date
     WHERE dr.check_start_date2 IS NOT NULL AND dr.auto_end_date IS NOT NULL
-    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.ssc_receive_goods_locate_id
 )
 SELECT 
     tc.inid,
@@ -403,15 +380,15 @@ SELECT
     tc.time_receive_to_auto,
     COALESCE(wtor.working_time_order_to_receive, 0) as working_time_order_to_receive,
     COALESCE(wrtc.working_time_receive_to_check, 0) as working_time_receive_to_check,
-    COALESCE(wctf.working_time_check_to_flat, 0) as working_time_check_to_flat,
-    COALESCE(wcta.working_time_check_to_auto, 0) as working_time_check_to_auto,
+    wctf.working_time_check_to_flat as working_time_check_to_flat,
+    wcta.working_time_check_to_auto as working_time_check_to_auto,
     -- 组合计算的工作时间
-    COALESCE(wtor.working_time_order_to_receive, 0) + COALESCE(wctf.working_time_check_to_flat, 0) as working_time_order_to_flat,
-    COALESCE(wtor.working_time_order_to_receive, 0) + COALESCE(wcta.working_time_check_to_auto, 0) as working_time_order_to_auto,
-    COALESCE(wrtc.working_time_receive_to_check, 0) + COALESCE(wctf.working_time_check_to_flat, 0) as working_time_receive_to_flat,
-    COALESCE(wrtc.working_time_receive_to_check, 0) + COALESCE(wcta.working_time_check_to_auto, 0) as working_time_receive_to_auto
+    CASE WHEN wctf.working_time_check_to_flat is not NULL THEN COALESCE(wtor.working_time_order_to_receive, 0) + COALESCE(wrtc.working_time_receive_to_check, 0) + wctf.working_time_check_to_flat ELSE NULL END as working_time_order_to_flat,
+    CASE WHEN wcta.working_time_check_to_auto is not NULL THEN COALESCE(wtor.working_time_order_to_receive, 0) + COALESCE(wrtc.working_time_receive_to_check, 0) + wcta.working_time_check_to_auto ELSE NULL END as working_time_order_to_auto,
+    CASE WHEN wctf.working_time_check_to_flat is not NULL THEN COALESCE(wrtc.working_time_receive_to_check, 0) + wctf.working_time_check_to_flat ELSE NULL END as working_time_receive_to_flat,
+    CASE WHEN wcta.working_time_check_to_auto is not NULL THEN COALESCE(wrtc.working_time_receive_to_check, 0) + wcta.working_time_check_to_auto ELSE NULL END as working_time_receive_to_auto
 FROM time_calculations tc
-LEFT JOIN working_time_order_to_receive wtor ON tc.inid = wtor.inid AND tc.indtlid = wtor.indtlid AND tc.receiveid = wtor.receiveid AND tc.inoutid = wtor.inoutid AND tc.ssc_receive_goods_locate_id = wtor.ssc_receive_goods_locate_id
-LEFT JOIN working_time_receive_to_check wrtc ON tc.inid = wrtc.inid AND tc.indtlid = wrtc.indtlid AND tc.receiveid = wrtc.receiveid AND tc.inoutid = wrtc.inoutid AND tc.ssc_receive_goods_locate_id = wrtc.ssc_receive_goods_locate_id
-LEFT JOIN working_time_check_to_flat wctf ON tc.inid = wctf.inid AND tc.indtlid = wctf.indtlid AND tc.receiveid = wctf.receiveid AND tc.inoutid = wctf.inoutid AND tc.ssc_receive_goods_locate_id = wctf.ssc_receive_goods_locate_id
-LEFT JOIN working_time_check_to_auto wcta ON tc.inid = wcta.inid AND tc.indtlid = wcta.indtlid AND tc.receiveid = wcta.receiveid AND tc.inoutid = wcta.inoutid AND tc.ssc_receive_goods_locate_id = wcta.ssc_receive_goods_locate_id;
+LEFT JOIN working_time_order_to_receive wtor ON tc.inid = wtor.inid AND tc.indtlid = wtor.indtlid
+LEFT JOIN working_time_receive_to_check wrtc ON tc.inid = wrtc.inid AND tc.indtlid = wrtc.indtlid AND tc.receiveid = wrtc.receiveid
+LEFT JOIN working_time_check_to_flat wctf ON tc.inid = wctf.inid AND tc.indtlid = wctf.indtlid AND tc.receiveid = wctf.receiveid AND tc.inoutid = wctf.inoutid 
+LEFT JOIN working_time_check_to_auto wcta ON tc.inid = wcta.inid AND tc.indtlid = wcta.indtlid AND tc.receiveid = wcta.receiveid AND tc.ssc_receive_goods_locate_id = wcta.ssc_receive_goods_locate_id;

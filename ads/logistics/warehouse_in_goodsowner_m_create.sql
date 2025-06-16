@@ -84,8 +84,6 @@ SELECT
     SUM(udicode_count) AS udicode_count
 FROM 
     dws.logistics_warehouse_in_goodsowner_d
-WHERE 
-    stat_date < DATE_TRUNC(CURRENT_DATE(), 'MONTH')
 GROUP BY 
     DATE_TRUNC(stat_date,'MONTH'),
     warehid,
