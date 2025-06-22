@@ -367,7 +367,7 @@ tasks:
     use_custom: true
     deploy_mode: "cluster"
     flag: YES
-    deps: [WMS_WAVE_DTL_d_ods_update]
+    deps: [WMS_ECODE_RECORD_d_ods_update]
     raw_script: |
         env{
           parallelism = 2
