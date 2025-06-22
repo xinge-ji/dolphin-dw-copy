@@ -488,6 +488,7 @@ tasks:
         DROP TABLE IF EXISTS zx_19007_v;
         CREATE TABLE zx_19007_v (
             ssc_receive_goods_locate_id decimal(38,0) not null,
+            receive_bill_type varchar,
             com_inv_case_id decimal,
             stock_pos_id decimal,
             credate DATETIME,

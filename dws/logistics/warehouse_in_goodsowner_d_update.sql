@@ -33,8 +33,7 @@ WITH in_data AS (
         d.inid,
         d.indtlid,
         d.goodsid,
-        d.is_coldchain,
-        d.is_chinese_medicine
+        d.goods_category
     FROM 
         dwd.logistics_warehouse_order_in_dtl d
     JOIN 
@@ -53,11 +52,7 @@ receive_data AS (
         d.goodsownerid,
         d.warehouse_name,
         d.goodsowner_name,
-        CASE 
-            WHEN d.is_coldchain = 1 THEN '冷链'
-            WHEN d.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        d.goods_category AS category,
         COUNT(1) AS receive_count
     FROM 
         in_data d
@@ -67,11 +62,7 @@ receive_data AS (
         d.goodsownerid,
         d.warehouse_name,
         d.goodsowner_name,
-        CASE 
-            WHEN d.is_coldchain = 1 THEN '冷链'
-            WHEN d.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        d.goods_category
     
     UNION ALL
     
@@ -99,11 +90,7 @@ check_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        CASE 
-            WHEN d.is_coldchain = 1 THEN '冷链'
-            WHEN d.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        d.goods_category AS category,
         COUNT(1) AS check_count
     FROM 
         dwd.logistics_warehouse_order_receive_dtl r
@@ -115,11 +102,7 @@ check_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        CASE 
-            WHEN d.is_coldchain = 1 THEN '冷链'
-            WHEN d.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        d.goods_category
     
     UNION ALL
     
@@ -149,11 +132,7 @@ check_scatter_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        CASE 
-            WHEN d.is_coldchain = 1 THEN '冷链'
-            WHEN d.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        d.goods_category AS category,
         COUNT(1) AS check_scatter_count,
         SUM(r.scatter_qty) as check_scatter_qty
     FROM 
@@ -167,11 +146,7 @@ check_scatter_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        CASE 
-            WHEN d.is_coldchain = 1 THEN '冷链'
-            WHEN d.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        d.goods_category
     
     UNION ALL
     
@@ -203,11 +178,7 @@ check_whole_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        CASE 
-            WHEN d.is_coldchain = 1 THEN '冷链'
-            WHEN d.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        d.goods_category AS category,
         COUNT(1) AS check_whole_count,
         SUM(r.whole_qty) as check_whole_qty
     FROM 
@@ -221,11 +192,7 @@ check_whole_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        CASE 
-            WHEN d.is_coldchain = 1 THEN '冷链'
-            WHEN d.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        d.goods_category
     
     UNION ALL
     
@@ -257,34 +224,26 @@ flat_shelf_data AS (
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        CASE 
-            WHEN io.is_coldchain = 1 THEN '冷链'
-            WHEN io.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        io.goods_category as category,
         SUM(io.whole_qty) AS flat_shelf_whole_qty,
         SUM(CASE WHEN io.scatter_qty is not NULL THEN 1 ELSE 0 END) AS flat_shelf_scatter_count
     FROM 
         dwd.logistics_warehouse_st_io_doc io
+    JOIN
+        dwd.logistics_warehouse_order_receive_dtl e ON io.sourceid = e.receiveid
     WHERE 
         io.is_out = 0  -- 入库单
         AND io.comefrom = 1  -- 来源为收货
         AND io.rfmanid != 0  -- 非系统管理员
         AND io.finish_time IS NOT NULL  -- 已完成的单据
         AND io.sectionid != 8515  -- 非立库
-        AND DATE(io.finish_time) >= CURRENT_DATE() - INTERVAL 60 DAY
-        AND DATE(io.finish_time) < CURRENT_DATE()
     GROUP BY 
         DATE(io.finish_time),
         io.warehid,
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        CASE 
-            WHEN io.is_coldchain = 1 THEN '冷链'
-            WHEN io.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        io.goods_category
     
     UNION ALL
     
@@ -299,14 +258,14 @@ flat_shelf_data AS (
         SUM(CASE WHEN io.scatter_qty is not NULL THEN 1 ELSE 0 END) AS flat_shelf_scatter_count
     FROM 
         dwd.logistics_warehouse_st_io_doc io
+    JOIN
+        dwd.logistics_warehouse_order_receive_dtl e ON io.sourceid = e.receiveid
     WHERE 
         io.is_out = 0  -- 入库单
         AND io.comefrom = 1  -- 来源为收货
         AND io.rfmanid != 0  -- 非系统管理员
         AND io.finish_time IS NOT NULL  -- 已完成的单据
         AND io.sectionid != 8515   -- 非立库
-        AND DATE(io.finish_time) >= CURRENT_DATE() - INTERVAL 60 DAY
-        AND DATE(io.finish_time) < CURRENT_DATE()
     GROUP BY 
         DATE(io.finish_time),
         io.warehid,
@@ -321,11 +280,7 @@ auto_shelf_data AS (
         d.goodsownerid,
         d.warehouse_name,
         d.goodsowner_name,
-        CASE 
-            WHEN d.is_coldchain = 1 THEN '冷链'
-            WHEN d.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        d.goods_category AS category,
         SUM(z.wholeqty) AS auto_shelf_whole_qty,
         SUM(z.scattercount) AS auto_shelf_scatter_count
     FROM 
@@ -333,19 +288,13 @@ auto_shelf_data AS (
     JOIN
         ods_wms.zx_19007_v z ON d.indtlid = z.indtlid
     WHERE d.receive_time is not null
-        AND DATE(d.receive_time) >= CURRENT_DATE() - INTERVAL 60 DAY
-        AND DATE(d.receive_time) < CURRENT_DATE()
     GROUP BY 
         DATE(d.receive_time),
         d.warehid,
         d.goodsownerid,
         d.warehouse_name,
         d.goodsowner_name,
-        CASE 
-            WHEN d.is_coldchain = 1 THEN '冷链'
-            WHEN d.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        d.goods_category
     
     UNION ALL
     
@@ -363,8 +312,6 @@ auto_shelf_data AS (
     JOIN
         ods_wms.zx_19007_v z ON d.indtlid = z.indtlid
     WHERE d.receive_time is not null
-        AND DATE(d.receive_time) >= CURRENT_DATE() - INTERVAL 60 DAY
-        AND DATE(d.receive_time) < CURRENT_DATE()
     GROUP BY 
         DATE(d.receive_time),
         d.warehid,
@@ -379,29 +326,19 @@ ecode_data AS (
         e.goodsownerid,
         e.warehouse_name,
         e.goodsowner_name,
-        CASE 
-            WHEN e.is_coldchain = 1 THEN '冷链'
-            WHEN e.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        e.goods_category AS category,
         COUNT(1) AS ecode_count
     FROM 
         dwd.logistics_warehouse_ecode e 
     WHERE 
         e.is_out = 0
-        AND DATE(e.create_time) >= CURRENT_DATE() - INTERVAL 60 DAY
-        AND DATE(e.create_time) < CURRENT_DATE()
     GROUP BY 
         DATE(e.create_time),
         e.warehid,
         e.goodsownerid,
         e.warehouse_name,
         e.goodsowner_name,
-        CASE 
-            WHEN e.is_coldchain = 1 THEN '冷链'
-            WHEN e.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        e.goods_category
     
     UNION ALL
     
@@ -417,8 +354,6 @@ ecode_data AS (
         dwd.logistics_warehouse_ecode e
     WHERE 
         e.is_out = 0  -- 入库单
-        AND DATE(e.create_time) >= CURRENT_DATE() - INTERVAL 60 DAY
-        AND DATE(e.create_time) < CURRENT_DATE()
     GROUP BY 
         DATE(e.create_time),
         e.warehid,
@@ -433,30 +368,20 @@ udicode_data AS (
         e.goodsownerid,
         e.warehouse_name,
         e.goodsowner_name,
-        CASE 
-            WHEN e.is_coldchain = 1 THEN '冷链'
-            WHEN e.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        e.goods_category AS category,
         COUNT(1) AS udicode_count
     FROM 
         dwd.logistics_warehouse_udicode e
     WHERE 
         e.is_out = 0  -- 入库单
         AND e.create_time IS NOT NULL
-        AND DATE(e.create_time) >= CURRENT_DATE() - INTERVAL 60 DAY
-        AND DATE(e.create_time) < CURRENT_DATE()
     GROUP BY 
         DATE(e.create_time),
         e.warehid,
         e.goodsownerid,
         e.warehouse_name,
         e.goodsowner_name,
-        CASE 
-            WHEN e.is_coldchain = 1 THEN '冷链'
-            WHEN e.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        e.goods_category
     
     UNION ALL
     
@@ -473,8 +398,6 @@ udicode_data AS (
     WHERE 
         e.is_out = 0  -- 入库单
         AND e.create_time IS NOT NULL
-        AND DATE(e.create_time) >= CURRENT_DATE() - INTERVAL 60 DAY
-        AND DATE(e.create_time) < CURRENT_DATE()
     GROUP BY 
         DATE(e.create_time),
         e.warehid,

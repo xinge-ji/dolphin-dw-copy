@@ -15,8 +15,7 @@ INSERT INTO
         goodsowner_name,
         goodsid,
         goods_name,
-        is_coldchain,
-        is_chinese_medicine,
+        goods_category,
         sourceid,
         is_out,
         udicode
@@ -31,8 +30,7 @@ SELECT
     c.goodsownername,
     e.goodsid,
     g.goods_name,
-    IFNULL(d.is_coldchain, 0),
-    IFNULL(d.is_chinese_medicine, 0),
+    IFNULL(d.goods_category, '其他') AS goods_category,
     e.sourceid,
     IFNULL(e.INOUTFLAG, 0) as is_out,
     e.udicode

@@ -22,11 +22,7 @@ WITH flat_pick_data AS (
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        CASE 
-            WHEN io.is_coldchain = 1 THEN '冷链'
-            WHEN io.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        io.goods_category AS category,
         COUNT(1) AS flat_pick_count,
         SUM(io.whole_qty) as flat_pick_whole_qty,
         SUM(CASE WHEN io.scatter_qty is not NULL THEN 1 ELSE 0 END) AS flat_pick_scatter_count
@@ -35,7 +31,6 @@ WITH flat_pick_data AS (
     WHERE 
         io.comefrom = 3  -- 来源为波次出库
         AND io.rfmanid != 0  -- 非系统管理员
-        AND io.rfflag = 3  -- 已完成
         AND io.finish_time IS NOT NULL  -- 已完成的单据
         and not exists
         (select 1
@@ -51,11 +46,7 @@ WITH flat_pick_data AS (
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        CASE 
-            WHEN io.is_coldchain = 1 THEN '冷链'
-            WHEN io.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        io.goods_category
     
     UNION ALL
     
@@ -74,7 +65,6 @@ WITH flat_pick_data AS (
     WHERE 
         io.comefrom = 3  -- 来源为波次出库
         AND io.rfmanid != 0  -- 非系统管理员
-        AND io.rfflag = 3  -- 已完成
         AND io.finish_time IS NOT NULL  -- 已完成的单据
         and not exists
         (select 1
@@ -98,11 +88,7 @@ auto_pick_data AS (
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        CASE 
-            WHEN io.is_coldchain = 1 THEN '冷链'
-            WHEN io.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        io.goods_category AS category,
         COUNT(1) as auto_pick_count,
         SUM(p.scatter_count) as auto_pick_scatter_count,
         SUM(p.whole_qty) as auto_pick_whole_qty
@@ -119,11 +105,7 @@ auto_pick_data AS (
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        CASE 
-            WHEN io.is_coldchain = 1 THEN '冷链'
-            WHEN io.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        io.goods_category
     
     UNION ALL
     
@@ -158,11 +140,7 @@ auto_udi_data AS (
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        CASE 
-            WHEN io.is_coldchain = 1 THEN '冷链'
-            WHEN io.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END AS category,
+        io.goods_category AS category,
         COUNT(1) as auto_udicode_count
     FROM 
         dwd.logistics_warehouse_st_io_doc io
@@ -179,11 +157,7 @@ auto_udi_data AS (
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        CASE 
-            WHEN io.is_coldchain = 1 THEN '冷链'
-            WHEN io.is_chinese_medicine = 1 THEN '中药'
-            ELSE '其他'
-        END
+        io.goods_category
     
     UNION ALL
     

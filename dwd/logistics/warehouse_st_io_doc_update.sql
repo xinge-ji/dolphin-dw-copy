@@ -22,8 +22,7 @@ INSERT INTO
         sectionid,
         goodsid,
         goods_name,
-        is_coldchain,
-        is_chinese_medicine,
+        goods_category,
         whole_qty,
         scatter_qty
     )
@@ -44,8 +43,7 @@ SELECT
     io.sectionid,
     io.goodsid,
     g.goods_name,
-    d.is_coldchain,
-    d.is_chinese_medicine,
+    IFNULL(d.goods_category, '其他') AS goods_category,
     io.wholeqty AS whole_qty,
     io.scatterqty AS scatter_qty
 FROM 

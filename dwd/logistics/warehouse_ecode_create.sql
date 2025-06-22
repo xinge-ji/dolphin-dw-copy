@@ -20,8 +20,7 @@ CREATE TABLE
         -- 商品
         goodsid bigint COMMENT '商品ID',
         goods_name varchar COMMENT '商品名称',
-        is_coldchain tinyint COMMENT '是否冷链',
-        is_chinese_medicine tinyint COMMENT '是否中药',
+        goods_category varchar COMMENT '商品分类:冷链/中药/其他',
 
         -- 关联单据
         sourceid bigint COMMENT '来源单据ID',
@@ -46,8 +45,7 @@ INSERT INTO dwd.logistics_warehouse_ecode (
     goodsowner_name,
     goodsid,
     goods_name,
-    is_coldchain,
-    is_chinese_medicine,
+    goods_category,
     sourceid,
     is_out,
     ecode
@@ -63,8 +61,7 @@ SELECT
     d.waregoodsid AS goodsid,
     d.goodsname AS goods_name,
     CAST(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(IFNULL(a.srcexpno, CAST(a.sourceid AS STRING)), '\n', ''), '\r', ''), '\t', '') AS BIGINT) AS sourceid,
-    IFNULL(e.is_coldchain, 0),
-    IFNULL(e.is_chinese_medicine, 0),
+    IFNULL(e.goods_category, '其他') AS goods_category,
     a.inoutflag AS is_out, -- 1=出库, 0=入库
     a.ecode
 FROM ods_wms.wms_ecode_record a

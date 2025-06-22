@@ -12,15 +12,15 @@ CREATE TABLE
 
         -- 关联单据
         sourceid bigint COMMENT '来源单据ID',
-
+        
         -- 货主
         goodsownerid bigint COMMENT '货主ID',
         goodsowner_name varchar COMMENT '货主名称',
 
         -- 状态
         is_out int COMMENT '是否出库单',
-        comefrom int COMMENT '来源',
-        rfflag tinyint COMMENT '状态:2-待完成;3-已完成',
+        comefrom int COMMENT '来源:1-入库;2-订单出库;3-波次出库;4-库内变动',
+        rfflag int COMMENT '状态:2-待完成;3-已完成',
 
         -- 仓库
         warehid bigint COMMENT '仓库ID',
@@ -31,8 +31,7 @@ CREATE TABLE
         -- 商品
         goodsid bigint COMMENT '商品ID',
         goods_name varchar COMMENT '商品名称',
-        is_coldchain tinyint COMMENT '是否冷链',
-        is_chinese_medicine tinyint COMMENT '是否中药',
+        goods_category varchar COMMENT '商品分类:冷链/中药/其他',
         whole_qty decimal COMMENT '整件件数',
         scatter_qty decimal(16,6) COMMENT '散件件数'        
     ) UNIQUE KEY (inoutid, dw_updatetime) DISTRIBUTED BY HASH (inoutid) PROPERTIES (
@@ -60,8 +59,7 @@ INSERT INTO
         sectionid,
         goodsid,
         goods_name,
-        is_coldchain,
-        is_chinese_medicine,
+        goods_category,
         whole_qty,
         scatter_qty
     )
@@ -82,8 +80,7 @@ SELECT
     io.sectionid,
     io.goodsid,
     g.goods_name,
-    d.is_coldchain,
-    d.is_chinese_medicine,
+    IFNULL(d.goods_category, '其他') AS goods_category,
     io.wholeqty AS whole_qty,
     io.scatterqty AS scatter_qty
 FROM 

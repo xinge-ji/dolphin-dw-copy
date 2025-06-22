@@ -655,6 +655,7 @@ tasks:
         TRUNCATE TABLE zx_19007_v;
         INSERT INTO zx_19007_v (
           ssc_receive_goods_locate_id,
+          receive_bill_type,
           com_inv_case_id,
           stock_pos_id,
           credate,
@@ -687,6 +688,7 @@ tasks:
         )
         SELECT 
                 c.ssc_receive_goods_locate_id, 
+                a.receive_bill_type,
                 g.com_inv_case_id,
                 c.stock_pos_id,
                 c.create_timestamp AS credate,
@@ -773,9 +775,7 @@ tasks:
                 WHERE com_party_type_id = 4
                 GROUP BY com_party_id
             ) party_factory 
-                ON party_factory.com_party_id = f.factory_id
-            WHERE 
-                a.receive_bill_type IN ('PURCHASE', 'SALE_RTN', 'TRANSFER');
+                ON party_factory.com_party_id = f.factory_id;
 
   - name: ssc_picking_carton
     task_type: SeaTunnel

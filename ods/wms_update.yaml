@@ -358,3 +358,216 @@ tasks:
         FROM wms_ecode_record_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM wms_ecode_record WHERE s.RECORDID = WMS_ECODE_RECORD.RECORDID AND s.DW_ID = WMS_ECODE_RECORD.DW_ID AND WMS_ECODE_RECORD.IS_ACTIVE=1);
         DROP TABLE wms_ecode_record_doristmp;
+
+  - name: WMS_WAVE_GOODS_DTL_d_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [WMS_WAVE_DTL_d_ods_update]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            table_path = "lywms.WMS_WAVE_GOODS_DTL"
+            query = """select t.WAVEGOODSDTLID, ora_hash(substr(coalesce(substr(to_char(t.WAVEDTLID), 1,255), '') || coalesce(substr(to_char(t.WAVEGOODSDTLID), 1,255), '') || coalesce(substr(to_char(t.OWNERGOODSID), 1,255), '') || coalesce(substr(to_char(t.GOODSID), 1,255), '') || coalesce(substr(to_char(t.GOODSPACKID), 1,255), '') || coalesce(substr(to_char(t.BATCHNO), 1,255), '') || coalesce(substr(to_char(t.LOTID), 1,255), '') || coalesce(substr(to_char(t.GOODSSTATUSID), 1,255), '') || coalesce(substr(to_char(t.QUANTITYSTATUS), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.WHOLEQTY), 1,255), '') || coalesce(substr(to_char(t.SCATTERQTY), 1,255), '') || coalesce(substr(to_char(t.USESTATUS), 1,255), '') || coalesce(substr(to_char(t.SORTTYPE), 1,255), '') || coalesce(substr(to_char(t.ADDMEDCHECKFLAG), 1,255), '') || coalesce(substr(to_char(t.PRINTFLAG), 1,255), '') || coalesce(substr(to_char(t1.PRINTDATE), 1,255), '') || coalesce(substr(to_char(t.PRINTMANID), 1,255), '') || coalesce(substr(to_char(t.GOODSOWNERID), 1,255), '') || coalesce(substr(to_char(t.FLAG), 1,255), '') || coalesce(substr(to_char(t.YJDEXPFLAG), 1,255), '') || coalesce(substr(to_char(t.SOURCEWAVEGOODSDTLID), 1,255), '') || coalesce(substr(to_char(t.AUTOTASKFLAG), 1,255), '') || coalesce(substr(to_char(t.AUTOCREDATE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.WAVEDTLID,t.OWNERGOODSID,t.GOODSID,t.GOODSPACKID,t.BATCHNO,t.LOTID,t.GOODSSTATUSID,t.QUANTITYSTATUS,t.GOODSQTY,t.WHOLEQTY,t.SCATTERQTY,t.USESTATUS,t.SORTTYPE,t.ADDMEDCHECKFLAG,t.PRINTFLAG,t.PRINTMANID,t.GOODSOWNERID,t.FLAG,t.YJDEXPFLAG,t.SOURCEWAVEGOODSDTLID,t.AUTOTASKFLAG,t.AUTOCREDATE,t2.CREDATE,t1.PRINTDATE from WMS_WAVE_GOODS_DTL t JOIN WMS_WAVE_DTL t1 ON t1.WAVEDTLID = t.WAVEDTLID JOIN WMS_WAVE_DOC t2 ON t1.WAVEID = t2.WAVEDOCID WHERE (t1.PRINTDATE is not NULL AND t1.PRINTDATE >= TRUNC(SYSDATE-60)) OR (t.AUTOCREDATE is not NULL AND t.AUTOCREDATE >= TRUNC(SYSDATE-60)) OR (t2.CREDATE is not NULL AND t2.CREDATE >= TRUNC(SYSDATE-60)) OR (t1.PRINTDATE is NULL AND t.AUTOCREDATE is NULL AND t2.CREDATE is NULL AND t1.PRINTDATE is NULL)"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(WAVEGOODSDTLID,DW_ID)
+              DISTRIBUTED BY HASH (WAVEGOODSDTLID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: WMS_WAVE_GOODS_DTL_d_ods_update
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_wms"
+    flag: YES
+    deps: [WMS_WAVE_GOODS_DTL_d_ods_tmp]
+    sql: |
+        UPDATE wms_wave_goods_dtl t
+        SET t.dw_updatetime = NOW(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM wms_wave_goods_dtl_doristmp s WHERE s.WAVEGOODSDTLID = t.WAVEGOODSDTLID AND s.DW_ID = t.DW_ID)  AND ((t.`PRINTDATE` is not null AND t.`PRINTDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`AUTOCREDATE` is not null AND t.`AUTOCREDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`CREDATE` is not null AND t.`CREDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR ((t.`PRINTDATE` is null) AND (t.`AUTOCREDATE` is null) AND (t.`CREDATE` is null)));
+        INSERT INTO wms_wave_goods_dtl (`WAVEDTLID`,`WAVEGOODSDTLID`,`OWNERGOODSID`,`GOODSID`,`GOODSPACKID`,`BATCHNO`,`LOTID`,`GOODSSTATUSID`,`QUANTITYSTATUS`,`GOODSQTY`,`WHOLEQTY`,`SCATTERQTY`,`USESTATUS`,`SORTTYPE`,`ADDMEDCHECKFLAG`,`PRINTFLAG`,`PRINTDATE`,`PRINTMANID`,`GOODSOWNERID`,`FLAG`,`YJDEXPFLAG`,`SOURCEWAVEGOODSDTLID`,`AUTOTASKFLAG`,`AUTOCREDATE`,`CREDATE`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
+        SELECT s.`WAVEDTLID`,s.`WAVEGOODSDTLID`,s.`OWNERGOODSID`,s.`GOODSID`,s.`GOODSPACKID`,s.`BATCHNO`,s.`LOTID`,s.`GOODSSTATUSID`,s.`QUANTITYSTATUS`,s.`GOODSQTY`,s.`WHOLEQTY`,s.`SCATTERQTY`,s.`USESTATUS`,s.`SORTTYPE`,s.`ADDMEDCHECKFLAG`,s.`PRINTFLAG`,s.`PRINTDATE`,s.`PRINTMANID`,s.`GOODSOWNERID`,s.`FLAG`,s.`YJDEXPFLAG`,s.`SOURCEWAVEGOODSDTLID`,s.`AUTOTASKFLAG`,s.`AUTOCREDATE`,s.`CREDATE`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
+        FROM wms_wave_goods_dtl_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM wms_wave_goods_dtl WHERE s.WAVEGOODSDTLID = WMS_WAVE_GOODS_DTL.WAVEGOODSDTLID AND s.DW_ID = WMS_WAVE_GOODS_DTL.DW_ID AND WMS_WAVE_GOODS_DTL.IS_ACTIVE=1);
+        DROP TABLE wms_wave_goods_dtl_doristmp;
+
+  - name: WMS_OUT_ORDER_DTL_d_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [WMS_WAVE_GOODS_DTL_d_ods_update]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            table_path = "lywms.WMS_OUT_ORDER_DTL"
+            query = """select t.OUTDTLID, ora_hash(substr(coalesce(substr(to_char(t.OUTID), 1,255), '') || coalesce(substr(to_char(t.OUTDTLID), 1,255), '') || coalesce(substr(to_char(t.WAREHID), 1,255), '') || coalesce(substr(to_char(t.GOODSOWNERID), 1,255), '') || coalesce(substr(to_char(t.GOODSID), 1,255), '') || coalesce(substr(to_char(t.OWNERGOODSID), 1,255), '') || coalesce(substr(to_char(t.BATCHNO), 1,255), '') || coalesce(substr(to_char(t.LOTID), 1,255), '') || coalesce(substr(to_char(t.LOTNO), 1,255), '') || coalesce(substr(to_char(t.VALIDDATE), 1,255), '') || coalesce(substr(to_char(t.GOODSSTATUSID), 1,255), '') || coalesce(substr(to_char(t.QUANTITYSTATUS), 1,255), '') || coalesce(substr(to_char(t.PRICE), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.GOODSPACKID), 1,255), '') || coalesce(substr(to_char(t.REALQTY), 1,255), '') || coalesce(substr(to_char(t.TRADEGOODSQTY), 1,255), '') || coalesce(substr(to_char(t.TRADEGOODSPACK), 1,255), '') || coalesce(substr(to_char(t.STOCKQTY), 1,255), '') || coalesce(substr(to_char(t.CUSTCANCELSTATUS), 1,255), '') || coalesce(substr(to_char(t.WMSCANCELSTATUS), 1,255), '') || coalesce(substr(to_char(t.ADDMEDCHECKFLAG), 1,255), '') || coalesce(substr(to_char(t.SRCEXPDTLNO), 1,255), '') || coalesce(substr(to_char(t.USESTATUS), 1,255), '') || coalesce(substr(to_char(t.PRINTFLAG), 1,255), '') || coalesce(substr(to_char(t.PRINTERROR), 1,255), '') || coalesce(substr(to_char(t.DISTRIBUTEID), 1,255), '') || coalesce(substr(to_char(t.DISTRIBUTEDTLID), 1,255), '') || coalesce(substr(to_char(t.RETAILPRICE), 1,255), '') || coalesce(substr(to_char(t.AMT), 1,255), '') || coalesce(substr(to_char(t.ALLOCATETIME), 1,255), '') || coalesce(substr(to_char(t.FAILREASON), 1,255), '') || coalesce(substr(to_char(t.EXPDTLMEMO), 1,255), '') || coalesce(substr(to_char(t.PLACESUPPLYID), 1,255), '') || coalesce(substr(to_char(t.PLACESUPPLYDTLID), 1,255), '') || coalesce(substr(to_char(t.PLACEPRICE), 1,255), '') || coalesce(substr(to_char(t.RESALEPRICE), 1,255), '') || coalesce(substr(to_char(t.PLACEMONEY), 1,255), '') || coalesce(substr(to_char(t.GOODSCLASSID), 1,255), '') || coalesce(substr(to_char(t.OTCFLAG), 1,255), '') || coalesce(substr(to_char(t.TRADEMARK), 1,255), '') || coalesce(substr(to_char(t.APPROVEDOCNO), 1,255), '') || coalesce(substr(to_char(t.PRODDATE), 1,255), '') || coalesce(substr(to_char(t.QUALIFYDOCNO), 1,255), '') || coalesce(substr(to_char(t.GOODSCLASSNAME), 1,255), '') || coalesce(substr(to_char(t.OLDDTLID), 1,255), '') || coalesce(substr(to_char(t.OTHERID), 1,255), '') || coalesce(substr(to_char(t.EXPFLAG), 1,255), '') || coalesce(substr(to_char(t.EXPDATE), 1,255), '') || coalesce(substr(to_char(t.EXPFILENAME), 1,255), '') || coalesce(substr(to_char(t.INVOICENO), 1,255), '') || coalesce(substr(to_char(t.INVOICELINE), 1,255), '') || coalesce(substr(to_char(t.CANKEEP), 1,255), '') || coalesce(substr(to_char(t.ZXCOLOR), 1,255), '') || coalesce(substr(to_char(t.TPRICETICK), 1,255), '') || coalesce(substr(to_char(t.TPRICEFLAG), 1,255), '') || coalesce(substr(to_char(t.DTLMEMO), 1,255), '') || coalesce(substr(to_char(t.BMSIODTLID), 1,255), '') || coalesce(substr(to_char(t.PACKINGQTY), 1,255), '') || coalesce(substr(to_char(t.PRTORDERSET), 1,255), '') || coalesce(substr(to_char(t.BMSINOUTID), 1,255), '') || coalesce(substr(to_char(t.SORTTYPE), 1,255), '') || coalesce(substr(to_char(t.WAVEGOODSDTLID), 1,255), '') || coalesce(substr(to_char(t.PRTINVFLAG), 1,255), '') || coalesce(substr(to_char(t.INVID), 1,255), '') || coalesce(substr(to_char(t.DTLZXCOLUMN1), 1,255), '') || coalesce(substr(to_char(t.DTLZXCOLUMN2), 1,255), '') || coalesce(substr(to_char(t.DTLZXCOLUMN3), 1,255), '') || coalesce(substr(to_char(t.DTLZXCOLUMN4), 1,255), '') || coalesce(substr(to_char(t.DTLZXCOLUMN5), 1,255), '') || coalesce(substr(to_char(t.PRINTNO), 1,255), '') || coalesce(substr(to_char(t.PRINTLINE), 1,255), '') || coalesce(substr(to_char(t.LOTLIMIT), 1,255), '') || coalesce(substr(to_char(t.PERIODLIMIT), 1,255), '') || coalesce(substr(to_char(t.PERIODLIMITUNIT), 1,255), '') || coalesce(substr(to_char(t.CANCELDATE), 1,255), '') || coalesce(substr(to_char(t.CANCELMANID), 1,255), '') || coalesce(substr(to_char(t.WAITFORCANCEL), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN1), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN2), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN3), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN4), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN5), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN6), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN7), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN8), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN9), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN10), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN11), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN12), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN13), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN14), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN15), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN16), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN17), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN18), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN19), 1,255), '') || coalesce(substr(to_char(t.LYDTLZXCOLUMN20), 1,255), '') || coalesce(substr(to_char(t.INVCODE), 1,255), '') || coalesce(substr(to_char(t.TO_ZSPT), 1,255), '') || coalesce(substr(to_char(t.TO_ZSPTDATE), 1,255), '') || coalesce(substr(to_char(t.FROM_SUDTLID), 1,255), '') || coalesce(substr(to_char(t.TO_GOODSOWNERID), 1,255), '') || coalesce(substr(to_char(t.TO_OWNERGOODSID), 1,255), '') || coalesce(substr(to_char(t.TO_GOODSID), 1,255), '') || coalesce(substr(to_char(t.TO_LOTID), 1,255), '') || coalesce(substr(to_char(t.TO_GOODSPACKID), 1,255), '') || coalesce(substr(to_char(t.TO_USESTATUS), 1,255), '') || coalesce(substr(to_char(t.TO_ERRORMEMO), 1,255), '') || coalesce(substr(to_char(t.SOURCEOUTDTLID), 1,255), '') || coalesce(substr(to_char(t.AUTOTASKFLAG), 1,255), '') || coalesce(substr(to_char(t.AUTOCREDATE), 1,255), '') || coalesce(substr(to_char(t.BUYINGPRICE), 1,255), '') || coalesce(substr(to_char(t.TO_ERPINDTLID), 1,255), '') || coalesce(substr(to_char(t.TO_ERPOUTDTLID), 1,255), '') || coalesce(substr(to_char(t.TO_PRINTPRICE), 1,255), '') || coalesce(substr(to_char(t.TO_PRINTAMT), 1,255), '') || coalesce(substr(to_char(t.INVOADDRESS), 1,255), '') || coalesce(substr(to_char(t.DISCOUNT_FALG), 1,255), '') || coalesce(substr(to_char(t.DISCOUNT_SADTLID), 1,255), '') || coalesce(substr(to_char(t.DISCOUNT_GOODSID), 1,255), '') || coalesce(substr(to_char(t.DISCOUNT_AMT), 1,255), '') || coalesce(substr(to_char(t.DISCOUNT_TAXRATE), 1,255), '') || coalesce(substr(to_char(t.DISCOUNT_DATE), 1,255), '') || coalesce(substr(to_char(t.DISCOUNT_MSG), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.OUTID,t.WAREHID,t.GOODSOWNERID,t.GOODSID,t.OWNERGOODSID,t.BATCHNO,t.LOTID,t.LOTNO,t.VALIDDATE,t.GOODSSTATUSID,t.QUANTITYSTATUS,t.PRICE,t.GOODSQTY,t.GOODSPACKID,t.REALQTY,t.TRADEGOODSQTY,t.TRADEGOODSPACK,t.STOCKQTY,t.CUSTCANCELSTATUS,t.WMSCANCELSTATUS,t.ADDMEDCHECKFLAG,t.SRCEXPDTLNO,t.USESTATUS,t.PRINTFLAG,t.PRINTERROR,t.DISTRIBUTEID,t.DISTRIBUTEDTLID,t.RETAILPRICE,t.AMT,t.ALLOCATETIME,t.FAILREASON,t.EXPDTLMEMO,t.PLACESUPPLYID,t.PLACESUPPLYDTLID,t.PLACEPRICE,t.RESALEPRICE,t.PLACEMONEY,t.GOODSCLASSID,t.OTCFLAG,t.TRADEMARK,t.APPROVEDOCNO,t.PRODDATE,t.QUALIFYDOCNO,t.GOODSCLASSNAME,t.OLDDTLID,t.OTHERID,t.EXPFLAG,t.EXPDATE,t.EXPFILENAME,t.INVOICENO,t.INVOICELINE,t.CANKEEP,t.ZXCOLOR,t.TPRICETICK,t.TPRICEFLAG,t.DTLMEMO,t.BMSIODTLID,t.PACKINGQTY,t.PRTORDERSET,t.BMSINOUTID,t.SORTTYPE,t.WAVEGOODSDTLID,t.PRTINVFLAG,t.INVID,t.DTLZXCOLUMN1,t.DTLZXCOLUMN2,t.DTLZXCOLUMN3,t.DTLZXCOLUMN4,t.DTLZXCOLUMN5,t.PRINTNO,t.PRINTLINE,t.LOTLIMIT,t.PERIODLIMIT,t.PERIODLIMITUNIT,t.CANCELDATE,t.CANCELMANID,t.WAITFORCANCEL,t.LYDTLZXCOLUMN1,t.LYDTLZXCOLUMN2,t.LYDTLZXCOLUMN3,t.LYDTLZXCOLUMN4,t.LYDTLZXCOLUMN5,t.LYDTLZXCOLUMN6,t.LYDTLZXCOLUMN7,t.LYDTLZXCOLUMN8,t.LYDTLZXCOLUMN9,t.LYDTLZXCOLUMN10,t.LYDTLZXCOLUMN11,t.LYDTLZXCOLUMN12,t.LYDTLZXCOLUMN13,t.LYDTLZXCOLUMN14,t.LYDTLZXCOLUMN15,t.LYDTLZXCOLUMN16,t.LYDTLZXCOLUMN17,t.LYDTLZXCOLUMN18,t.LYDTLZXCOLUMN19,t.LYDTLZXCOLUMN20,t.INVCODE,t.TO_ZSPT,t.TO_ZSPTDATE,t.FROM_SUDTLID,t.TO_GOODSOWNERID,t.TO_OWNERGOODSID,t.TO_GOODSID,t.TO_LOTID,t.TO_GOODSPACKID,t.TO_USESTATUS,t.TO_ERRORMEMO,t.SOURCEOUTDTLID,t.AUTOTASKFLAG,t.AUTOCREDATE,t.BUYINGPRICE,t.TO_ERPINDTLID,t.TO_ERPOUTDTLID,t.TO_PRINTPRICE,t.TO_PRINTAMT,t.INVOADDRESS,t.DISCOUNT_FALG,t.DISCOUNT_SADTLID,t.DISCOUNT_GOODSID,t.DISCOUNT_AMT,t.DISCOUNT_TAXRATE,t.DISCOUNT_DATE,t.DISCOUNT_MSG from WMS_OUT_ORDER_DTL t WHERE (t.VALIDDATE is not NULL AND t.VALIDDATE >= TRUNC(SYSDATE-60)) OR (t.ALLOCATETIME is not NULL AND t.ALLOCATETIME >= TRUNC(SYSDATE-60)) OR (t.PRODDATE is not NULL AND t.PRODDATE >= TRUNC(SYSDATE-60)) OR (t.EXPDATE is not NULL AND t.EXPDATE >= TRUNC(SYSDATE-60)) OR (t.CANCELDATE is not NULL AND t.CANCELDATE >= TRUNC(SYSDATE-60)) OR (t.TO_ZSPTDATE is not NULL AND t.TO_ZSPTDATE >= TRUNC(SYSDATE-60)) OR (t.AUTOCREDATE is not NULL AND t.AUTOCREDATE >= TRUNC(SYSDATE-60)) OR (t.DISCOUNT_DATE is not NULL AND t.DISCOUNT_DATE >= TRUNC(SYSDATE-60)) OR (t.VALIDDATE is NULL AND t.ALLOCATETIME is NULL AND t.PRODDATE is NULL AND t.EXPDATE is NULL AND t.CANCELDATE is NULL AND t.TO_ZSPTDATE is NULL AND t.AUTOCREDATE is NULL AND t.DISCOUNT_DATE is NULL)"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(OUTDTLID,DW_ID)
+              DISTRIBUTED BY HASH (OUTDTLID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: WMS_OUT_ORDER_DTL_d_ods_update
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_wms"
+    flag: YES
+    deps: [WMS_OUT_ORDER_DTL_d_ods_tmp]
+    sql: |
+        UPDATE wms_out_order_dtl t
+        SET t.dw_updatetime = NOW(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM wms_out_order_dtl_doristmp s WHERE s.OUTDTLID = t.OUTDTLID AND s.DW_ID = t.DW_ID)  AND ((t.`VALIDDATE` is not null AND t.`VALIDDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`ALLOCATETIME` is not null AND t.`ALLOCATETIME` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`PRODDATE` is not null AND t.`PRODDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`EXPDATE` is not null AND t.`EXPDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`CANCELDATE` is not null AND t.`CANCELDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`TO_ZSPTDATE` is not null AND t.`TO_ZSPTDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`AUTOCREDATE` is not null AND t.`AUTOCREDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`DISCOUNT_DATE` is not null AND t.`DISCOUNT_DATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR ((t.`VALIDDATE` is null) AND (t.`ALLOCATETIME` is null) AND (t.`PRODDATE` is null) AND (t.`EXPDATE` is null) AND (t.`CANCELDATE` is null) AND (t.`TO_ZSPTDATE` is null) AND (t.`AUTOCREDATE` is null) AND (t.`DISCOUNT_DATE` is null)));
+        INSERT INTO wms_out_order_dtl (`OUTID`,`OUTDTLID`,`WAREHID`,`GOODSOWNERID`,`GOODSID`,`OWNERGOODSID`,`BATCHNO`,`LOTID`,`LOTNO`,`VALIDDATE`,`GOODSSTATUSID`,`QUANTITYSTATUS`,`PRICE`,`GOODSQTY`,`GOODSPACKID`,`REALQTY`,`TRADEGOODSQTY`,`TRADEGOODSPACK`,`STOCKQTY`,`CUSTCANCELSTATUS`,`WMSCANCELSTATUS`,`ADDMEDCHECKFLAG`,`SRCEXPDTLNO`,`USESTATUS`,`PRINTFLAG`,`PRINTERROR`,`DISTRIBUTEID`,`DISTRIBUTEDTLID`,`RETAILPRICE`,`AMT`,`ALLOCATETIME`,`FAILREASON`,`EXPDTLMEMO`,`PLACESUPPLYID`,`PLACESUPPLYDTLID`,`PLACEPRICE`,`RESALEPRICE`,`PLACEMONEY`,`GOODSCLASSID`,`OTCFLAG`,`TRADEMARK`,`APPROVEDOCNO`,`PRODDATE`,`QUALIFYDOCNO`,`GOODSCLASSNAME`,`OLDDTLID`,`OTHERID`,`EXPFLAG`,`EXPDATE`,`EXPFILENAME`,`INVOICENO`,`INVOICELINE`,`CANKEEP`,`ZXCOLOR`,`TPRICETICK`,`TPRICEFLAG`,`DTLMEMO`,`BMSIODTLID`,`PACKINGQTY`,`PRTORDERSET`,`BMSINOUTID`,`SORTTYPE`,`WAVEGOODSDTLID`,`PRTINVFLAG`,`INVID`,`DTLZXCOLUMN1`,`DTLZXCOLUMN2`,`DTLZXCOLUMN3`,`DTLZXCOLUMN4`,`DTLZXCOLUMN5`,`PRINTNO`,`PRINTLINE`,`LOTLIMIT`,`PERIODLIMIT`,`PERIODLIMITUNIT`,`CANCELDATE`,`CANCELMANID`,`WAITFORCANCEL`,`LYDTLZXCOLUMN1`,`LYDTLZXCOLUMN2`,`LYDTLZXCOLUMN3`,`LYDTLZXCOLUMN4`,`LYDTLZXCOLUMN5`,`LYDTLZXCOLUMN6`,`LYDTLZXCOLUMN7`,`LYDTLZXCOLUMN8`,`LYDTLZXCOLUMN9`,`LYDTLZXCOLUMN10`,`LYDTLZXCOLUMN11`,`LYDTLZXCOLUMN12`,`LYDTLZXCOLUMN13`,`LYDTLZXCOLUMN14`,`LYDTLZXCOLUMN15`,`LYDTLZXCOLUMN16`,`LYDTLZXCOLUMN17`,`LYDTLZXCOLUMN18`,`LYDTLZXCOLUMN19`,`LYDTLZXCOLUMN20`,`INVCODE`,`TO_ZSPT`,`TO_ZSPTDATE`,`FROM_SUDTLID`,`TO_GOODSOWNERID`,`TO_OWNERGOODSID`,`TO_GOODSID`,`TO_LOTID`,`TO_GOODSPACKID`,`TO_USESTATUS`,`TO_ERRORMEMO`,`SOURCEOUTDTLID`,`AUTOTASKFLAG`,`AUTOCREDATE`,`BUYINGPRICE`,`TO_ERPINDTLID`,`TO_ERPOUTDTLID`,`TO_PRINTPRICE`,`TO_PRINTAMT`,`INVOADDRESS`,`DISCOUNT_FALG`,`DISCOUNT_SADTLID`,`DISCOUNT_GOODSID`,`DISCOUNT_AMT`,`DISCOUNT_TAXRATE`,`DISCOUNT_DATE`,`DISCOUNT_MSG`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
+        SELECT s.`OUTID`,s.`OUTDTLID`,s.`WAREHID`,s.`GOODSOWNERID`,s.`GOODSID`,s.`OWNERGOODSID`,s.`BATCHNO`,s.`LOTID`,s.`LOTNO`,s.`VALIDDATE`,s.`GOODSSTATUSID`,s.`QUANTITYSTATUS`,s.`PRICE`,s.`GOODSQTY`,s.`GOODSPACKID`,s.`REALQTY`,s.`TRADEGOODSQTY`,s.`TRADEGOODSPACK`,s.`STOCKQTY`,s.`CUSTCANCELSTATUS`,s.`WMSCANCELSTATUS`,s.`ADDMEDCHECKFLAG`,s.`SRCEXPDTLNO`,s.`USESTATUS`,s.`PRINTFLAG`,s.`PRINTERROR`,s.`DISTRIBUTEID`,s.`DISTRIBUTEDTLID`,s.`RETAILPRICE`,s.`AMT`,s.`ALLOCATETIME`,s.`FAILREASON`,s.`EXPDTLMEMO`,s.`PLACESUPPLYID`,s.`PLACESUPPLYDTLID`,s.`PLACEPRICE`,s.`RESALEPRICE`,s.`PLACEMONEY`,s.`GOODSCLASSID`,s.`OTCFLAG`,s.`TRADEMARK`,s.`APPROVEDOCNO`,s.`PRODDATE`,s.`QUALIFYDOCNO`,s.`GOODSCLASSNAME`,s.`OLDDTLID`,s.`OTHERID`,s.`EXPFLAG`,s.`EXPDATE`,s.`EXPFILENAME`,s.`INVOICENO`,s.`INVOICELINE`,s.`CANKEEP`,s.`ZXCOLOR`,s.`TPRICETICK`,s.`TPRICEFLAG`,s.`DTLMEMO`,s.`BMSIODTLID`,s.`PACKINGQTY`,s.`PRTORDERSET`,s.`BMSINOUTID`,s.`SORTTYPE`,s.`WAVEGOODSDTLID`,s.`PRTINVFLAG`,s.`INVID`,s.`DTLZXCOLUMN1`,s.`DTLZXCOLUMN2`,s.`DTLZXCOLUMN3`,s.`DTLZXCOLUMN4`,s.`DTLZXCOLUMN5`,s.`PRINTNO`,s.`PRINTLINE`,s.`LOTLIMIT`,s.`PERIODLIMIT`,s.`PERIODLIMITUNIT`,s.`CANCELDATE`,s.`CANCELMANID`,s.`WAITFORCANCEL`,s.`LYDTLZXCOLUMN1`,s.`LYDTLZXCOLUMN2`,s.`LYDTLZXCOLUMN3`,s.`LYDTLZXCOLUMN4`,s.`LYDTLZXCOLUMN5`,s.`LYDTLZXCOLUMN6`,s.`LYDTLZXCOLUMN7`,s.`LYDTLZXCOLUMN8`,s.`LYDTLZXCOLUMN9`,s.`LYDTLZXCOLUMN10`,s.`LYDTLZXCOLUMN11`,s.`LYDTLZXCOLUMN12`,s.`LYDTLZXCOLUMN13`,s.`LYDTLZXCOLUMN14`,s.`LYDTLZXCOLUMN15`,s.`LYDTLZXCOLUMN16`,s.`LYDTLZXCOLUMN17`,s.`LYDTLZXCOLUMN18`,s.`LYDTLZXCOLUMN19`,s.`LYDTLZXCOLUMN20`,s.`INVCODE`,s.`TO_ZSPT`,s.`TO_ZSPTDATE`,s.`FROM_SUDTLID`,s.`TO_GOODSOWNERID`,s.`TO_OWNERGOODSID`,s.`TO_GOODSID`,s.`TO_LOTID`,s.`TO_GOODSPACKID`,s.`TO_USESTATUS`,s.`TO_ERRORMEMO`,s.`SOURCEOUTDTLID`,s.`AUTOTASKFLAG`,s.`AUTOCREDATE`,s.`BUYINGPRICE`,s.`TO_ERPINDTLID`,s.`TO_ERPOUTDTLID`,s.`TO_PRINTPRICE`,s.`TO_PRINTAMT`,s.`INVOADDRESS`,s.`DISCOUNT_FALG`,s.`DISCOUNT_SADTLID`,s.`DISCOUNT_GOODSID`,s.`DISCOUNT_AMT`,s.`DISCOUNT_TAXRATE`,s.`DISCOUNT_DATE`,s.`DISCOUNT_MSG`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
+        FROM wms_out_order_dtl_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM wms_out_order_dtl WHERE s.OUTDTLID = WMS_OUT_ORDER_DTL.OUTDTLID AND s.DW_ID = WMS_OUT_ORDER_DTL.DW_ID AND WMS_OUT_ORDER_DTL.IS_ACTIVE=1);
+        DROP TABLE wms_out_order_dtl_doristmp;
+
+  - name: WMS_OUT_ORDER_LOT_DTL_d_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: [WMS_OUT_ORDER_DTL_d_ods_update]
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
+            driver = "oracle.jdbc.OracleDriver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "lywms"
+            password = "lywms"
+            table_path = "lywms.WMS_OUT_ORDER_LOT_DTL"
+            query = """select t.OUTLOTID, ora_hash(substr(coalesce(substr(to_char(t.OUTDTLID), 1,255), '') || coalesce(substr(to_char(t.OUTLOTID), 1,255), '') || coalesce(substr(to_char(t.LOTID), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.WAVEGOODSDTLID), 1,255), '') || coalesce(substr(to_char(t.WHOLEQTY), 1,255), '') || coalesce(substr(to_char(t.BOXNO), 1,255), '') || coalesce(substr(to_char(t.REALQTY), 1,255), '') || coalesce(substr(to_char(t.IWCS_WHOLEQTY), 1,255), '') || coalesce(substr(to_char(t.IWCS_BOXNO), 1,255), '') || coalesce(substr(to_char(t.SOURCEOUTLOTID), 1,255), '') || coalesce(substr(to_char(t.AUTOTASKFLAG), 1,255), '') || coalesce(substr(to_char(t.AUTOCREDATE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t.OUTDTLID,t.LOTID,t.GOODSQTY,t.WAVEGOODSDTLID,t.WHOLEQTY,t.BOXNO,t.REALQTY,t.IWCS_WHOLEQTY,t.IWCS_BOXNO,t.SOURCEOUTLOTID,t.AUTOTASKFLAG,t.AUTOCREDATE,t1.ALLOCATETIME from WMS_OUT_ORDER_LOT_DTL t LEFT JOIN WMS_OUT_ORDER_DTL t1 ON t.OUTDTLID = t1.OUTDTLID WHERE (t.AUTOCREDATE is not NULL AND t.AUTOCREDATE >= TRUNC(SYSDATE-60)) OR (t1.ALLOCATETIME is not NULL AND t1.ALLOCATETIME >= TRUNC(SYSDATE-60)) OR ((t.AUTOCREDATE is NULL) AND (t1.ALLOCATETIME is NULL))"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_wms"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(OUTLOTID,DW_ID)
+              DISTRIBUTED BY HASH (OUTLOTID,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: WMS_OUT_ORDER_LOT_DTL_d_ods_update
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_wms"
+    flag: YES
+    deps: [WMS_OUT_ORDER_LOT_DTL_d_ods_tmp]
+    sql: |
+        UPDATE wms_out_order_lot_dtl t
+        SET t.dw_updatetime = NOW(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM wms_out_order_lot_dtl_doristmp s WHERE s.OUTLOTID = t.OUTLOTID AND s.DW_ID = t.DW_ID)  AND ((t.`AUTOCREDATE` is not null AND t.`AUTOCREDATE` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR (t.`ALLOCATETIME` is not null AND t.`ALLOCATETIME` > date_sub(CURDATE(), INTERVAL 60 DAY)) OR ((t.`AUTOCREDATE` is null) AND (t.`ALLOCATETIME` is null)));
+        INSERT INTO wms_out_order_lot_dtl (`OUTDTLID`,`OUTLOTID`,`LOTID`,`GOODSQTY`,`WAVEGOODSDTLID`,`WHOLEQTY`,`BOXNO`,`REALQTY`,`IWCS_WHOLEQTY`,`IWCS_BOXNO`,`SOURCEOUTLOTID`,`AUTOTASKFLAG`,`AUTOCREDATE`,`ALLOCATETIME`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
+        SELECT s.`OUTDTLID`,s.`OUTLOTID`,s.`LOTID`,s.`GOODSQTY`,s.`WAVEGOODSDTLID`,s.`WHOLEQTY`,s.`BOXNO`,s.`REALQTY`,s.`IWCS_WHOLEQTY`,s.`IWCS_BOXNO`,s.`SOURCEOUTLOTID`,s.`AUTOTASKFLAG`,s.`AUTOCREDATE`,s.`ALLOCATETIME`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
+        FROM wms_out_order_lot_dtl_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM wms_out_order_lot_dtl WHERE s.OUTLOTID = WMS_OUT_ORDER_LOT_DTL.OUTLOTID AND s.DW_ID = WMS_OUT_ORDER_LOT_DTL.DW_ID AND WMS_OUT_ORDER_LOT_DTL.IS_ACTIVE=1);
+        DROP TABLE wms_out_order_lot_dtl_doristmp;

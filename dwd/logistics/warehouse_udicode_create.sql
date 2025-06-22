@@ -20,8 +20,7 @@ CREATE TABLE
         -- 商品
         goodsid bigint COMMENT '商品ID',
         goods_name varchar COMMENT '商品名称',
-        is_coldchain tinyint COMMENT '是否冷链',
-        is_chinese_medicine tinyint COMMENT '是否中药',
+        goods_category varchar COMMENT '商品分类:冷链/中药/其他',
 
         -- 关联单据
         sourceid bigint COMMENT '来源单据ID',
@@ -47,8 +46,7 @@ INSERT INTO
         goodsowner_name,
         goodsid,
         goods_name,
-        is_coldchain,
-        is_chinese_medicine,
+        goods_category,
         sourceid,
         is_out,
         udicode
@@ -63,8 +61,7 @@ SELECT
     c.goodsownername,
     e.goodsid,
     g.goods_name,
-    IFNULL(d.is_coldchain, 0),
-    IFNULL(d.is_chinese_medicine, 0),
+    IFNULL(d.goods_category, '其他') AS goods_category,
     e.sourceid,
     IFNULL(e.INOUTFLAG, 0) as is_out,
     e.udicode

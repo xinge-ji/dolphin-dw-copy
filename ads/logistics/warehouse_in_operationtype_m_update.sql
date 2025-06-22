@@ -15,7 +15,7 @@ WITH
         SELECT
             warehid,
             goodsownerid,
-            operationtype_name as operationtype,
+            operation_type as operationtype,
             warehouse_name,
             goodsowner_name,
             -- 订单到收货相关指标 (stat_date = DATE(receive_time))

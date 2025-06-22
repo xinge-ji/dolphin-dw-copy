@@ -11,7 +11,8 @@ CREATE TABLE
         goodsclass bigint COMMENT '商品类别ID',
         goods_class_name varchar COMMENT '商品类别',
         is_coldchain tinyint COMMENT '是否冷链',
-        is_chinese_medicine tinyint COMMENT '是否中药'
+        is_chinese_medicine tinyint COMMENT '是否中药',
+        goods_category varchar COMMENT '商品分类:冷链/中药/其他'
     ) UNIQUE KEY (featureid, dw_starttime) DISTRIBUTED BY HASH (featureid) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",
@@ -30,7 +31,8 @@ INSERT INTO
         goodsclass,
         goods_class_name,
         is_coldchain,
-        is_chinese_medicine
+        is_chinese_medicine,
+        goods_category
     )
 WITH
     ranked_wms_goods_feature AS (
@@ -80,7 +82,12 @@ SELECT
     CASE
         WHEN a.goodsclass in (14, 15, 16, 20, 47) THEN 1
         ELSE 0
-    END as is_chinese_medicine
+    END as is_chinese_medicine,
+    CASE
+        WHEN IFNULL(e.chainflag, 0) = 1 THEN '冷链'
+        WHEN a.goodsclass in (14, 15, 16, 20, 47) THEN '中药'
+        ELSE '其他'
+    END as goods_category
 FROM
     ranked_wms_goods_feature a
     JOIN ods_wms.pub_ddl_dtl e ON a.goodsclass = e.ddlid AND e.sysid = 9 AND e.is_active = 1;

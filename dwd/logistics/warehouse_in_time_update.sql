@@ -9,11 +9,10 @@ INSERT INTO dwd.logistics_warehouse_in_time (
     goodsownerid,
     goodsowner_name,
     is_autotask,
-    operationtype_name,
+    operation_type,
     create_time,
     receive_time,
-    is_coldchain,
-    is_chinese_medicine,
+    goods_category,
     check_time,
     sectionid,
     finish_time,
@@ -44,11 +43,10 @@ WITH full_data AS (
         a.goodsownerid,
         a.goodsowner_name,
         a.is_autotask,
-        a.operationtype_name,
+        a.operation_type,
         a.create_time,
         b.receive_time,
-        b.is_coldchain,
-        b.is_chinese_medicine,
+        b.goods_category,
         c.receiveid,
         c.check_time,
         c.sectionid,
@@ -146,9 +144,6 @@ working_time_order_to_receive AS (
     SELECT 
         dr.inid,
         dr.indtlid,
-        dr.receiveid,
-        dr.inoutid,
-        dr.ssc_receive_goods_locate_id,
         SUM(
             CASE 
                 -- 开始和结束在同一工作日
@@ -185,15 +180,13 @@ working_time_order_to_receive AS (
     LEFT JOIN dim.date d ON d.date_key >= dr.order_start_date 
                          AND d.date_key <= dr.receive_end_date
     WHERE dr.order_start_date IS NOT NULL AND dr.receive_end_date IS NOT NULL
-    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+    GROUP BY dr.inid, dr.indtlid
 ),
 working_time_receive_to_check AS (
     SELECT 
         dr.inid,
         dr.indtlid,
         dr.receiveid,
-        dr.inoutid,
-        dr.ssc_receive_goods_locate_id,
         SUM(
             CASE 
                 WHEN dr.receive_start_date = dr.check_end_date AND d.date_key = dr.receive_start_date THEN
@@ -226,7 +219,7 @@ working_time_receive_to_check AS (
     LEFT JOIN dim.date d ON d.date_key >= dr.receive_start_date 
                          AND d.date_key <= dr.check_end_date
     WHERE dr.receive_start_date IS NOT NULL AND dr.check_end_date IS NOT NULL
-    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+    GROUP BY dr.inid, dr.indtlid, dr.receiveid
 ),
 working_time_check_to_flat AS (
     SELECT 
@@ -234,7 +227,6 @@ working_time_check_to_flat AS (
         dr.indtlid,
         dr.receiveid,
         dr.inoutid,
-        dr.ssc_receive_goods_locate_id,
         SUM(
             CASE 
                 WHEN dr.check_start_date = dr.flat_end_date AND d.date_key = dr.check_start_date THEN
@@ -267,14 +259,13 @@ working_time_check_to_flat AS (
     LEFT JOIN dim.date d ON d.date_key >= dr.check_start_date 
                          AND d.date_key <= dr.flat_end_date
     WHERE dr.check_start_date IS NOT NULL AND dr.flat_end_date IS NOT NULL
-    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid
 ),
 working_time_check_to_auto AS (
     SELECT 
         dr.inid,
         dr.indtlid,
         dr.receiveid,
-        dr.inoutid,
         dr.ssc_receive_goods_locate_id,
         SUM(
             CASE 
@@ -308,7 +299,7 @@ working_time_check_to_auto AS (
     LEFT JOIN dim.date d ON d.date_key >= dr.check_start_date2 
                          AND d.date_key <= dr.auto_end_date
     WHERE dr.check_start_date2 IS NOT NULL AND dr.auto_end_date IS NOT NULL
-    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.inoutid, dr.ssc_receive_goods_locate_id
+    GROUP BY dr.inid, dr.indtlid, dr.receiveid, dr.ssc_receive_goods_locate_id
 )
 SELECT 
     tc.inid,
@@ -321,11 +312,10 @@ SELECT
     tc.goodsownerid,
     tc.goodsowner_name,
     tc.is_autotask,
-    tc.operationtype_name,
+    tc.operation_type,
     tc.create_time,
     tc.receive_time,
-    tc.is_coldchain,
-    tc.is_chinese_medicine,
+    tc.goods_category,
     tc.check_time,
     tc.sectionid,
     tc.finish_time,
@@ -348,7 +338,7 @@ SELECT
     CASE WHEN wctf.working_time_check_to_flat is not NULL THEN COALESCE(wrtc.working_time_receive_to_check, 0) + wctf.working_time_check_to_flat ELSE NULL END as working_time_receive_to_flat,
     CASE WHEN wcta.working_time_check_to_auto is not NULL THEN COALESCE(wrtc.working_time_receive_to_check, 0) + wcta.working_time_check_to_auto ELSE NULL END as working_time_receive_to_auto
 FROM time_calculations tc
-LEFT JOIN working_time_order_to_receive wtor ON tc.inid = wtor.inid AND tc.indtlid = wtor.indtlid AND tc.receiveid = wtor.receiveid AND tc.inoutid = wtor.inoutid AND (tc.ssc_receive_goods_locate_id = wtor.ssc_receive_goods_locate_id OR (tc.ssc_receive_goods_locate_id IS NULL AND wtor.ssc_receive_goods_locate_id IS NULL))
-LEFT JOIN working_time_receive_to_check wrtc ON tc.inid = wrtc.inid AND tc.indtlid = wrtc.indtlid AND tc.receiveid = wrtc.receiveid AND tc.inoutid = wrtc.inoutid AND (tc.ssc_receive_goods_locate_id = wtor.ssc_receive_goods_locate_id OR (tc.ssc_receive_goods_locate_id IS NULL AND wtor.ssc_receive_goods_locate_id IS NULL))
-LEFT JOIN working_time_check_to_flat wctf ON tc.inid = wctf.inid AND tc.indtlid = wctf.indtlid AND tc.receiveid = wctf.receiveid AND tc.inoutid = wctf.inoutid AND (tc.ssc_receive_goods_locate_id IS NULL AND wtor.ssc_receive_goods_locate_id IS NULL)
-LEFT JOIN working_time_check_to_auto wcta ON tc.inid = wcta.inid AND tc.indtlid = wcta.indtlid AND tc.receiveid = wcta.receiveid AND tc.inoutid = wcta.inoutid AND tc.ssc_receive_goods_locate_id = wtor.ssc_receive_goods_locate_id;
+LEFT JOIN working_time_order_to_receive wtor ON tc.inid = wtor.inid AND tc.indtlid = wtor.indtlid
+LEFT JOIN working_time_receive_to_check wrtc ON tc.inid = wrtc.inid AND tc.indtlid = wrtc.indtlid AND tc.receiveid = wrtc.receiveid
+LEFT JOIN working_time_check_to_flat wctf ON tc.inid = wctf.inid AND tc.indtlid = wctf.indtlid AND tc.receiveid = wctf.receiveid AND tc.inoutid = wctf.inoutid 
+LEFT JOIN working_time_check_to_auto wcta ON tc.inid = wcta.inid AND tc.indtlid = wcta.indtlid AND tc.receiveid = wcta.receiveid AND tc.ssc_receive_goods_locate_id = wcta.ssc_receive_goods_locate_id;
