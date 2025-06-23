@@ -95,7 +95,7 @@ auto_pick_data AS (
     FROM 
         dwd.logistics_warehouse_st_io_doc io
     JOIN
-        dwd.logistics_warehouse_iwcs_picking p ON io.inoutid = p.wms_inout_id
+        dwd.logistics_warehouse_iwcs_pick p ON io.inoutid = p.wms_inout_id
     WHERE p.pick_time is not NULL
         AND DATE(p.pick_time) >= CURRENT_DATE() - INTERVAL 60 DAY
         AND DATE(p.pick_time) < CURRENT_DATE()
@@ -122,7 +122,7 @@ auto_pick_data AS (
     FROM 
         dwd.logistics_warehouse_st_io_doc io
     JOIN
-        dwd.logistics_warehouse_iwcs_picking p ON io.inoutid = p.wms_inout_id
+        dwd.logistics_warehouse_iwcs_pick p ON io.inoutid = p.wms_inout_id
     WHERE p.pick_time is not NULL
         AND DATE(p.pick_time) >= CURRENT_DATE() - INTERVAL 60 DAY
         AND DATE(p.pick_time) < CURRENT_DATE()
@@ -145,7 +145,7 @@ auto_udi_data AS (
     FROM 
         dwd.logistics_warehouse_st_io_doc io
     JOIN
-        dwd.logistics_warehouse_iwcs_picking p ON io.inoutid = p.wms_inout_id
+        dwd.logistics_warehouse_iwcs_pick p ON io.inoutid = p.wms_inout_id
     JOIN 
         ods_wms.iwcs_ssc_picking_carton_detail_udi u ON p.wms_inout_id = u.wms_inout_id
     WHERE p.pick_time is not NULL
@@ -172,7 +172,7 @@ auto_udi_data AS (
     FROM 
         dwd.logistics_warehouse_st_io_doc io
     JOIN
-        dwd.logistics_warehouse_iwcs_picking p ON io.inoutid = p.wms_inout_id
+        dwd.logistics_warehouse_iwcs_pick p ON io.inoutid = p.wms_inout_id
     JOIN 
         ods_wms.iwcs_ssc_picking_carton_detail_udi u ON p.wms_inout_id = u.wms_inout_id
     WHERE p.pick_time is not NULL

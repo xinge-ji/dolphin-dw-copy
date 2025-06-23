@@ -39,7 +39,7 @@ INSERT INTO
         goodsownerid,
         goodsowner_name,
         -- 状态
-        use_status,
+        usestatus,
         use_status,
         is_autotask,
         operation_type

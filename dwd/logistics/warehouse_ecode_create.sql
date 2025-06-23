@@ -60,8 +60,8 @@ SELECT
     c.goodsownername AS goodsowner_name,
     d.waregoodsid AS goodsid,
     d.goodsname AS goods_name,
-    CAST(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(IFNULL(a.srcexpno, CAST(a.sourceid AS STRING)), '\n', ''), '\r', ''), '\t', '') AS BIGINT) AS sourceid,
     IFNULL(e.goods_category, '其他') AS goods_category,
+    CAST(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(IFNULL(a.srcexpno, CAST(a.sourceid AS STRING)), '\n', ''), '\r', ''), '\t', '') AS BIGINT) AS sourceid,
     a.inoutflag AS is_out, -- 1=出库, 0=入库
     a.ecode
 FROM ods_wms.wms_ecode_record a

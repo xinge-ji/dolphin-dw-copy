@@ -4,77 +4,6 @@ workflow:
     project: wms_ods
 
 tasks:
-  - name: WMS_WAVE_GOODS_DTL_d_ods_tmp
-    task_type: SeaTunnel
-    fail_retry_times: 4
-    fail_retry_interval: 5
-    startup_script: "seatunnel.sh"
-    use_custom: true
-    deploy_mode: "cluster"
-    flag: YES
-    deps: []
-    raw_script: |
-        env{
-          parallelism = 2
-          job.mode = "BATCH"
-        }
-        source{
-          Jdbc {
-            url = "jdbc:oracle:thin:@10.10.10.202:1521/luyandg"
-            driver = "oracle.jdbc.OracleDriver"
-            connection_check_timeout_sec = 100
-            decimal_type_narrowing = false
-            user = "lywms"
-            password = "lywms"
-            table_path = "lywms.WMS_WAVE_GOODS_DTL"
-            query = """select t.WAVEGOODSDTLID, ora_hash(substr(coalesce(substr(to_char(t.WAVEDTLID), 1,255), '') || coalesce(substr(to_char(t.WAVEGOODSDTLID), 1,255), '') || coalesce(substr(to_char(t.OWNERGOODSID), 1,255), '') || coalesce(substr(to_char(t.GOODSID), 1,255), '') || coalesce(substr(to_char(t.GOODSPACKID), 1,255), '') || coalesce(substr(to_char(t.BATCHNO), 1,255), '') || coalesce(substr(to_char(t.LOTID), 1,255), '') || coalesce(substr(to_char(t.GOODSSTATUSID), 1,255), '') || coalesce(substr(to_char(t.QUANTITYSTATUS), 1,255), '') || coalesce(substr(to_char(t.GOODSQTY), 1,255), '') || coalesce(substr(to_char(t.WHOLEQTY), 1,255), '') || coalesce(substr(to_char(t.SCATTERQTY), 1,255), '') || coalesce(substr(to_char(t.USESTATUS), 1,255), '') || coalesce(substr(to_char(t.SORTTYPE), 1,255), '') || coalesce(substr(to_char(t.ADDMEDCHECKFLAG), 1,255), '') || coalesce(substr(to_char(t.PRINTFLAG), 1,255), '') || coalesce(substr(to_char(t.PRINTDATE), 1,255), '') || coalesce(substr(to_char(t.PRINTMANID), 1,255), '') || coalesce(substr(to_char(t.GOODSOWNERID), 1,255), '') || coalesce(substr(to_char(t.FLAG), 1,255), '') || coalesce(substr(to_char(t.YJDEXPFLAG), 1,255), '') || coalesce(substr(to_char(t.SOURCEWAVEGOODSDTLID), 1,255), '') || coalesce(substr(to_char(t.AUTOTASKFLAG), 1,255), '') || coalesce(substr(to_char(t.AUTOCREDATE), 1,255), ''), 1,4000)) as DW_ID, SYSDATE as dw_createtime, SYSDATE as dw_updatetime, 1 as is_active,t1.CREDATE,t.WAVEDTLID,t.OWNERGOODSID,t.GOODSID,t.GOODSPACKID,t.BATCHNO,t.LOTID,t.GOODSSTATUSID,t.QUANTITYSTATUS,t.GOODSQTY,t.WHOLEQTY,t.SCATTERQTY,t.USESTATUS,t.SORTTYPE,t.ADDMEDCHECKFLAG,t.PRINTFLAG,t.PRINTDATE,t.PRINTMANID,t.GOODSOWNERID,t.FLAG,t.YJDEXPFLAG,t.SOURCEWAVEGOODSDTLID,t.AUTOTASKFLAG,t.AUTOCREDATE from WMS_WAVE_GOODS_DTL t JOIN wms_wave_dtl t2 ON t2.wavedtlid=t.wavedtlid JOIN wms_wave_doc t1 ON t1.wavedocid = t2.waveid WHERE (t.PRINTDATE is not NULL AND t.PRINTDATE >= TRUNC(SYSDATE-90)) OR (t.AUTOCREDATE is not NULL AND t.AUTOCREDATE >= TRUNC(SYSDATE-90)) OR (t1.CREDATE >= TRUNC(SYSDATE-90))"""
-          }
-        }
-        sink{
-          Doris {
-            fenodes = "10.60.10.13:8030"
-            username = "root"
-            password = "doris123"
-            database = "ods_wms"
-            table = "${table_name}_doristmp"
-            data_save_mode = DROP_DATA
-            save_mode_create_template = """
-              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
-                  ${rowtype_fields}
-              ) ENGINE=OLAP
-              UNIQUE KEY(WAVEGOODSDTLID,DW_ID)
-              DISTRIBUTED BY HASH (WAVEGOODSDTLID,DW_ID)
-              PROPERTIES (
-                  "replication_allocation" = "tag.location.default: 1",
-                  "in_memory" = "false",
-                  "storage_format" = "V2",
-                  "disable_auto_compaction" = "false"
-              )
-            """
-            doris.config = {
-              format = "json"
-              read_json_by_line="true"
-            }
-          }
-        }
-
-  - name: WMS_WAVE_GOODS_DTL_d_ods_update
-    task_type: Sql
-    fail_retry_times: 1
-    fail_retry_interval: 5
-    datasource_name: "ods_wms"
-    flag: YES
-    deps: [WMS_WAVE_GOODS_DTL_d_ods_tmp]
-    sql: |
-        UPDATE wms_wave_goods_dtl t
-        SET t.dw_updatetime = CURRENT_DATE(), t.is_active = 0 
-        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM wms_wave_goods_dtl_doristmp s WHERE s.WAVEGOODSDTLID = t.WAVEGOODSDTLID AND s.DW_ID = t.DW_ID)  AND ((t.`PRINTDATE` is not null AND t.`PRINTDATE` > date_sub(CURDATE(), INTERVAL 90 DAY)) OR (t.`AUTOCREDATE` is not null AND t.`AUTOCREDATE` > date_sub(CURDATE(), INTERVAL 90 DAY)) OR (t.`CREDATE` >= date_sub(CURDATE(), INTERVAL 90 DAY)));
-        INSERT INTO wms_wave_goods_dtl (`WAVEDTLID`,`WAVEGOODSDTLID`,`OWNERGOODSID`,`GOODSID`,`GOODSPACKID`,`BATCHNO`,`LOTID`,`GOODSSTATUSID`,`QUANTITYSTATUS`,`GOODSQTY`,`WHOLEQTY`,`SCATTERQTY`,`USESTATUS`,`SORTTYPE`,`ADDMEDCHECKFLAG`,`PRINTFLAG`,`PRINTDATE`,`PRINTMANID`,`GOODSOWNERID`,`FLAG`,`YJDEXPFLAG`,`SOURCEWAVEGOODSDTLID`,`AUTOTASKFLAG`,`AUTOCREDATE`,`CREDATE`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
-        SELECT s.`WAVEDTLID`,s.`WAVEGOODSDTLID`,s.`OWNERGOODSID`,s.`GOODSID`,s.`GOODSPACKID`,s.`BATCHNO`,s.`LOTID`,s.`GOODSSTATUSID`,s.`QUANTITYSTATUS`,s.`GOODSQTY`,s.`WHOLEQTY`,s.`SCATTERQTY`,s.`USESTATUS`,s.`SORTTYPE`,s.`ADDMEDCHECKFLAG`,s.`PRINTFLAG`,s.`PRINTDATE`,s.`PRINTMANID`,s.`GOODSOWNERID`,s.`FLAG`,s.`YJDEXPFLAG`,s.`SOURCEWAVEGOODSDTLID`,s.`AUTOTASKFLAG`,s.`AUTOCREDATE`,s.`CREDATE`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
-        FROM wms_wave_goods_dtl_doristmp s
-        WHERE NOT EXISTS (SELECT 1 FROM wms_wave_goods_dtl WHERE s.WAVEGOODSDTLID = WMS_WAVE_GOODS_DTL.WAVEGOODSDTLID AND s.DW_ID = WMS_WAVE_GOODS_DTL.DW_ID);
-        DROP TABLE wms_wave_goods_dtl_doristmp;
-
   - name: WMS_GOODS_FEATURE_ods_tmp
     task_type: SeaTunnel
     fail_retry_times: 4
@@ -83,7 +12,7 @@ tasks:
     use_custom: true
     deploy_mode: "cluster"
     flag: YES
-    deps: [WMS_WAVE_GOODS_DTL_d_ods_update]
+    deps: []
     raw_script: |
         env{
           parallelism = 2

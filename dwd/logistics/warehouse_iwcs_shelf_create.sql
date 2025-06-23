@@ -30,9 +30,9 @@ CREATE TABLE
         goods_qty decimal(31, 8) COMMENT '商品数量',
         dtl_goods_qty decimal(31, 8) COMMENT '明细商品数量',
         depot_name varchar COMMENT '仓库名称',
-        scatter_count int COMMENT '散装数量',
-        whole_count int COMMENT '整装数量',
-        whole_qty double COMMENT '整装重量'
+        scatter_count int COMMENT '散件条目数',
+        whole_count int COMMENT '整件条目数',
+        whole_qty double COMMENT '整件件数'
     ) ENGINE = OLAP UNIQUE KEY (ssc_receive_goods_locate_id) DISTRIBUTED BY HASH (ssc_receive_goods_locate_id) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",

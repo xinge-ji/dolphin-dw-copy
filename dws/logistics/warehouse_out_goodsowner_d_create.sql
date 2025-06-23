@@ -123,7 +123,7 @@ auto_pick_data AS (
     FROM 
         dwd.logistics_warehouse_st_io_doc io
     JOIN
-        dwd.logistics_warehouse_iwcs_picking p ON io.inoutid = p.wms_inout_id
+        dwd.logistics_warehouse_iwcs_pick p ON io.inoutid = p.wms_inout_id
     WHERE p.pick_time is not NULL
     GROUP BY 
         DATE(p.pick_time),
@@ -148,7 +148,7 @@ auto_pick_data AS (
     FROM 
         dwd.logistics_warehouse_st_io_doc io
     JOIN
-        dwd.logistics_warehouse_iwcs_picking p ON io.inoutid = p.wms_inout_id
+        dwd.logistics_warehouse_iwcs_pick p ON io.inoutid = p.wms_inout_id
     WHERE p.pick_time is not NULL
     GROUP BY 
         DATE(p.pick_time),
@@ -169,7 +169,7 @@ auto_udi_data AS (
     FROM 
         dwd.logistics_warehouse_st_io_doc io
     JOIN
-        dwd.logistics_warehouse_iwcs_picking p ON io.inoutid = p.wms_inout_id
+        dwd.logistics_warehouse_iwcs_pick p ON io.inoutid = p.wms_inout_id
     JOIN 
         ods_wms.iwcs_ssc_picking_carton_detail_udi u ON p.wms_inout_id = u.wms_inout_id
     WHERE p.pick_time is not NULL
@@ -194,7 +194,7 @@ auto_udi_data AS (
     FROM 
         dwd.logistics_warehouse_st_io_doc io
     JOIN
-        dwd.logistics_warehouse_iwcs_picking p ON io.inoutid = p.wms_inout_id
+        dwd.logistics_warehouse_iwcs_pick p ON io.inoutid = p.wms_inout_id
     JOIN 
         ods_wms.iwcs_ssc_picking_carton_detail_udi u ON p.wms_inout_id = u.wms_inout_id
     WHERE p.pick_time is not NULL

@@ -18,6 +18,7 @@ CREATE TABLE dwd.logistics_warehouse_pick_doc (
     
     -- 任务信息
     operation_type varchar COMMENT '操作类型',
+    sourceid bigint COMMENT '来源ID',
     taskid bigint COMMENT '任务ID(1对多拣货单ID)',
     task_type varchar COMMENT '任务类型',
     io_comefrom varchar COMMENT '来源',
@@ -93,6 +94,8 @@ INSERT INTO dwd.logistics_warehouse_pick_doc (
     check_time,
     pickareaid,
     pickarea_name,
+    operation_type,
+    sourceid,
     taskid,
     task_type,
     io_comefrom,
@@ -102,7 +105,6 @@ INSERT INTO dwd.logistics_warehouse_pick_doc (
     rfflag,
     usestatus,
     goodsid,
-    operation_type,
     goods_name,
     goods_type,
     goods_qty,
@@ -145,6 +147,8 @@ SELECT
     b.keepdate as check_time,
     f.pickareaid,
     g.pickareaname as pickarea_name,
+    s.ddlname as operation_type,
+    b.sourceid,
     a.taskid,
     '出库下架' as task_type,
     CASE
@@ -157,7 +161,6 @@ SELECT
     b.rfflag,
     b.usestatus,
     b.goodsid,
-    s.ddlname as operation_type,
     j.goodsname as goods_name,
     j.goodstype as goods_type,
     b.goodsqty as goods_qty,
@@ -228,6 +231,8 @@ SELECT
     b.keepdate as check_time,
     f.pickareaid,
     g.pickareaname as pickarea_name,
+    s.ddlname as operation_type,
+    b.sourceid,
     a.taskid,
     CASE e.subtype
         WHEN 1 THEN '波次补货下架'
@@ -243,7 +248,6 @@ SELECT
     b.rfflag,
     b.usestatus,
     b.goodsid,
-    s.ddlname as operation_type,
     j.goodsname as goods_name,
     j.goodstype as goods_type,
     b.goodsqty as goods_qty,

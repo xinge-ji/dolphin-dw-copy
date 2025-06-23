@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS dwd.logistics_warehouse_shelf_doc;
+
 CREATE TABLE dwd.logistics_warehouse_shelf_doc (
     -- 主键
     shelfid bigint COMMENT '上架单ID (=inoutid)',
@@ -15,9 +17,15 @@ CREATE TABLE dwd.logistics_warehouse_shelf_doc (
 
     -- 任务信息
     operation_type varchar COMMENT '操作类型',
+    sourceid bigint COMMENT '来源ID',
     taskid bigint COMMENT '任务ID (1对多上架单)',
     task_type varchar COMMENT '任务类型',
     rfflag tinyint COMMENT 'RF标志',
+
+    -- 操作人员
+    rfmanid bigint COMMENT '拣货操作员ID',
+    rfman_name varchar COMMENT '拣货操作员姓名',
+
     usestatus varchar COMMENT '使用状态',
     io_comefrom varchar COMMENT '来源',
     is_iwcs tinyint COMMENT '是否IWCS分区',
@@ -29,6 +37,8 @@ CREATE TABLE dwd.logistics_warehouse_shelf_doc (
     goods_type varchar COMMENT '商品类型',
     factory_name varchar COMMENT '厂家名称',
     goods_qty decimal(18,4) COMMENT '商品数量',
+    whole_qty decimal COMMENT '整件件数',
+    scatter_qty decimal(16,6) COMMENT '散件件数',
     trade_pack_name varchar COMMENT '贸易包装名称',
     product_area varchar COMMENT '产地',
 
@@ -74,9 +84,12 @@ INSERT INTO dwd.logistics_warehouse_shelf_doc (
     sectionid,
     section_name,
     operation_type,
+    sourceid,
     taskid,
     task_type,
     rfflag,
+    rfmanid,
+    rfman_name,
     usestatus,
     io_comefrom,
     is_iwcs,
@@ -86,6 +99,8 @@ INSERT INTO dwd.logistics_warehouse_shelf_doc (
     goods_type,
     factory_name,
     goods_qty,
+    whole_qty,
+    scatter_qty,
     trade_pack_name,
     product_area,
     lotno,
@@ -113,11 +128,14 @@ SELECT
     b.credate AS create_time,
     b.rffindate AS shelf_time,  
     b.sectionid,
-    j.sectionname AS section_name,
+    IFNULL(j.sectionname, '其他') AS section_name,
     s.ddlname as operation_type,
+    b.sourceid,
     a.taskid,
     '入库上架' AS task_type,
     b.rfflag,
+    b.rfmanid,
+    o.employeename as rfman_name,
     b.usestatus,
     CASE b.comefrom
         WHEN 1 THEN '入库'
@@ -131,6 +149,8 @@ SELECT
     g.goodstype AS goods_type,
     g.factname AS factory_name,
     b.goodsqty AS goods_qty,
+    b.wholeqty AS whole_qty,
+    b.scatterqty AS scatter_qty,
     g.tradepackname AS trade_pack_name,
     g.prodarea AS product_area,
     i.lotno,
@@ -151,23 +171,25 @@ SELECT
     g.goodsownerid,
     m.goodsownername AS goodsowner_name
 FROM ods_wms.wms_task_doc a
-JOIN ods_wms.wms_st_io_doc b ON a.taskid = b.taskid
-JOIN ods_wms.wms_receive_dtl c ON b.sourceid = c.receiveid
-JOIN ods_wms.wms_in_order_dtl d ON c.indtlid = d.indtlid
-JOIN ods_wms.wms_in_order e ON d.inid = e.inid
-LEFT JOIN ods_wms.tpl_go_company f ON e.sourcecompanyid = f.companyid
-JOIN ods_wms.tpl_goods g ON b.ownergoodsid = g.ownergoodsid
-LEFT JOIN ods_wms.tpl_pub_goods_packs h ON b.goodspackid = h.goodspackid
-LEFT JOIN ods_wms.wms_goods_lot i ON b.lotid = i.lotid
-LEFT JOIN ods_wms.wms_st_section_def j ON b.sectionid = j.sectionid
-LEFT JOIN ods_wms.tpl_drugform k ON g.drugform = k.drugformno
-JOIN ods_wms.wms_container_def t ON b.containerid = t.containerid
-LEFT JOIN ods_wms.tpl_warehouse l ON a.warehid = l.warehid
-LEFT JOIN ods_wms.tpl_goodsowner m ON g.goodsownerid = m.goodsownerid
+JOIN ods_wms.wms_st_io_doc b ON a.taskid = b.taskid AND b.is_active = 1 
+JOIN ods_wms.wms_receive_dtl c ON b.sourceid = c.receiveid AND c.is_active = 1
+JOIN ods_wms.wms_in_order_dtl d ON c.indtlid = d.indtlid AND d.is_active = 1
+JOIN ods_wms.wms_in_order e ON d.inid = e.inid AND e.is_active = 1
+LEFT JOIN ods_wms.tpl_go_company f ON e.sourcecompanyid = f.companyid AND f.is_active = 1
+JOIN ods_wms.tpl_goods g ON b.ownergoodsid = g.ownergoodsid AND g.is_active = 1
+LEFT JOIN ods_wms.tpl_pub_goods_packs h ON b.goodspackid = h.goodspackid AND h.is_active = 1
+LEFT JOIN ods_wms.wms_goods_lot i ON b.lotid = i.lotid AND i.is_active = 1
+LEFT JOIN ods_wms.wms_st_section_def j ON b.sectionid = j.sectionid AND j.is_active = 1
+LEFT JOIN ods_wms.tpl_drugform k ON g.drugform = k.drugformno AND k.is_active = 1
+JOIN ods_wms.wms_container_def t ON b.containerid = t.containerid AND t.is_active = 1
+LEFT JOIN ods_wms.tpl_warehouse l ON a.warehid = l.warehid AND l.is_active = 1
+LEFT JOIN ods_wms.tpl_goodsowner m ON g.goodsownerid = m.goodsownerid AND m.is_active = 1
+LEFT JOIN ods_wms.pub_employee o ON b.rfmanid = o.employeeid AND o.is_active = 1
 LEFT JOIN ods_wms.wms_st_section_def p ON b.sectionid = p.sectionid AND p.is_active = 1
 LEFT JOIN ods_wms.sys_ddl_dtl s ON b.operationtype = s.ddlid AND s.sysid = 389 AND s.is_active = 1
 WHERE a.tasktype = 3  -- 上架任务
   AND b.comefrom = 1  -- 入库
+  AND a.is_active = 1
 
 UNION ALL
 
@@ -178,8 +200,9 @@ SELECT
     b.credate AS create_time,
     b.rffindate AS shelf_time,  
     b.sectionid,
-    j.sectionname AS section_name,
+    IFNULL(j.sectionname, '其他') AS section_name,
     s.ddlname as operation_type,
+    b.sourceid,
     a.taskid,
     CASE e.subtype
         WHEN 1 THEN '波次补货上架'
@@ -189,6 +212,8 @@ SELECT
         ELSE '报警补货上架'
     END AS task_type,
     b.rfflag,
+    b.rfmanid,
+    o.employeename as rfman_name,
     b.usestatus,
     CASE b.comefrom
         WHEN 1 THEN '入库'
@@ -202,6 +227,8 @@ SELECT
     g.goodstype AS goods_type,
     g.factname AS factory_name,
     b.goodsqty AS goods_qty,
+    b.wholeqty AS whole_qty,
+    b.scatterqty AS scatter_qty,
     g.tradepackname AS trade_pack_name,
     g.prodarea AS product_area,
     i.lotno,
@@ -222,19 +249,21 @@ SELECT
     g.goodsownerid,
     m.goodsownername AS goodsowner_name
 FROM ods_wms.wms_task_doc a
-JOIN ods_wms.wms_st_io_doc b ON a.taskid = b.taskid
-JOIN ods_wms.wms_trade_dtl d ON b.sourceid = d.tradedtlid
-JOIN ods_wms.wms_trade_order e ON d.tradeid = e.tradeid
-LEFT JOIN ods_wms.tpl_goods g ON b.ownergoodsid = g.ownergoodsid
-LEFT JOIN ods_wms.tpl_pub_goods_packs h ON b.goodspackid = h.goodspackid
-LEFT JOIN ods_wms.wms_goods_lot i ON b.lotid = i.lotid
-LEFT JOIN ods_wms.wms_st_section_def j ON b.sectionid = j.sectionid
-LEFT JOIN ods_wms.tpl_drugform k ON g.drugform = k.drugformno
-JOIN ods_wms.wms_container_def t ON b.containerid = t.containerid
-LEFT JOIN ods_wms.tpl_warehouse l ON a.warehid = l.warehid
-LEFT JOIN ods_wms.tpl_goodsowner m ON g.goodsownerid = m.goodsownerid
+JOIN ods_wms.wms_st_io_doc b ON a.taskid = b.taskid AND b.is_active = 1
+JOIN ods_wms.wms_trade_dtl d ON b.sourceid = d.tradedtlid AND d.is_active = 1
+JOIN ods_wms.wms_trade_order e ON d.tradeid = e.tradeid AND e.is_active = 1
+LEFT JOIN ods_wms.tpl_goods g ON b.ownergoodsid = g.ownergoodsid AND g.is_active = 1
+LEFT JOIN ods_wms.tpl_pub_goods_packs h ON b.goodspackid = h.goodspackid AND h.is_active = 1
+LEFT JOIN ods_wms.wms_goods_lot i ON b.lotid = i.lotid AND i.is_active = 1
+LEFT JOIN ods_wms.wms_st_section_def j ON b.sectionid = j.sectionid AND j.is_active = 1
+LEFT JOIN ods_wms.tpl_drugform k ON g.drugform = k.drugformno AND k.is_active = 1
+JOIN ods_wms.wms_container_def t ON b.containerid = t.containerid AND t.is_active = 1
+LEFT JOIN ods_wms.tpl_warehouse l ON a.warehid = l.warehid AND l.is_active = 1
+LEFT JOIN ods_wms.tpl_goodsowner m ON g.goodsownerid = m.goodsownerid AND m.is_active = 1
+LEFT JOIN ods_wms.pub_employee o ON b.rfmanid = o.employeeid AND o.is_active = 1
 LEFT JOIN ods_wms.wms_st_section_def p ON b.sectionid = p.sectionid AND p.is_active = 1
 LEFT JOIN ods_wms.sys_ddl_dtl s ON b.operationtype = s.ddlid AND s.sysid = 389 AND s.is_active = 1
 WHERE a.tasktype = 3  -- 上架
   AND b.comefrom = 4  -- 库内下架任务（指库内变动单生成的下架任务）
-  AND e.subtype IN (1, 2, 3, 4, 5);  -- 1 波次补货 2 报警补货 3 闲时补货 4手工补货 5波次预补货
+  AND e.subtype IN (1, 2, 3, 4, 5)  -- 1 波次补货 2 报警补货 3 闲时补货 4手工补货 5波次预补货
+  AND a.is_active = 1;

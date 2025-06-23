@@ -4,6 +4,7 @@ workflow:
   schedule: 0 0 6 ? * * *
 
 tasks:
+  # 基础层 - 无依赖
   - name: warehouse_ecode
     task_type: Sql
     datasource_name: "dwd"
@@ -18,19 +19,27 @@ tasks:
     deps: [warehouse_ecode]
     sql: $FILE{"warehouse_udicode_update.sql"}
   
-  - name: warehouse_iwcs_picking
+  - name: warehouse_iwcs_pick
     task_type: Sql
     datasource_name: "dwd"
     flag: YES
     deps: [warehouse_udicode]
-    sql: $FILE{"warehouse_iwcs_picking_update.sql"}
+    sql: $FILE{"warehouse_iwcs_pick_update.sql"}
+    
+  - name: warehouse_iwcs_shelf
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_iwcs_pick]
+    sql: $FILE{"warehouse_iwcs_shelf_update.sql"}
   
+  # 入库流程层
   - name: warehouse_order_in_doc
     task_type: Sql
     datasource_name: "dwd"
     flag: YES
-    deps: [warehouse_iwcs_picking]
-    sql: $FILE{"warehouse_iwcs_picking_update.sql"}
+    deps: [warehouse_iwcs_shelf]
+    sql: $FILE{"warehouse_order_in_doc_update.sql"}
   
   - name: warehouse_order_in_dtl
     task_type: Sql
@@ -38,24 +47,77 @@ tasks:
     flag: YES
     deps: [warehouse_order_in_doc]
     sql: $FILE{"warehouse_order_in_dtl_update.sql"}
+  
+  # 出库流程层
+  - name: warehouse_order_out_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_order_in_dtl]
+    sql: $FILE{"warehouse_order_out_doc_update.sql"}
+    
+  - name: warehouse_order_out_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_order_out_doc]
+    sql: $FILE{"warehouse_order_out_dtl_update.sql"}
+    
+  - name: warehouse_order_out_lot_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_order_out_dtl]
+    sql: $FILE{"warehouse_order_out_lot_dtl_update.sql"}
+  
+  # 波次流程层
+  - name: warehouse_wave_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_order_out_lot_dtl]
+    sql: $FILE{"warehouse_wave_doc_update.sql"}
+    
+  - name: warehouse_wave_dtl
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_wave_doc]
+    sql: $FILE{"warehouse_wave_dtl_update.sql"}
+  
+  # 操作层
+  - name: warehouse_st_io_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_wave_dtl]
+    sql: $FILE{"warehouse_st_io_doc_update.sql"}
+    
+  - name: warehouse_pick_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_st_io_doc]
+    sql: $FILE{"warehouse_pick_doc_update.sql"}
+    
+  - name: warehouse_shelf_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_pick_doc]
+    sql: $FILE{"warehouse_shelf_doc_update.sql"}
 
   - name: warehouse_order_receive_dtl
     task_type: Sql
     datasource_name: "dwd"
     flag: YES
-    deps: [warehouse_order_in_dtl]
+    deps: [warehouse_shelf_doc]
     sql: $FILE{"warehouse_order_receive_dtl_update.sql"}
   
-  - name: warehouse_st_io_doc
-    task_type: Sql
-    datasource_name: "dwd"
-    flag: YES
-    deps: [warehouse_order_receive_dtl]
-    sql: $FILE{"warehouse_st_io_doc_update.sql"}
-  
+  # 时间分析层
   - name: warehouse_in_time
     task_type: Sql
     datasource_name: "dwd"
     flag: YES
-    deps: [warehouse_st_io_doc]
+    deps: [warehouse_order_receive_dtl]
     sql: $FILE{"warehouse_in_time_update.sql"}

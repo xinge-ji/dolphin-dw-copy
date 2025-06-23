@@ -9,36 +9,56 @@ INSERT INTO
     dwd.logistics_warehouse_order_receive_dtl (
         receiveid,
         dw_updatetime,
-        inid,
         indtlid,
         warehid,
         warehouse_name,
         sectionid,
+        section_name,
+        goodsownerid,
+        goodsowner_name,
         check_time,
         goodsid,
         goods_name,
+        goods_category,
         scatter_qty,
         whole_qty
     )
+-- 优化后的查询
+WITH filtered_receive AS (
+    SELECT receiveid, dw_updatetime, indtlid, warehid, sectionid, checkdate, goodsid, scatterqty, wholeqty
+    FROM ods_wms.wms_receive_dtl 
+    WHERE is_active = 1 
+    AND dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_order_receive_dtl);
+),
+latest_shelf AS (
+    -- 只处理有关联的shelf数据
+    SELECT 
+        sd.sourceid AS receiveid, 
+        sd.section_name,
+        ROW_NUMBER() OVER (PARTITION BY sd.sourceid ORDER BY sd.shelf_time ASC) as rn
+    FROM dwd.logistics_warehouse_shelf_doc sd
+    WHERE sd.section_name IS NOT NULL
+      AND EXISTS (
+          SELECT 1 FROM filtered_receive fr WHERE fr.receiveid = sd.sourceid
+      )
+)
 SELECT 
     r.receiveid,
     r.dw_updatetime,
-    a.inid,
     r.indtlid,
     r.warehid,
-    b.warehname AS warehouse_name,
+    d.warehouse_name,
     r.sectionid,
+    COALESCE(j.sectionname, ls.section_name, '其他') AS section_name,
+    d.goodsownerid,
+    d.goodsowner_name,
     r.checkdate AS check_time,
     r.goodsid,
-    g.goods_name,
+    d.goods_name,
+    IFNULL(d.goods_category, '其他') AS goods_category,
     r.scatterqty,
     r.wholeqty
-FROM 
-    ods_wms.wms_receive_dtl r
-JOIN 
-    dwd.logistics_warehouse_order_in_dtl a ON r.indtlid = a.indtlid
-LEFT JOIN ods_wms.tpl_warehouse b ON r.warehid = b.warehid AND b.is_active = 1
-LEFT JOIN 
-    dim.goods g ON r.goodsid = g.goodsid AND r.checkdate >= g.dw_starttime AND r.checkdate < g.dw_endtime
-WHERE r.is_active = 1
-AND r.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_order_receive_dtl);
+FROM filtered_receive r
+JOIN dwd.logistics_warehouse_order_in_dtl d ON r.indtlid = d.indtlid
+LEFT JOIN ods_wms.wms_st_section_def j ON r.sectionid = j.sectionid AND j.is_active = 1
+LEFT JOIN latest_shelf ls ON r.receiveid = ls.receiveid AND ls.rn = 1;
