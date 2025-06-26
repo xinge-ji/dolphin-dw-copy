@@ -30,7 +30,17 @@ CREATE TABLE dws.logistics_warehouse_in_d(
     mean_time_order_to_receive double COMMENT '订单到收货平均用时',
     mean_time_receive_to_check double COMMENT '收货到验收平均用时',
     mean_time_check_to_flat double COMMENT '验到平库上架平均用时',
-    mean_time_check_to_auto double COMMENT '验到立库上架平均用时'
+    mean_time_check_to_auto double COMMENT '验到立库上架平均用时',
+
+    -- 时效指标
+    order_to_receive_2d_count int COMMENT '2天订单到收货完成条目数',
+    order_to_receive_7d_count int COMMENT '7天订单到收货完成条目数',
+    receive_to_check_24h_count int COMMENT '24小时收货到验收完成条目数',
+    receive_to_check_48h_count int COMMENT '48小时收货到验货完成条目数',
+    check_to_flat_24h_count int COMMENT '24小时验收上架平库完成条目数',
+    check_to_flat_48h_count int COMMENT '48小时验收上架平库完成条目数',
+    check_to_auto_24h_count int COMMENT '24小时验收上架立库完成条目数',
+    check_to_auto_48h_count int COMMENT '48小时验收上架立库完成条目数'
 )
 UNIQUE KEY (stat_date, warehid, goodsownerid, goods_category, operation_type, section_name)
 DISTRIBUTED BY HASH(warehid) BUCKETS 10
@@ -65,7 +75,15 @@ INSERT INTO dws.logistics_warehouse_in_d (
     mean_time_order_to_receive,
     mean_time_receive_to_check,
     mean_time_check_to_flat,
-    mean_time_check_to_auto
+    mean_time_check_to_auto,
+    order_to_receive_2d_count,
+    order_to_receive_7d_count,
+    receive_to_check_24h_count,
+    receive_to_check_48h_count,
+    check_to_flat_24h_count,
+    check_to_flat_48h_count,
+    check_to_auto_24h_count,
+    check_to_auto_48h_count
 )
 WITH filtered_in_dtl AS (
     -- 先过滤需要的入库明细数据
@@ -95,7 +113,10 @@ receive_base AS (
         COALESCE(si.section_name, '') as section_name,
         -- 聚合指标
         COUNT(DISTINCT a.indtlid) as receive_count,
-        AVG(a.order_to_receive_time) as mean_time_order_to_receive
+        AVG(a.order_to_receive_time) as mean_time_order_to_receive,
+        -- 时效指标
+        SUM(CASE WHEN a.order_to_receive_time <= 2 THEN 1 ELSE 0 END) as order_to_receive_2d_count,
+        SUM(CASE WHEN a.order_to_receive_time <= 7 THEN 1 ELSE 0 END) as order_to_receive_7d_count
     FROM filtered_in_dtl a
     LEFT JOIN section_info_indtlid si ON a.indtlid = si.indtlid AND si.rn = 1
     GROUP BY 
@@ -116,7 +137,10 @@ check_detail AS (
         SUM(CASE WHEN b.whole_qty > 0 THEN 1 ELSE 0 END) as check_whole_count,
         SUM(b.scatter_qty) as check_scatter_qty,
         SUM(b.whole_qty) as check_whole_qty,
-        AVG(TIMESTAMPDIFF(MINUTE, f.receive_time, b.check_time)) as mean_time_receive_to_check
+        AVG(TIMESTAMPDIFF(MINUTE, f.receive_time, b.check_time)) as mean_time_receive_to_check,
+        -- 时效指标
+        SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, f.receive_time, b.check_time) <= 1440 THEN 1 ELSE 0 END) as receive_to_check_24h_count,
+        SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, f.receive_time, b.check_time) <= 2880 THEN 1 ELSE 0 END) as receive_to_check_48h_count
     FROM dwd.logistics_warehouse_order_receive_dtl b
     JOIN filtered_in_dtl f ON b.indtlid = f.indtlid
     WHERE b.check_time IS NOT NULL
@@ -135,7 +159,10 @@ flat_shelf_detail AS (
         -- 聚合指标
         IFNULL(SUM(c.whole_qty), 0) as flat_shelf_whole_qty,
         SUM(CASE WHEN c.scatter_qty > 0 THEN 1 ELSE 0 END) as flat_shelf_scatter_count,
-        AVG(TIMESTAMPDIFF(MINUTE, b.check_time, c.shelf_time)) as mean_time_check_to_flat
+        AVG(TIMESTAMPDIFF(MINUTE, b.check_time, c.shelf_time)) as mean_time_check_to_flat,
+        -- 时效指标
+        SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, b.check_time, c.shelf_time) <= 1440 THEN 1 ELSE 0 END) as check_to_flat_24h_count,
+        SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, b.check_time, c.shelf_time) <= 2880 THEN 1 ELSE 0 END) as check_to_flat_48h_count
     FROM dwd.logistics_warehouse_shelf_doc c
     JOIN dwd.logistics_warehouse_order_receive_dtl b ON b.receiveid = c.sourceid
     JOIN filtered_in_dtl f ON b.indtlid = f.indtlid
@@ -156,7 +183,10 @@ auto_shelf_detail AS (
         -- 聚合指标
         IFNULL(SUM(d.whole_qty), 0) as auto_shelf_whole_qty,
         IFNULL(SUM(d.scatter_count), 0) as auto_shelf_scatter_count,
-        AVG(TIMESTAMPDIFF(MINUTE, b.check_time, d.create_time)) as mean_time_check_to_auto
+        AVG(TIMESTAMPDIFF(MINUTE, b.check_time, d.create_time)) as mean_time_check_to_auto,
+        -- 时效指标
+        SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, b.check_time, d.create_time) <= 1440 THEN 1 ELSE 0 END) as check_to_auto_24h_count,
+        SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, b.check_time, d.create_time) <= 2880 THEN 1 ELSE 0 END) as check_to_auto_48h_count
     FROM dwd.logistics_warehouse_iwcs_shelf d
     JOIN dwd.logistics_warehouse_order_receive_dtl b ON b.receiveid = d.receiveid
     JOIN filtered_in_dtl f ON b.indtlid = f.indtlid
@@ -250,7 +280,17 @@ SELECT
     rb.mean_time_order_to_receive,
     cd.mean_time_receive_to_check,
     fsd.mean_time_check_to_flat,
-    asd.mean_time_check_to_auto
+    asd.mean_time_check_to_auto,
+    
+    -- 时效指标
+    COALESCE(rb.order_to_receive_2d_count, 0) as order_to_receive_2d_count,
+    COALESCE(rb.order_to_receive_7d_count, 0) as order_to_receive_7d_count,
+    COALESCE(cd.receive_to_check_24h_count, 0) as receive_to_check_24h_count,
+    COALESCE(cd.receive_to_check_48h_count, 0) as receive_to_check_48h_count,
+    COALESCE(fsd.check_to_flat_24h_count, 0) as check_to_flat_24h_count,
+    COALESCE(fsd.check_to_flat_48h_count, 0) as check_to_flat_48h_count,
+    COALESCE(asd.check_to_auto_24h_count, 0) as check_to_auto_24h_count,
+    COALESCE(asd.check_to_auto_48h_count, 0) as check_to_auto_48h_count
     
 FROM all_dimensions ad
 LEFT JOIN receive_base rb ON ad.stat_date = rb.stat_date 
