@@ -57,7 +57,7 @@ receive_base AS (
         DATE(a.receive_time) as stat_date,
         a.warehid, a.goodsownerid, a.goods_category, a.operation_type,
         a.warehouse_name, a.goodsowner_name,
-        COALESCE(si.section_name, '') as section_name,
+        COALESCE(si.section_name, '其他') as section_name,
         -- 聚合指标
         COUNT(DISTINCT a.indtlid) as receive_count,
         AVG(a.order_to_receive_time) as mean_time_order_to_receive,
@@ -70,7 +70,7 @@ receive_base AS (
     GROUP BY 
         DATE(a.receive_time), a.warehid, a.goodsownerid, a.goods_category,
         a.operation_type, a.warehouse_name, a.goodsowner_name,
-        COALESCE(si.section_name, '')
+        COALESCE(si.section_name, '其他')
 ),
 
 -- 验收明细数据（聚合）
@@ -81,8 +81,8 @@ check_detail AS (
         f.warehouse_name, f.goodsowner_name, b.section_name, 
         -- 聚合指标
         COUNT(DISTINCT b.receiveid) as check_count,
-        SUM(CASE WHEN b.scatter_qty > 0 THEN 1 ELSE 0 END) as check_scatter_count,
-        SUM(CASE WHEN b.whole_qty > 0 THEN 1 ELSE 0 END) as check_whole_count,
+        SUM(CASE WHEN b.scatter_qty != 0 THEN 1 ELSE 0 END) as check_scatter_count,
+        SUM(CASE WHEN b.whole_qty != 0 THEN 1 ELSE 0 END) as check_whole_count,
         SUM(b.scatter_qty) as check_scatter_qty,
         SUM(b.whole_qty) as check_whole_qty,
         AVG(TIMESTAMPDIFF(MINUTE, f.receive_time, b.check_time)) as mean_time_receive_to_check,
@@ -107,7 +107,7 @@ flat_shelf_detail AS (
         f.warehouse_name, f.goodsowner_name, c.section_name,
         -- 聚合指标
         IFNULL(SUM(c.whole_qty), 0) as flat_shelf_whole_qty,
-        SUM(CASE WHEN c.scatter_qty > 0 THEN 1 ELSE 0 END) as flat_shelf_scatter_count,
+        SUM(CASE WHEN c.scatter_qty != 0 THEN 1 ELSE 0 END) as flat_shelf_scatter_count,
         AVG(TIMESTAMPDIFF(MINUTE, b.check_time, c.shelf_time)) as mean_time_check_to_flat,
         -- 时效指标
         SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, b.check_time, c.shelf_time) <= 1440 THEN 1 ELSE 0 END) as check_to_flat_24h_count,
@@ -218,22 +218,32 @@ SELECT
     COALESCE(cd.check_whole_qty, 0) as check_whole_qty,
     
     -- 平库上架指标
-    fsd.flat_shelf_whole_qty, 
-    fsd.flat_shelf_scatter_count,
+    COALESCE(fsd.flat_shelf_whole_qty, 0) as flat_shelf_whole_qty, 
+    COALESCE(fsd.flat_shelf_scatter_count, 0) as flat_shelf_scatter_count,
     
     -- 立库上架指标
-    asd.auto_shelf_whole_qty, 
-    asd.auto_shelf_scatter_count, 
+    COALESCE(asd.auto_shelf_whole_qty, 0) as auto_shelf_whole_qty, 
+    COALESCE(asd.auto_shelf_scatter_count, 0) as auto_shelf_scatter_count, 
     
     -- 码类指标
     COALESCE(ed.ecode_count, 0) as ecode_count,
     COALESCE(ud.udicode_count, 0) as udicode_count,
 
     -- 时间
-    rb.mean_time_order_to_receive,
-    cd.mean_time_receive_to_check,
-    fsd.mean_time_check_to_flat,
-    asd.mean_time_check_to_auto
+    COALESCE(rb.mean_time_order_to_receive, 0) as mean_time_order_to_receive,
+    COALESCE(cd.mean_time_receive_to_check, 0) as mean_time_receive_to_check,
+    COALESCE(fsd.mean_time_check_to_flat, 0) as mean_time_check_to_flat,
+    COALESCE(asd.mean_time_check_to_auto, 0) as mean_time_check_to_auto,
+    
+    -- 时效指标
+    COALESCE(rb.order_to_receive_2d_count, 0) as order_to_receive_2d_count,
+    COALESCE(rb.order_to_receive_7d_count, 0) as order_to_receive_7d_count,
+    COALESCE(cd.receive_to_check_24h_count, 0) as receive_to_check_24h_count,
+    COALESCE(cd.receive_to_check_48h_count, 0) as receive_to_check_48h_count,
+    COALESCE(fsd.check_to_flat_24h_count, 0) as check_to_flat_24h_count,
+    COALESCE(fsd.check_to_flat_48h_count, 0) as check_to_flat_48h_count,
+    COALESCE(asd.check_to_auto_24h_count, 0) as check_to_auto_24h_count,
+    COALESCE(asd.check_to_auto_48h_count, 0) as check_to_auto_48h_count
     
 FROM all_dimensions ad
 LEFT JOIN receive_base rb ON ad.stat_date = rb.stat_date 

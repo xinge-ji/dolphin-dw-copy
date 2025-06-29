@@ -35,7 +35,7 @@ latest_shelf AS (
     SELECT 
         sd.sourceid AS receiveid, 
         sd.section_name,
-        ROW_NUMBER() OVER (PARTITION BY sd.sourceid ORDER BY sd.shelf_time ASC) as rn
+        ROW_NUMBER() OVER (PARTITION BY sd.sourceid ORDER BY sd.shelf_time ASC, sd.section_name ASC) as rn
     FROM dwd.logistics_warehouse_shelf_doc sd
     WHERE sd.section_name IS NOT NULL
       AND EXISTS (
@@ -60,5 +60,5 @@ SELECT
     r.wholeqty
 FROM filtered_receive r
 JOIN dwd.logistics_warehouse_order_in_dtl d ON r.indtlid = d.indtlid
-LEFT JOIN ods_wms.wms_st_section_def j ON r.sectionid = j.sectionid AND j.is_active = 1
-LEFT JOIN latest_shelf ls ON r.receiveid = ls.receiveid AND ls.rn = 1;
+LEFT JOIN (SELECT sectionid, sectionname FROM ods_wms.wms_st_section_def WHERE is_active = 1) j ON r.sectionid = j.sectionid
+LEFT JOIN (SELECT receiveid, section_name FROM latest_shelf WHERE rn = 1) ls ON r.receiveid = ls.receiveid;

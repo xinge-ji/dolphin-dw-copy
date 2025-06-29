@@ -85,7 +85,7 @@ receive_data AS (
         d.goodsownerid,
         d.warehouse_name,
         d.goodsowner_name,
-        d.goods_category AS category,
+        COALESCE(d.goods_category, '其他') AS category,
         COUNT(1) AS receive_count
     FROM 
         in_data d
@@ -95,7 +95,7 @@ receive_data AS (
         d.goodsownerid,
         d.warehouse_name,
         d.goodsowner_name,
-        d.goods_category
+        COALESCE(d.goods_category, '其他')
     
     UNION ALL
     
@@ -123,7 +123,7 @@ check_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        d.goods_category AS category,
+        COALESCE(d.goods_category, '其他') AS category,
         COUNT(1) AS check_count
     FROM 
         dwd.logistics_warehouse_order_receive_dtl r
@@ -135,7 +135,7 @@ check_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        d.goods_category
+        COALESCE(d.goods_category, '其他')
     
     UNION ALL
     
@@ -165,7 +165,7 @@ check_scatter_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        d.goods_category AS category,
+        COALESCE(d.goods_category, '其他') AS category,
         COUNT(1) AS check_scatter_count,
         SUM(r.scatter_qty) as check_scatter_qty
     FROM 
@@ -179,7 +179,7 @@ check_scatter_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        d.goods_category
+        COALESCE(d.goods_category, '其他')
     
     UNION ALL
     
@@ -211,7 +211,7 @@ check_whole_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        d.goods_category AS category,
+        COALESCE(d.goods_category, '其他') AS category,
         COUNT(1) AS check_whole_count,
         SUM(r.whole_qty) as check_whole_qty
     FROM 
@@ -225,7 +225,7 @@ check_whole_data AS (
         d.goodsownerid,
         r.warehouse_name,
         d.goodsowner_name,
-        d.goods_category
+        COALESCE(d.goods_category, '其他')
     
     UNION ALL
     
@@ -257,7 +257,7 @@ flat_shelf_data AS (
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        io.goods_category as category,
+        COALESCE(io.goods_category, '其他') as category,
         SUM(io.whole_qty) AS flat_shelf_whole_qty,
         SUM(CASE WHEN io.scatter_qty is not NULL THEN 1 ELSE 0 END) AS flat_shelf_scatter_count
     FROM 
@@ -276,7 +276,7 @@ flat_shelf_data AS (
         io.goodsownerid,
         io.warehouse_name,
         io.goodsowner_name,
-        io.goods_category
+        COALESCE(io.goods_category, '其他')
     
     UNION ALL
     
@@ -313,7 +313,7 @@ auto_shelf_data AS (
         d.goodsownerid,
         d.warehouse_name,
         d.goodsowner_name,
-        d.goods_category AS category,
+        COALESCE(d.goods_category, '其他') AS category,
         SUM(z.wholeqty) AS auto_shelf_whole_qty,
         SUM(z.scattercount) AS auto_shelf_scatter_count
     FROM 
@@ -327,7 +327,7 @@ auto_shelf_data AS (
         d.goodsownerid,
         d.warehouse_name,
         d.goodsowner_name,
-        d.goods_category
+        COALESCE(d.goods_category, '其他')
     
     UNION ALL
     
@@ -359,7 +359,7 @@ ecode_data AS (
         e.goodsownerid,
         e.warehouse_name,
         e.goodsowner_name,
-        e.goods_category AS category,
+        COALESCE(e.goods_category, '其他') AS category,
         COUNT(1) AS ecode_count
     FROM 
         dwd.logistics_warehouse_ecode e 
@@ -371,7 +371,7 @@ ecode_data AS (
         e.goodsownerid,
         e.warehouse_name,
         e.goodsowner_name,
-        e.goods_category
+        COALESCE(e.goods_category, '其他')
     
     UNION ALL
     
@@ -401,7 +401,7 @@ udicode_data AS (
         e.goodsownerid,
         e.warehouse_name,
         e.goodsowner_name,
-        e.goods_category AS category,
+        COALESCE(e.goods_category, '其他') AS category,
         COUNT(1) AS udicode_count
     FROM 
         dwd.logistics_warehouse_udicode e
@@ -414,7 +414,7 @@ udicode_data AS (
         e.goodsownerid,
         e.warehouse_name,
         e.goodsowner_name,
-        e.goods_category
+        COALESCE(e.goods_category, '其他')
     
     UNION ALL
     

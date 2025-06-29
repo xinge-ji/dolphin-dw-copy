@@ -47,4 +47,4 @@ SELECT
 FROM ods_wms.wms_out_order a
 LEFT JOIN ods_wms.sys_ddl_dtl s ON a.operationtype = s.ddlid AND s.sysid = 389 AND s.is_active = 1
 WHERE a.is_active = 1
-AND dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_order_out_doc);
+AND a.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_order_out_doc);

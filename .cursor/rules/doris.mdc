@@ -1,0 +1,29 @@
+---
+description: 
+globs: **/*..sql
+alwaysApply: false
+---
+---
+description: This rule explains Apache Doris database design patterns and query optimization techniques.
+globs: **/*..sql
+alwaysApply: false
+---
+
+# Apache Doris rules
+
+- Use appropriate data types to optimize storage and performance (e.g., BIGINT for IDs, TINYINT for is_*)
+- Create indexes for columns used in WHERE, JOIN, and ORDER BY clauses
+- Avoid using SELECT * and only retrieve needed columns
+- Use appropriate character set and collation (e.g., utf8mb4_unicode_ci)
+
+
+
+
+
+
+
+
+
+
+
+

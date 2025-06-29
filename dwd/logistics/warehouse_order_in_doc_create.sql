@@ -18,7 +18,7 @@ CREATE TABLE
         use_status varchar COMMENT '使用状态:0-取消/1-下单/2-处理中/3-完成/4-挂起',
         is_autotask tinyint COMMENT '是否转单自动生成订单',
         operation_type varchar COMMENT '业务类型'
-    ) UNIQUE KEY (inid, dw_updatetime) DISTRIBUTED BY HASH (inid) PROPERTIES (
+    ) UNIQUE KEY (inid) DISTRIBUTED BY HASH (inid) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",
         "storage_format" = "V2",
@@ -62,7 +62,7 @@ SELECT
         ELSE '未定义'
     END AS use_status,
     IFNULL(a.autotaskflag, 0) as is_autotask,
-    s.ddlname as operation_type
+    IFNULL(s.ddlname, '其他') as operation_type
 FROM
     ods_wms.wms_in_order a
     LEFT JOIN ods_wms.tpl_warehouse b ON a.warehid = b.warehid

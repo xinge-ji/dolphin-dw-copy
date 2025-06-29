@@ -43,7 +43,7 @@ CREATE TABLE dws.logistics_warehouse_in_d(
     check_to_auto_48h_count int COMMENT '48小时验收上架立库完成条目数'
 )
 UNIQUE KEY (stat_date, warehid, goodsownerid, goods_category, operation_type, section_name)
-DISTRIBUTED BY HASH(warehid) BUCKETS 10
+DISTRIBUTED BY HASH(stat_date, warehid)
 PROPERTIES (
     "replication_allocation" = "tag.location.default: 3",
     "in_memory" = "false",
@@ -96,11 +96,16 @@ WITH filtered_in_dtl AS (
     WHERE a.is_recheck = 0 AND doc.is_autotask = 0
 ),
 section_info_indtlid AS (
-    -- 只处理有关联的shelf数据，使用ROW_NUMBER替代FIRST_VALUE
+    -- 使用稳定的ORDER BY条件，避免ROW_NUMBER不确定性导致的结果波动
     SELECT 
         rd.indtlid,
         sd.section_name,
-        ROW_NUMBER() OVER (PARTITION BY rd.indtlid ORDER BY sd.check_time DESC) as rn
+        ROW_NUMBER() OVER (
+            PARTITION BY rd.indtlid 
+            ORDER BY sd.check_time DESC,     -- 主排序：最新验收时间
+                     sd.section_name ASC,    -- 次排序：section_name保证一致性
+                     sd.receiveid ASC        -- 第三排序：receiveid确保唯一性
+        ) as rn
     FROM filtered_in_dtl rd
     JOIN dwd.logistics_warehouse_order_receive_dtl sd ON sd.indtlid = rd.indtlid
 ),
@@ -110,7 +115,7 @@ receive_base AS (
         DATE(a.receive_time) as stat_date,
         a.warehid, a.goodsownerid, a.goods_category, a.operation_type,
         a.warehouse_name, a.goodsowner_name,
-        COALESCE(si.section_name, '') as section_name,
+        COALESCE(si.section_name, '其他') as section_name,
         -- 聚合指标
         COUNT(DISTINCT a.indtlid) as receive_count,
         AVG(a.order_to_receive_time) as mean_time_order_to_receive,
@@ -118,11 +123,11 @@ receive_base AS (
         SUM(CASE WHEN a.order_to_receive_time <= 2 THEN 1 ELSE 0 END) as order_to_receive_2d_count,
         SUM(CASE WHEN a.order_to_receive_time <= 7 THEN 1 ELSE 0 END) as order_to_receive_7d_count
     FROM filtered_in_dtl a
-    LEFT JOIN section_info_indtlid si ON a.indtlid = si.indtlid AND si.rn = 1
+    LEFT JOIN (SELECT indtlid, section_name FROM section_info_indtlid WHERE rn = 1) si ON a.indtlid = si.indtlid
     GROUP BY 
         DATE(a.receive_time), a.warehid, a.goodsownerid, a.goods_category,
         a.operation_type, a.warehouse_name, a.goodsowner_name,
-        COALESCE(si.section_name, '')
+        COALESCE(si.section_name, '其他')
 ),
 
 -- 验收明细数据（聚合）
@@ -133,8 +138,8 @@ check_detail AS (
         f.warehouse_name, f.goodsowner_name, b.section_name, 
         -- 聚合指标
         COUNT(DISTINCT b.receiveid) as check_count,
-        SUM(CASE WHEN b.scatter_qty > 0 THEN 1 ELSE 0 END) as check_scatter_count,
-        SUM(CASE WHEN b.whole_qty > 0 THEN 1 ELSE 0 END) as check_whole_count,
+        SUM(CASE WHEN b.scatter_qty != 0 THEN 1 ELSE 0 END) as check_scatter_count,
+        SUM(CASE WHEN b.whole_qty != 0 THEN 1 ELSE 0 END) as check_whole_count,
         SUM(b.scatter_qty) as check_scatter_qty,
         SUM(b.whole_qty) as check_whole_qty,
         AVG(TIMESTAMPDIFF(MINUTE, f.receive_time, b.check_time)) as mean_time_receive_to_check,
@@ -158,7 +163,7 @@ flat_shelf_detail AS (
         f.warehouse_name, f.goodsowner_name, c.section_name,
         -- 聚合指标
         IFNULL(SUM(c.whole_qty), 0) as flat_shelf_whole_qty,
-        SUM(CASE WHEN c.scatter_qty > 0 THEN 1 ELSE 0 END) as flat_shelf_scatter_count,
+        SUM(CASE WHEN c.scatter_qty != 0 THEN 1 ELSE 0 END) as flat_shelf_scatter_count,
         AVG(TIMESTAMPDIFF(MINUTE, b.check_time, c.shelf_time)) as mean_time_check_to_flat,
         -- 时效指标
         SUM(CASE WHEN TIMESTAMPDIFF(MINUTE, b.check_time, c.shelf_time) <= 1440 THEN 1 ELSE 0 END) as check_to_flat_24h_count,
@@ -230,17 +235,17 @@ udicode_detail AS (
 
 -- 汇总所有维度组合
 all_dimensions AS (
-    SELECT stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM receive_base
+    SELECT distinct stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM receive_base
     UNION
-    SELECT stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM check_detail
+    SELECT distinct stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM check_detail
     UNION
-    SELECT stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM flat_shelf_detail
+    SELECT distinct stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM flat_shelf_detail
     UNION
-    SELECT stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM auto_shelf_detail
+    SELECT distinct stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM auto_shelf_detail
     UNION
-    SELECT stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM ecode_detail
+    SELECT distinct stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM ecode_detail
     UNION
-    SELECT stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM udicode_detail
+    SELECT distinct stat_date, warehid, goodsownerid, goods_category, operation_type, section_name, warehouse_name, goodsowner_name FROM udicode_detail
 )
 
 -- 最终聚合查询
@@ -265,22 +270,22 @@ SELECT
     COALESCE(cd.check_whole_qty, 0) as check_whole_qty,
     
     -- 平库上架指标
-    fsd.flat_shelf_whole_qty, 
-    fsd.flat_shelf_scatter_count,
+    COALESCE(fsd.flat_shelf_whole_qty, 0) as flat_shelf_whole_qty, 
+    COALESCE(fsd.flat_shelf_scatter_count, 0) as flat_shelf_scatter_count,
     
     -- 立库上架指标
-    asd.auto_shelf_whole_qty, 
-    asd.auto_shelf_scatter_count, 
+    COALESCE(asd.auto_shelf_whole_qty, 0) as auto_shelf_whole_qty, 
+    COALESCE(asd.auto_shelf_scatter_count, 0) as auto_shelf_scatter_count, 
     
     -- 码类指标
     COALESCE(ed.ecode_count, 0) as ecode_count,
     COALESCE(ud.udicode_count, 0) as udicode_count,
 
     -- 时间
-    rb.mean_time_order_to_receive,
-    cd.mean_time_receive_to_check,
-    fsd.mean_time_check_to_flat,
-    asd.mean_time_check_to_auto,
+    COALESCE(rb.mean_time_order_to_receive, 0) as mean_time_order_to_receive,
+    COALESCE(cd.mean_time_receive_to_check, 0) as mean_time_receive_to_check,
+    COALESCE(fsd.mean_time_check_to_flat, 0) as mean_time_check_to_flat,
+    COALESCE(asd.mean_time_check_to_auto, 0) as mean_time_check_to_auto,
     
     -- 时效指标
     COALESCE(rb.order_to_receive_2d_count, 0) as order_to_receive_2d_count,

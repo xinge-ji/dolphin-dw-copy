@@ -41,7 +41,7 @@ SELECT
         ELSE '未定义'
     END AS use_status,
     IFNULL(a.autotaskflag, 0) as is_autotask,
-    s.ddlname as operation_type
+    IFNULL(s.ddlname, '其他') as operation_type
 FROM
     ods_wms.wms_in_order a
     LEFT JOIN ods_wms.tpl_warehouse b ON a.warehid = b.warehid

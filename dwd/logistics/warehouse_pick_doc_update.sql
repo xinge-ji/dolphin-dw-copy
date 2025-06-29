@@ -20,6 +20,7 @@ INSERT INTO dwd.logistics_warehouse_pick_doc (
     wavedtlid,
     ssc_picking_carton_id,
     is_iwcs,
+    section_name,
     rfflag,
     usestatus,
     goodsid,
@@ -47,6 +48,7 @@ INSERT INTO dwd.logistics_warehouse_pick_doc (
     checkman_name,
     inoutid,
     warehid,
+    warehouse_name,
     posid,
     whole_qty,
     scatter_qty,
@@ -76,6 +78,7 @@ SELECT
     v.wavedtlid,
     u.ssc_picking_carton_id,
     IFNULL(p.iwcs_flag, 0) as is_iwcs,
+    IFNULL(p.sectionname, '其他') as section_name,
     b.rfflag,
     b.usestatus,
     b.goodsid,
@@ -103,6 +106,7 @@ SELECT
     r.employeename as checkman_name,
     b.inoutid,
     b.warehid,
+    x.warehname as warehouse_name,
     b.posid,
     b.wholeqty as whole_qty,
     b.scatterqty as scatter_qty,
@@ -110,7 +114,7 @@ SELECT
     t.goodsownername as goodsowner_name,
     CASE WHEN IFNULL(h.packsize,0) = 0 THEN 0 ELSE CEIL(b.goodsqty/h.packsize) END as case_qty,
     q.areaflag,
-    w.goods_category
+    IFNULL(w.goods_category, '其他') as goods_category
 FROM ods_wms.wms_task_doc a
 INNER JOIN ods_wms.wms_st_io_doc b ON a.taskid = b.taskid AND b.is_active = 1
 LEFT JOIN ods_wms.wms_wave_goods_dtl c ON b.sourceid = c.wavegoodsdtlid AND c.is_active = 1
@@ -134,6 +138,7 @@ LEFT JOIN ods_wms.tpl_goodsowner t ON j.goodsownerid = t.goodsownerid AND t.is_a
 LEFT JOIN ods_wms.iwcs_ssc_picking_carton u ON b.inoutid = u.wms_inout_id
 LEFT JOIN ods_wms.wms_wave_goods_dtl v ON b.sourceid = v.wavegoodsdtlid AND v.is_active = 1
 LEFT JOIN dim.wms_goods_feature w ON w.warehid = b.warehid AND w.goodsid = b.goodsid AND b.credate >= w.dw_starttime AND b.credate < w.dw_endtime
+LEFT JOIN ods_wms.tpl_warehouse x ON a.warehid = x.warehid AND x.is_active = 1
 WHERE a.tasktype = 1  -- 拣货任务（波次生成）
   AND b.comefrom in (2, 3)  -- 波次出库
   AND a.is_active = 1
@@ -164,6 +169,7 @@ SELECT
     v.wavedtlid,
     u.ssc_picking_carton_id,
     IFNULL(p.iwcs_flag, 0) as is_iwcs,
+    IFNULL(p.sectionname, '其他') as section_name,
     b.rfflag,
     b.usestatus,
     b.goodsid,
@@ -191,6 +197,7 @@ SELECT
     r.employeename as checkman_name,
     b.inoutid,
     b.warehid,
+    x.warehname as warehouse_name,
     b.posid,
     b.wholeqty as whole_qty,
     b.scatterqty as scatter_qty,
@@ -198,7 +205,7 @@ SELECT
     t.goodsownername as goodsowner_name,
     CASE WHEN IFNULL(h.packsize,0) = 0 THEN 0 ELSE CEIL(b.goodsqty/h.packsize) END as case_qty,
     q.areaflag,
-    w.goods_category
+    IFNULL(w.goods_category, '其他') as goods_category
 FROM ods_wms.wms_task_doc a
 INNER JOIN ods_wms.wms_st_io_doc b ON a.taskid = b.taskid AND b.is_active = 1
 LEFT JOIN ods_wms.wms_trade_dtl d ON b.sourceid = d.tradedtlid AND d.is_active = 1
@@ -220,6 +227,7 @@ LEFT JOIN ods_wms.tpl_goodsowner t ON j.goodsownerid = t.goodsownerid AND t.is_a
 LEFT JOIN ods_wms.iwcs_ssc_picking_carton u ON b.inoutid = u.wms_inout_id
 LEFT JOIN ods_wms.wms_wave_goods_dtl v ON b.sourceid = v.wavegoodsdtlid AND v.is_active = 1
 LEFT JOIN dim.wms_goods_feature w ON w.warehid = b.warehid AND w.goodsid = b.goodsid AND b.credate >= w.dw_starttime AND b.credate < w.dw_endtime
+LEFT JOIN ods_wms.tpl_warehouse x ON a.warehid = x.warehid AND x.is_active = 1
 WHERE a.tasktype = 2  -- 拣货任务（波次生成）
   AND b.comefrom = 4  -- 库内变动
   AND e.subtype IN (1, 2, 3, 4, 5)  -- 1 波次补货 2 报警补货 3 闲时补货 4手工补货 5波次预补货
