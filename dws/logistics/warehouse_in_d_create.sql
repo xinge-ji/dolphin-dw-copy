@@ -19,8 +19,10 @@ CREATE TABLE dws.logistics_warehouse_in_d(
     check_whole_count int COMMENT '整件验收条目数',
     check_scatter_qty decimal(16,6) COMMENT '散件验收件数',
     check_whole_qty decimal COMMENT '整件验收件数',
+    flat_shelf_count int COMMENT '平库上架条目数',
     flat_shelf_whole_qty decimal COMMENT '平库上架整件件数',
     flat_shelf_scatter_count int COMMENT '平库上架散件条目数',
+    auto_shelf_count int COMMENT '立库上架条目数',
     auto_shelf_whole_qty decimal COMMENT '立库上架整件件数',
     auto_shelf_scatter_count int COMMENT '立库上架散件条目数',
     ecode_count int COMMENT '电子监管码',
@@ -66,8 +68,10 @@ INSERT INTO dws.logistics_warehouse_in_d (
     check_whole_count,
     check_scatter_qty,
     check_whole_qty,
+    flat_shelf_count,
     flat_shelf_whole_qty,
     flat_shelf_scatter_count,
+    auto_shelf_count,
     auto_shelf_whole_qty,
     auto_shelf_scatter_count,
     ecode_count,
@@ -162,6 +166,7 @@ flat_shelf_detail AS (
         f.warehid, f.goodsownerid, f.goods_category, f.operation_type,
         f.warehouse_name, f.goodsowner_name, c.section_name,
         -- 聚合指标
+        COUNT(DISTINCT c.shelfid) as flat_shelf_count,
         IFNULL(SUM(c.whole_qty), 0) as flat_shelf_whole_qty,
         SUM(CASE WHEN c.scatter_qty != 0 THEN 1 ELSE 0 END) as flat_shelf_scatter_count,
         AVG(TIMESTAMPDIFF(MINUTE, b.check_time, c.shelf_time)) as mean_time_check_to_flat,
@@ -186,6 +191,7 @@ auto_shelf_detail AS (
         f.warehid, f.goodsownerid, f.goods_category, f.operation_type,
         f.warehouse_name, f.goodsowner_name, b.section_name,
         -- 聚合指标
+        COUNT(DISTINCT d.ssc_receive_goods_locate_id) as auto_shelf_count,
         IFNULL(SUM(d.whole_qty), 0) as auto_shelf_whole_qty,
         IFNULL(SUM(d.scatter_count), 0) as auto_shelf_scatter_count,
         AVG(TIMESTAMPDIFF(MINUTE, b.check_time, d.create_time)) as mean_time_check_to_auto,
@@ -270,10 +276,12 @@ SELECT
     COALESCE(cd.check_whole_qty, 0) as check_whole_qty,
     
     -- 平库上架指标
+    COALESCE(fsd.flat_shelf_count, 0) as flat_shelf_count,
     COALESCE(fsd.flat_shelf_whole_qty, 0) as flat_shelf_whole_qty, 
     COALESCE(fsd.flat_shelf_scatter_count, 0) as flat_shelf_scatter_count,
     
     -- 立库上架指标
+    COALESCE(asd.auto_shelf_count, 0) as auto_shelf_count,
     COALESCE(asd.auto_shelf_whole_qty, 0) as auto_shelf_whole_qty, 
     COALESCE(asd.auto_shelf_scatter_count, 0) as auto_shelf_scatter_count, 
     
