@@ -284,7 +284,7 @@ ALTER TRIGGER ""EXFSYS"".""RLMGR_TRUNCATE_MAINT"" DISABLE"
        on bond_warehouse_inorder
        for each row
 declare
-  v_count number;--¼ÆÊı
+  v_count number;--è®¡æ•°
   cursor c_bond_warehouse_inorderdtl1 is
          select b.seqid,b.seqdtlid,b.declared_quantity
                 from bond_warehouse_qty_lst a ,bond_warehouse_inorderdtl b--,bond_warehouse_inorder c
@@ -302,14 +302,14 @@ declare
   r_bond_warehouse_inorderdtl2 c_bond_warehouse_inorderdtl2%rowtype;
 begin
      if :old.usestatus = :new.usestatus then
-          Raise_Application_Error(-20001,'²»ÄÜ·´¸´È·ÈÏ»ò»ØÍËÈ·ÈÏ£¡');
+          Raise_Application_Error(-20001,'ä¸èƒ½åå¤ç¡®è®¤æˆ–å›é€€ç¡®è®¤ï¼');
      end if;
-     --È·ÈÏÂß¼­
-     --1.ÅĞ¶ÏseqdtlidÓĞ´æÔÚ ²»ÔÊĞí²åÈë£»
-     --2.²»´æÔÚ ¾Í²åÈë
+     --ç¡®è®¤é€»è¾‘
+     --1.åˆ¤æ–­seqdtlidæœ‰å­˜åœ¨ ä¸å…è®¸æ’å…¥ï¼›
+     --2.ä¸å­˜åœ¨ å°±æ’å…¥
      if :new.usestatus = 1 then
-        select (case when count(1) > 0 then 1 --¿â´æ±íÃ»ÓĞ¸ÃÏ¸µ¥
-                     else 0 end) counts --¿â´æ±íÓĞ¸Ã×Üµ¥ºÍÏ¸µ¥
+        select (case when count(1) > 0 then 1 --åº“å­˜è¡¨æ²¡æœ‰è¯¥ç»†å•
+                     else 0 end) counts --åº“å­˜è¡¨æœ‰è¯¥æ€»å•å’Œç»†å•
                into v_count
                from bond_warehouse_qty_lst a ,bond_warehouse_inorderdtl b
                     where a.seqdtlid(+) = b.seqdtlid
@@ -321,7 +321,7 @@ begin
                  from bond_warehouse_qty_lst
                  where seqid = :new.seqid;
         end if;
-        --²åÈë¿â´æ±íÃ»ÓĞµÄÏ¸µ¥
+        --æ’å…¥åº“å­˜è¡¨æ²¡æœ‰çš„ç»†å•
         if v_count = 1 then
           open c_bond_warehouse_inorderdtl1;
           loop
@@ -337,7 +337,7 @@ begin
           end loop;
           close c_bond_warehouse_inorderdtl1;
          end if;
-         --²åÈë¿â´æ±íÃ»ÓĞµÄËùÓĞÏ¸µ¥
+         --æ’å…¥åº“å­˜è¡¨æ²¡æœ‰çš„æ‰€æœ‰ç»†å•
           if v_count = 3 then
               open c_bond_warehouse_inorderdtl2;
               loop
@@ -354,10 +354,10 @@ begin
               close c_bond_warehouse_inorderdtl2;
            end if;
      end if;
-     --»ØÍËÈ·ÈÏÂß¼­
-     --1.ÅĞ¶ÏseqdtlidÊÇ·ñ´æÔÚ ´æÔÚ²»ÔÊĞí»ØÍË
-     --2.´æÔÚµÄ»° ÅĞ¶Ï ¿â´æÊıÁ¿goodsqtyÊÇ·ñ=Èë¿â¶©µ¥ÉÏµÄÊıÁ¿£¬Èç¹û¿â´æ²»¹»»ØÍËÊ§°Ü
-     --3.»ØÍË³É¹¦ É¾³ı¿â´æ±í¼ÇÂ¼
+     --å›é€€ç¡®è®¤é€»è¾‘
+     --1.åˆ¤æ–­seqdtlidæ˜¯å¦å­˜åœ¨ å­˜åœ¨ä¸å…è®¸å›é€€
+     --2.å­˜åœ¨çš„è¯ åˆ¤æ–­ åº“å­˜æ•°é‡goodsqtyæ˜¯å¦=å…¥åº“è®¢å•ä¸Šçš„æ•°é‡ï¼Œå¦‚æœåº“å­˜ä¸å¤Ÿå›é€€å¤±è´¥
+     --3.å›é€€æˆåŠŸ åˆ é™¤åº“å­˜è¡¨è®°å½•
      if nvl(:new.usestatus,0) = 0 then
         open c_bond_warehouse_inorderdtl2;
         loop
@@ -367,7 +367,7 @@ begin
           if c_bond_warehouse_inorderdtl2 %notfound then
             exit;
           end if;
-          --ÒÑ³ö¿âµÄ²»ÄÜ»ØÍË
+          --å·²å‡ºåº“çš„ä¸èƒ½å›é€€
           select count(1) into v_count
                  from bond_warehouse_inorderdtl a,bond_warehouse_outorderdtl b,bond_warehouse_outorder c
                       where a.seqdtlid = b.seqdtlid
@@ -375,7 +375,7 @@ begin
                             and c.usestatus = 1
                             and a.seqdtlid = r_bond_warehouse_inorderdtl2.seqdtlid;
           if v_count <> 0 then
-             Raise_Application_Error(-20001,'»ØÍËÈ·¶¨--Ï¸µ¥¡¾'||r_bond_warehouse_inorderdtl2.seqdtlid||'¡¿ÒÑ³ö¿â,²»ÔÊĞí»ØÍË!');
+             Raise_Application_Error(-20001,'å›é€€ç¡®å®š--ç»†å•ã€'||r_bond_warehouse_inorderdtl2.seqdtlid||'ã€‘å·²å‡ºåº“,ä¸å…è®¸å›é€€!');
             exit;
           end if;
 
@@ -388,7 +388,7 @@ begin
             delete from bond_warehouse_qty_lst where seqdtlid =  r_bond_warehouse_inorderdtl2.seqdtlid;
 
           else
-            Raise_Application_Error(-20001,'»ØÍËÈ·¶¨ºóÏ¸µ¥¡¾'||r_bond_warehouse_inorderdtl2.seqdtlid||'¡¿»õÆ·¿â´æÊıÁ¿Ğ¡ÓÚ0,²»ÔÊĞí»ØÍË!');
+            Raise_Application_Error(-20001,'å›é€€ç¡®å®šåç»†å•ã€'||r_bond_warehouse_inorderdtl2.seqdtlid||'ã€‘è´§å“åº“å­˜æ•°é‡å°äº0,ä¸å…è®¸å›é€€!');
             exit;
           end if;
         end loop;
@@ -405,8 +405,8 @@ ALTER TRIGGER ""JXWMS"".""BOND_WAREHOUSE_INORDER_TRG"" ENABLE"
        on bond_warehouse_outorder
        for each row
 declare
-       v_count number;--¼ÆÊı
-       v_sum number;--¼ÆËã×ÜºÍ
+       v_count number;--è®¡æ•°
+       v_sum number;--è®¡ç®—æ€»å’Œ
        cursor c_bond_warehouse_outorder is
          select a.seqdtlid,nvl(b.goodsqty,0)-nvl(a.goodsqty,0) inventory
                from bond_warehouse_outorderdtl a,bond_warehouse_qty_lst b,bond_warehouse_inorderdtl c
@@ -416,14 +416,14 @@ declare
        r_bond_warehouse_outorder  c_bond_warehouse_outorder%rowtype;
 begin
        if :old.usestatus = :new.usestatus then
-          Raise_Application_Error(-20001,'²»ÄÜ·´¸´È·ÈÏ»ò»ØÍËÈ·ÈÏ£¡');
+          Raise_Application_Error(-20001,'ä¸èƒ½åå¤ç¡®è®¤æˆ–å›é€€ç¡®è®¤ï¼');
        end if;
 
-       /*È·¶¨Âß¼­£º
-       1.ÅĞ¶ÏseqdtlidÊÇ·ñ´æÔÚ ²»´æÔÚÔòÈ·¶¨Ê§°Ü£»
-       2.Èç¹û´æÔÚ£¬ÅĞ¶Ï³ö¿âÏ¸µ¥ÉÏµÄ³ö¿âÊıÁ¿ÊÇ·ñĞ¡ÓÚ»òµÈÓÚ¿â´æÊıÁ¿£¬
-       Í¨¹ıseqdtlid¹ØÁª£»¿â´æ×ã¹»È·¶¨³É¹¦£¬
-       update¿â´æ±íµÄ¿â´æÊıÁ¿=¿â´æÊıÁ¿-³ö¿âÊıÁ¿£»¿â´æ²»¹»È·¶¨Ê§°Ü£»*/
+       /*ç¡®å®šé€»è¾‘ï¼š
+       1.åˆ¤æ–­seqdtlidæ˜¯å¦å­˜åœ¨ ä¸å­˜åœ¨åˆ™ç¡®å®šå¤±è´¥ï¼›
+       2.å¦‚æœå­˜åœ¨ï¼Œåˆ¤æ–­å‡ºåº“ç»†å•ä¸Šçš„å‡ºåº“æ•°é‡æ˜¯å¦å°äºæˆ–ç­‰äºåº“å­˜æ•°é‡ï¼Œ
+       é€šè¿‡seqdtlidå…³è”ï¼›åº“å­˜è¶³å¤Ÿç¡®å®šæˆåŠŸï¼Œ
+       updateåº“å­˜è¡¨çš„åº“å­˜æ•°é‡=åº“å­˜æ•°é‡-å‡ºåº“æ•°é‡ï¼›åº“å­˜ä¸å¤Ÿç¡®å®šå¤±è´¥ï¼›*/
 
       if :new.usestatus = 1 then
          open c_bond_warehouse_outorder;
@@ -435,7 +435,7 @@ begin
              end if;
 
              if r_bond_warehouse_outorder.inventory < 0 then
-                Raise_Application_Error(-20001,'È·¶¨Ê§°Ü,Ï¸µ¥¡¾'||r_bond_warehouse_outorder.seqdtlid||'¡¿»õÆ·¿â´æÊıÁ¿Ğ¡ÓÚ³ö¿âÊıÁ¿,²»ÔÊĞí³ö¿â!');
+                Raise_Application_Error(-20001,'ç¡®å®šå¤±è´¥,ç»†å•ã€'||r_bond_warehouse_outorder.seqdtlid||'ã€‘è´§å“åº“å­˜æ•°é‡å°äºå‡ºåº“æ•°é‡,ä¸å…è®¸å‡ºåº“!');
              elsif r_bond_warehouse_outorder.inventory = 0 then
                 delete from bond_warehouse_qty_lst where seqdtlid = r_bond_warehouse_outorder.seqdtlid;
              else
@@ -445,11 +445,11 @@ begin
          close c_bond_warehouse_outorder;
       end if;
 
-      /*»ØÍËÈ·¶¨Âß¼­£º
-      1.ÅĞ¶ÏseqdtlidÊÇ·ñ´æÔÚ ²»´æÔÚ»ØÍËÊ§°Ü
-      2.´æÔÚµÄ»° ÅĞ¶Ï ¿â´æÊıÁ¿+»ØÍËÊıÁ¿ ÊÇ·ñĞ¡ÓÚ
-      Èë¿â¶©µ¥µÄÊıÁ¿(seqdtlid¹ØÁª)£»Ğ¡ÓÚ»òµÈÓÚÈë¿â¶©µ¥ÊıÁ¿£¬Ôò»ØÍË³É¹¦£¬
-      ¸üĞÂ¿â´æ±íÊıÁ¿Îª¿â´æÊıÁ¿+»ØÍËÊıÁ¿£»Èç¹û´óÓÚ£¬»ØÍËÈ·¶¨Ê§°Ü*/
+      /*å›é€€ç¡®å®šé€»è¾‘ï¼š
+      1.åˆ¤æ–­seqdtlidæ˜¯å¦å­˜åœ¨ ä¸å­˜åœ¨å›é€€å¤±è´¥
+      2.å­˜åœ¨çš„è¯ åˆ¤æ–­ åº“å­˜æ•°é‡+å›é€€æ•°é‡ æ˜¯å¦å°äº
+      å…¥åº“è®¢å•çš„æ•°é‡(seqdtlidå…³è”)ï¼›å°äºæˆ–ç­‰äºå…¥åº“è®¢å•æ•°é‡ï¼Œåˆ™å›é€€æˆåŠŸï¼Œ
+      æ›´æ–°åº“å­˜è¡¨æ•°é‡ä¸ºåº“å­˜æ•°é‡+å›é€€æ•°é‡ï¼›å¦‚æœå¤§äºï¼Œå›é€€ç¡®å®šå¤±è´¥*/
 
       if :new.usestatus = 0 then
          open c_bond_warehouse_outorder;
@@ -466,7 +466,7 @@ begin
                              and a.seqdtlid is null;
 
            if v_count > 0  then
-              Raise_Application_Error(-20001,'Ï¸µ¥ÓĞ²»´æÔÚµÄ¿â´æ»õÆ·,»ØÍËÊ§°Ü£¡');
+              Raise_Application_Error(-20001,'ç»†å•æœ‰ä¸å­˜åœ¨çš„åº“å­˜è´§å“,å›é€€å¤±è´¥ï¼');
               exit;
            end if;
 
@@ -480,7 +480,7 @@ begin
                               and a.outseqid = :new.outseqid
                               GROUP BY a.seqdtlid,c.declared_quantity;
            if v_sum = 1 then
-              Raise_Application_Error(-20001,'¿â´æÀ´Ô´ID¡¾'||r_bond_warehouse_outorder.seqdtlid||'¡¿»ØÍË»õÆ·Êı¹ı¶à,»ØÍËÊ§°Ü£¡');
+              Raise_Application_Error(-20001,'åº“å­˜æ¥æºIDã€'||r_bond_warehouse_outorder.seqdtlid||'ã€‘å›é€€è´§å“æ•°è¿‡å¤š,å›é€€å¤±è´¥ï¼');
               exit;
            elsif v_sum = 2 then
                insert into bond_warehouse_qty_lst
@@ -1849,7 +1849,7 @@ begin
       if nvl(:old.usestatus,0) <> :new.usestatus and :old.goodsownerid in (340,520) and :new.usestatus=2 then
       
       select tpl_edi_queue_seq.nextval into p from dual;
--- usestatus 1.ÁÙÊ± 2.È·¶¨
+-- usestatus 1.ä¸´æ—¶ 2.ç¡®å®š
         insert into tpl_edi_queue
           values (:old.goodsownerid,
                  sysdate,
@@ -2064,7 +2064,7 @@ ALTER TRIGGER ""JXWMS"".""TRG_WMS_GOODSGROUP_TMP_HIS"" ENABLE"
   after update on wms_box_dtl
   for each row
      begin
-  --µ±ĞŞ¸Ä×°Ïäµ¥×Üµ¥Ê±É¾³ıÒ½ÔºÊÕ»õ·şÎñµ¥¡£
+  --å½“ä¿®æ”¹è£…ç®±å•æ€»å•æ—¶åˆ é™¤åŒ»é™¢æ”¶è´§æœåŠ¡å•ã€‚
   if :old.docid <> :new.docid then
     delete from wms_his_patch t
     where exists(select 1 from wms_turnbox_to_box_rel t1
@@ -2149,7 +2149,7 @@ ALTER TRIGGER ""JXWMS"".""TRG_ZX_PURCHASE_INVNO_HIS"" ENABLE"
   REFERENCING OLD AS OLD NEW AS NEW
   FOR EACH ROW
 
---change by xyue 2017-11-28 Ôö¼Ó·¢Æ±´úÂë×Ö¶Î
+--change by xyue 2017-11-28 å¢åŠ å‘ç¥¨ä»£ç å­—æ®µ
 BEGIN
   insert into ZX_SALES_INVNO_his
     (salesdtlid,
@@ -2438,11 +2438,11 @@ ALTER TRIGGER ""JXWMS"".""T_WCS_TO_WMS_WORKFINISH_TRG"" ENABLE"
   for each row
 
 declare
-  v_count number;--¼ÆÊı
-  v_newqty number; --¸üĞÂºó¿â´æ
+  v_count number;--è®¡æ•°
+  v_newqty number; --æ›´æ–°ååº“å­˜
 
 begin
-  --Èë¿âµ¥ÓÉ¡¾ÁÙÊ±¡¿->¡¾ÕıÊ½¡¿,ÏÈ°´goodsid²é¿â´æ±íÊÇ·ñ´æÔÚ,´æÔÚ¾ÍÊıÁ¿µş¼Ó,²»´æÔÚ¾ÍĞÂÔöÒ»Ìõ¿â´æ¼ÇÂ¼
+  --å…¥åº“å•ç”±ã€ä¸´æ—¶ã€‘->ã€æ­£å¼ã€‘,å…ˆæŒ‰goodsidæŸ¥åº“å­˜è¡¨æ˜¯å¦å­˜åœ¨,å­˜åœ¨å°±æ•°é‡å åŠ ,ä¸å­˜åœ¨å°±æ–°å¢ä¸€æ¡åº“å­˜è®°å½•
   if :new.usestatus = 1 then 
     select count(1)
       into v_count
@@ -2461,8 +2461,8 @@ begin
     end if;
   end if;
   
-  --Èë¿âµ¥»ØÍËÈ·¶¨ÓÉ¡¾ÕıÊ½¡¿->¡¾ÁÙÊ±¡¿,ÏÈ°´goodsid²é¿â´æ±í¿Û¼õ¿â´æ£¬¿Û¼õ³öÏÖ¸ºÊı¾Í±¨´í
-  --¿Û¼õÍê³Éºó¿â´æÊıÁ¿Îª0,ÔòÉ¾³ı¼ÇÂ¼
+  --å…¥åº“å•å›é€€ç¡®å®šç”±ã€æ­£å¼ã€‘->ã€ä¸´æ—¶ã€‘,å…ˆæŒ‰goodsidæŸ¥åº“å­˜è¡¨æ‰£å‡åº“å­˜ï¼Œæ‰£å‡å‡ºç°è´Ÿæ•°å°±æŠ¥é”™
+  --æ‰£å‡å®Œæˆååº“å­˜æ•°é‡ä¸º0,åˆ™åˆ é™¤è®°å½•
   if nvl(:new.usestatus,0) = 0 then 
     select nvl(max(t.goodsqty), 0) - :new.goodsqty
       into v_newqty
@@ -2473,10 +2473,10 @@ begin
       update wcs_device_goods_qty t
          set t.goodsqty = v_newqty
        where t.goodsid = :new.goodsid;
-    elsif v_newqty = 0 then --¸üĞÂºó¿â´æÎª0 É¾³ı¿â´æ±í¼ÇÂ¼
+    elsif v_newqty = 0 then --æ›´æ–°ååº“å­˜ä¸º0 åˆ é™¤åº“å­˜è¡¨è®°å½•
       delete wcs_device_goods_qty t where t.goodsid = :new.goodsid;
     else
-      Raise_Application_Error(-20001,'»ØÍËÈ·¶¨ºó¸Ã»õÆ·¿â´æÊıÁ¿Ğ¡ÓÚ0,²»ÔÊĞí»ØÍË!');
+      Raise_Application_Error(-20001,'å›é€€ç¡®å®šåè¯¥è´§å“åº“å­˜æ•°é‡å°äº0,ä¸å…è®¸å›é€€!');
     end if;  
   end if;
   
@@ -2492,12 +2492,12 @@ ALTER TRIGGER ""JXWMS"".""WCS_DEVICE_GOODS_IN_TRG"" ENABLE"
   for each row
 
 declare
-  v_count number;--¼ÆÊı
-  v_newqty number; --¸üĞÂºó¿â´æ
+  v_count number;--è®¡æ•°
+  v_newqty number; --æ›´æ–°ååº“å­˜
 
 begin
-  --³ö¿âµ¥È·¶¨ÓÉ¡¾ÕıÊ½¡¿->¡¾ÁÙÊ±¡¿,ÏÈ°´goodsid²é¿â´æ±í¿Û¼õ¿â´æ£¬¿Û¼õ³öÏÖ¸ºÊı¾Í±¨´í
-  --¿Û¼õÍê³Éºó¿â´æÊıÁ¿Îª0,ÔòÉ¾³ı¼ÇÂ¼
+  --å‡ºåº“å•ç¡®å®šç”±ã€æ­£å¼ã€‘->ã€ä¸´æ—¶ã€‘,å…ˆæŒ‰goodsidæŸ¥åº“å­˜è¡¨æ‰£å‡åº“å­˜ï¼Œæ‰£å‡å‡ºç°è´Ÿæ•°å°±æŠ¥é”™
+  --æ‰£å‡å®Œæˆååº“å­˜æ•°é‡ä¸º0,åˆ™åˆ é™¤è®°å½•
   if nvl(:new.usestatus,0) = 1 then 
     select nvl(max(t.goodsqty), 0) - :new.goodsqty
       into v_newqty
@@ -2508,14 +2508,14 @@ begin
       update wcs_device_goods_qty t
          set t.goodsqty = v_newqty
        where t.goodsid = :new.goodsid;
-    elsif v_newqty = 0 then --¸üĞÂºó¿â´æÎª0 É¾³ı¿â´æ±í¼ÇÂ¼
+    elsif v_newqty = 0 then --æ›´æ–°ååº“å­˜ä¸º0 åˆ é™¤åº“å­˜è¡¨è®°å½•
       delete wcs_device_goods_qty t where t.goodsid = :new.goodsid;
     else
-      Raise_Application_Error(-20001,'³ö¿âµ¥È·¶¨ºó¸Ã»õÆ·¿â´æÊıÁ¿Ğ¡ÓÚ0,²»ÔÊĞíÈ·¶¨!Çë¼ì²é¿â´æÊıÁ¿!');
+      Raise_Application_Error(-20001,'å‡ºåº“å•ç¡®å®šåè¯¥è´§å“åº“å­˜æ•°é‡å°äº0,ä¸å…è®¸ç¡®å®š!è¯·æ£€æŸ¥åº“å­˜æ•°é‡!');
     end if;  
   end if;
   
-  --³ö¿âµ¥ÓÉ¡¾ÕıÊ½¡¿->¡¾ÁÙÊ±¡¿,ÏÈ°´goodsid²é¿â´æ±íÊÇ·ñ´æÔÚ,´æÔÚ¾ÍÊıÁ¿µş¼Ó,²»´æÔÚ¾ÍĞÂÔöÒ»Ìõ¿â´æ¼ÇÂ¼
+  --å‡ºåº“å•ç”±ã€æ­£å¼ã€‘->ã€ä¸´æ—¶ã€‘,å…ˆæŒ‰goodsidæŸ¥åº“å­˜è¡¨æ˜¯å¦å­˜åœ¨,å­˜åœ¨å°±æ•°é‡å åŠ ,ä¸å­˜åœ¨å°±æ–°å¢ä¸€æ¡åº“å­˜è®°å½•
   if nvl(:new.usestatus,0) = 0 then 
     select count(1)
       into v_count
@@ -2570,8 +2570,8 @@ end;
 ALTER TRIGGER ""JXWMS"".""ZX_710031_TRG"" ENABLE"
 "JXWMS","ZX_710037_TRG","ZX_710037","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""JXWMS"".""ZX_710037_TRG"" 
-before insert on zx_710037  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_710037  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
 	select zx_710037_seq.nextval into :new.zxid from dual;
 end;
@@ -2596,29 +2596,29 @@ p_packsize number(12);
 p_wholeqty number(12);
 p_exist number(2);
 BEGIN
----Ëã³öÉÏÏÂ¼Ü·Ö¿ªµÄ
+---ç®—å‡ºä¸Šä¸‹æ¶åˆ†å¼€çš„
 select t1.executetype
 into p_executype
 from wms_trade_order t1
 where  t1.tradeid = :new.tradeid;
 p_userstatus:=:new.USESTATUS;
 select count(*) into p_exist from zx_WMS_Trade_Dtl where tradedtlid = :new.tradedtlid;
-   --ÔÚÉú³ÉÕû¼ş²¨´Î³ö¿âµÄ³öÈë¿âÃ÷Ï¸Ê±£¬Éú³É10¼şÒÔÏÂµÄ±êÇ©Êı
+   --åœ¨ç”Ÿæˆæ•´ä»¶æ³¢æ¬¡å‡ºåº“çš„å‡ºå…¥åº“æ˜ç»†æ—¶ï¼Œç”Ÿæˆ10ä»¶ä»¥ä¸‹çš„æ ‡ç­¾æ•°
 
- if nvl(p_executype,0) = 2 and nvl(p_userstatus,0) = 2 and nvl(p_exist,0) = 0 then ---²¹»õ¡¢ÉÏÏÂ¼Ü·Ö¿ªÖ´ĞĞ
-       -----È¡°ü×°´óĞ¡¡£
+ if nvl(p_executype,0) = 2 and nvl(p_userstatus,0) = 2 and nvl(p_exist,0) = 0 then ---è¡¥è´§ã€ä¸Šä¸‹æ¶åˆ†å¼€æ‰§è¡Œ
+       -----å–åŒ…è£…å¤§å°ã€‚
        select packsize
        into p_packsize
        from tpl_pub_goods_packs
        where goodspackid = :new.goodspackid ;
-       -----È¡³ö¼şÊı¡£
+       -----å–å‡ºä»¶æ•°ã€‚
        if nvl(p_packsize,0) <> 0 then
           p_wholeqty := ceil(:new.qty/p_packsize);
        else
           p_wholeqty := 1;
        end if;
 
-       if (nvl(p_wholeqty,0)>=1 and nvl(p_wholeqty,0)<10)then    --³¬¹ı10¼şÖ»´òÓ¡Ò»ÕÅ£¬µÍÓÚ10¼şµÄ²Å´òÓ¡¶ÔÓ¦¼şÊıµÄ±êÇ©ÊıÁ¿
+       if (nvl(p_wholeqty,0)>=1 and nvl(p_wholeqty,0)<10)then    --è¶…è¿‡10ä»¶åªæ‰“å°ä¸€å¼ ï¼Œä½äº10ä»¶çš„æ‰æ‰“å°å¯¹åº”ä»¶æ•°çš„æ ‡ç­¾æ•°é‡
          for i in 1..p_wholeqty loop
          insert into zx_WMS_Trade_Dtl(ZXTRADEID,TRADEDTLID,printflag,seqno,wholeqty)
                 values(zx_WMS_Trade_Dtl_SEQ.NEXTVAL,:new.tradedtlid,0,i,p_wholeqty);
@@ -2719,43 +2719,43 @@ ON wms_st_io_doc
 REFERENCING OLD AS OLD NEW AS NEW
 FOR EACH ROW
 /*************************************************************/
-/*  ÖĞÎÄÃû³Æ£º³öÈë¿âÃ÷Ï¸                                      */
-/*  ¹¦ÄÜÃèÊö£ºÔÚÕû¼ş³ö¿â±êÇ©µÄ´òÓ¡Ê±»õÎ»ÉÏ²»Í¬µÄ³ö¿â¼şÊı        */
-/*              ´òÓ¡µÄ±êÇ©ÊıÓĞËù²»Í¬¡£                         */
-/*  ±àĞ´ÈË£ºwanghuaiyu      ±àĞ´Ê±¼ä£º20130622                  */
-/*  ĞŞ¸ÄÈË£º      ĞŞ¸ÄÊ±¼ä£º                                    */
+/*  ä¸­æ–‡åç§°ï¼šå‡ºå…¥åº“æ˜ç»†                                      */
+/*  åŠŸèƒ½æè¿°ï¼šåœ¨æ•´ä»¶å‡ºåº“æ ‡ç­¾çš„æ‰“å°æ—¶è´§ä½ä¸Šä¸åŒçš„å‡ºåº“ä»¶æ•°        */
+/*              æ‰“å°çš„æ ‡ç­¾æ•°æœ‰æ‰€ä¸åŒã€‚                         */
+/*  ç¼–å†™äººï¼šwanghuaiyu      ç¼–å†™æ—¶é—´ï¼š20130622                  */
+/*  ä¿®æ”¹äººï¼š      ä¿®æ”¹æ—¶é—´ï¼š                                    */
 /**************************************************************/
 declare
-  v_autoprtparam number(1);--±êÇ©´òÓ¡¼şÊıÉÏÏŞ
-  v_wholeqty number(8);--Õû¼şÊıÁ¿
-  v_prtperpackflag number(1);--Ã¿Ïä´òÓ¡³ö¿â±êÇ©
+  v_autoprtparam number(1);--æ ‡ç­¾æ‰“å°ä»¶æ•°ä¸Šé™
+  v_wholeqty number(8);--æ•´ä»¶æ•°é‡
+  v_prtperpackflag number(1);--æ¯ç®±æ‰“å°å‡ºåº“æ ‡ç­¾
 
 BEGIN
   if :new.comefrom = 3 then
-    --²éÑ¯³ö¼ğ»õ¹¤×÷Çø¶¨ÒåÖĞµÄ""±êÇ©´òÓ¡¼şÊıÉÏÏŞ""
+    --æŸ¥è¯¢å‡ºæ‹£è´§å·¥ä½œåŒºå®šä¹‰ä¸­çš„""æ ‡ç­¾æ‰“å°ä»¶æ•°ä¸Šé™""
     select nvl(b.autoprtparam,0),nvl(b.prtperpackflag, 0) 
       into v_autoprtparam,v_prtperpackflag
       from wms_pickarea b
      where b.pickareaid = nvl(:new.pickareaid,0);
-    v_wholeqty := :new.wholeqty;--Õû¼şÊıÁ¿
+    v_wholeqty := :new.wholeqty;--æ•´ä»¶æ•°é‡
     if nvl(v_wholeqty,0) > 0 then
-      --Èç¹û¡°Ã¿Ïä´òÓ¡³ö¿â±êÇ©¡±Ã»ÓĞÑ¡ÉÏ£¬¼´Öµ²»µÈÓÚ 1£¬Ö»²åÈëÒ»Ìõ¼ÇÂ¼
+      --å¦‚æœâ€œæ¯ç®±æ‰“å°å‡ºåº“æ ‡ç­¾â€æ²¡æœ‰é€‰ä¸Šï¼Œå³å€¼ä¸ç­‰äº 1ï¼Œåªæ’å…¥ä¸€æ¡è®°å½•
       if(v_prtperpackflag <> 1) then
          insert into zx_out_label_print(seqid, inoutid, labelseq, wholeqty, credate)
           values(zx_out_label_print_seq.NEXTVAL, :new.inoutid, v_wholeqty, v_wholeqty, sysdate);
-      --Èç¹ûÑ¡ÔñÁË¡°Ã¿Ïä´òÓ¡³ö¿â±êÇ©¡±£¬¼´ÖµµÈÓÚ1
+      --å¦‚æœé€‰æ‹©äº†â€œæ¯ç®±æ‰“å°å‡ºåº“æ ‡ç­¾â€ï¼Œå³å€¼ç­‰äº1
       elsif(v_prtperpackflag = 1)then
-        --Èç¹û "" ±êÇ©´òÓ¡¼şÊıÉÏÏŞ "" Îª¿Õ»ò 0 
+        --å¦‚æœ "" æ ‡ç­¾æ‰“å°ä»¶æ•°ä¸Šé™ "" ä¸ºç©ºæˆ– 0 
         if(v_autoprtparam = 0) then
           insert into zx_out_label_print(seqid, inoutid, labelseq, wholeqty, credate)
           values(zx_out_label_print_seq.NEXTVAL, :new.inoutid, v_wholeqty, v_wholeqty, sysdate);
-        --Èç¹û "" ±êÇ©´òÓ¡¼şÊıÉÏÏŞ "" ²»Îª¿Õ»òÕß0 £¬ÇÒ´óÓÚÕû¼şÊıÁ¿£¬²åÈëÕû¼şÊıÁ¿Ìõ¼ÇÂ¼
+        --å¦‚æœ "" æ ‡ç­¾æ‰“å°ä»¶æ•°ä¸Šé™ "" ä¸ä¸ºç©ºæˆ–è€…0 ï¼Œä¸”å¤§äºæ•´ä»¶æ•°é‡ï¼Œæ’å…¥æ•´ä»¶æ•°é‡æ¡è®°å½•
         elsif(v_autoprtparam >= v_wholeqty) then
           for i in 1 .. v_wholeqty loop
             insert into zx_out_label_print(seqid,inoutid,labelseq,wholeqty,credate)
             values(zx_out_label_print_seq.NEXTVAL, :new.inoutid, i, v_wholeqty,sysdate);
           end loop;
-        --Èç¹ûÕû¼şÊıÁ¿´óÓÚ"" ±êÇ©´òÓ¡¼şÊıÉÏÏŞ "" ,²åÈë5 Ìõ¼ÇÂ¼
+        --å¦‚æœæ•´ä»¶æ•°é‡å¤§äº"" æ ‡ç­¾æ‰“å°ä»¶æ•°ä¸Šé™ "" ,æ’å…¥5 æ¡è®°å½•
         elsif(nvl(v_wholeqty, 0) > v_autoprtparam) then
         	for i in 1 .. v_autoprtparam loop
             insert into zx_out_label_print(seqid,inoutid,labelseq,wholeqty,credate)
@@ -2829,7 +2829,7 @@ ALTER TRIGGER ""LYERP"".""BMS_DISCTYPE_DISCOUNT_DEF_TRI"" ENABLE"
   CREATE OR REPLACE TRIGGER ""LYERP"".""BMS_MV_DTL_TRI"" 
   before insert on bms_mv_dtl for each row
 declare
-  v_count number(1); --ÅĞ¶ÏÊÇ·ñÊÇÍ¬Ò»´æ»õÕÊ
+  v_count number(1); --åˆ¤æ–­æ˜¯å¦æ˜¯åŒä¸€å­˜è´§å¸
   v_flag  number(1);
 begin
   v_flag := 0;
@@ -2856,7 +2856,7 @@ begin
 
     if (v_flag = 1) then
       raise_application_error(-20001,
-                              v_count || '³É±¾¼ÆËã·½Ê½Ñ¡Ôñ´íÎó£¬ÇëÈ·ÈÏ£¡' ||
+                              v_count || 'æˆæœ¬è®¡ç®—æ–¹å¼é€‰æ‹©é”™è¯¯ï¼Œè¯·ç¡®è®¤ï¼' ||
                               v_flag);
     end if;
   end if;
@@ -2870,7 +2870,7 @@ ALTER TRIGGER ""LYERP"".""BMS_MV_DTL_TRI"" ENABLE"
   for each row
 declare
   v_count number(2);
-  ---ĞŞ¸ÄÅĞ¶ÏÂß¼­20220707
+  ---ä¿®æ”¹åˆ¤æ–­é€»è¾‘20220707
 begin
   if inserting then
     select count(1)
@@ -2887,7 +2887,7 @@ begin
        and not REGEXP_LIKE(:NEW.accno, '^([0-9]+)$');
   end if;
   if (v_count > 0) then
-    raise_application_error(-20001, 'ÕËºÅ´æÔÚ·ÇÊı×ÖµÄÊı×Ö£¡' || v_count);
+    raise_application_error(-20001, 'è´¦å·å­˜åœ¨éæ•°å­—çš„æ•°å­—ï¼' || v_count);
   end if;
 
 end;
@@ -2902,7 +2902,7 @@ ALTER TRIGGER ""LYERP"".""BMS_SA_INV_INFO_TRI"" ENABLE"
 Begin
 
   If :New.Checkmanid = :New.Adjustmanid Then
-    Raise_Application_Error(-20001, '¸´ºËÈË²»ÄÜ¸ú²ğÁãÈËÒ»Ñù');
+    Raise_Application_Error(-20001, 'å¤æ ¸äººä¸èƒ½è·Ÿæ‹†é›¶äººä¸€æ ·');
 
   End If;
 
@@ -2915,11 +2915,11 @@ ALTER TRIGGER ""LYERP"".""BMS_ST_ADJUST_TRI"" ENABLE"
   before update on bms_st_re_doc
   for each row
 declare
-  v_count number(1); --ÊÕ»õÏ¸µ¥¼ÇÂ¼Êı
+  v_count number(1); --æ”¶è´§ç»†å•è®°å½•æ•°
   v_count1 number(1);
 
 begin
- --À´»õÊıÁ¿Óë¶©»õÊıÁ¿µÄ²¨¶¯·¶Î§£º1¶ÖÒÔÏÂµÄ¿ØÖÆÔÚ¡À10%ÒÔÄÚ£»1¶ÖÒÔÉÏ5¶ÖÒÔÏÂµÄ¿ØÖÆÔÚ¡À5%ÒÔÄÚ£»5¶ÖÒÔÉÏ¿ØÖÆÔÚ¡À2%ÒÔÄÚ
+ --æ¥è´§æ•°é‡ä¸è®¢è´§æ•°é‡çš„æ³¢åŠ¨èŒƒå›´ï¼š1å¨ä»¥ä¸‹çš„æ§åˆ¶åœ¨Â±10%ä»¥å†…ï¼›1å¨ä»¥ä¸Š5å¨ä»¥ä¸‹çš„æ§åˆ¶åœ¨Â±5%ä»¥å†…ï¼›5å¨ä»¥ä¸Šæ§åˆ¶åœ¨Â±2%ä»¥å†…
   if :OLD.entryid=64 and :NEW.usestatus=2 and :OLD.rgtype=1 then
     select count(1) into v_count
     from (select a.sucondtlid, sum(a.goodsqty) regoodsqty
@@ -2939,13 +2939,13 @@ begin
              and b.goodsqty > 5000
            group by a.sucondtlid, b.goodsqty
           having sum(a.goodsqty) > b.goodsqty and (sum(a.goodsqty) - nvl(b.goodsqty, 0)) / nvl(b.goodsqty, 1) > 0.02);
---ÓÉÓÚ½ÇÉ«ÊÚÈ¨¿ØÖÆ10%£¬ËùÒÔĞ¡ÓÚ1¶ÖµÄ²»¿ØÖÆ
+--ç”±äºè§’è‰²æˆæƒæ§åˆ¶10%ï¼Œæ‰€ä»¥å°äº1å¨çš„ä¸æ§åˆ¶
     if ( v_count > 0) then
-      raise_application_error(-20001, '1¶ÖÒÔÉÏ5¶ÖÒÔÏÂµÄ¿ØÖÆÔÚ¡À5%ÒÔÄÚ');
+      raise_application_error(-20001, '1å¨ä»¥ä¸Š5å¨ä»¥ä¸‹çš„æ§åˆ¶åœ¨Â±5%ä»¥å†…');
     end if;
 
     if ( v_count1 > 0) then
-      raise_application_error(-20001, '5¶ÖÒÔÉÏ¿ØÖÆÔÚ¡À2%ÒÔÄÚ');
+      raise_application_error(-20001, '5å¨ä»¥ä¸Šæ§åˆ¶åœ¨Â±2%ä»¥å†…');
     end if;
   end if;
 
@@ -2957,11 +2957,11 @@ ALTER TRIGGER ""LYERP"".""BMS_ST_RE_DOC_TRI"" ENABLE"
   before insert on bms_st_re_dtl
   for each row
 declare
-  v_count number(1); --ÊÕ»õÏ¸µ¥¼ÇÂ¼Êı
+  v_count number(1); --æ”¶è´§ç»†å•è®°å½•æ•°
 
-  v_goodsqty number(16, 6); --²åÈëºóµÄÊÕ»õ×ÜÊıÁ¿
+  v_goodsqty number(16, 6); --æ’å…¥åçš„æ”¶è´§æ€»æ•°é‡
 
-  v_fetchqty number(16, 6); --ÏúÍËÉêÇëµÄÊıÁ¿
+  v_fetchqty number(16, 6); --é”€é€€ç”³è¯·çš„æ•°é‡
 begin
   select count(1), nvl(sum(b.goodsqty), 0) + :NEW.goodsqty
     into v_count, v_goodsqty
@@ -2977,7 +2977,7 @@ begin
    where t.fetchdtlid = :NEW.fetchdtlid;
 
   if (v_fetchqty > 0 and v_goodsqty > v_fetchqty and v_count >= 1) then
-    raise_application_error(-20001, 'ÊÕ»õÊıÁ¿´óÓÚÏúÍËÉêÇëÊıÁ¿');
+    raise_application_error(-20001, 'æ”¶è´§æ•°é‡å¤§äºé”€é€€ç”³è¯·æ•°é‡');
   end if;
 
 end bms_st_re_dtl_tri;
@@ -2991,7 +2991,7 @@ declare
   v_count number(5);
 begin
     -- dbms_output.put_line(:NEW.usestatus);
-    --È¥µô×´Ì¬ÎªÍê³É£¬»ØÍË²É¹ºÒµÎñ´¦Àí£¬ÔÊĞí»ØÍË
+    --å»æ‰çŠ¶æ€ä¸ºå®Œæˆï¼Œå›é€€é‡‡è´­ä¸šåŠ¡å¤„ç†ï¼Œå…è®¸å›é€€
  if :OLD.entryid in(64) and :OLD.Usestatus<>3 then
  v_count :=0;
   select count(1) into v_count from bms_st_rg_dtl b,mpcs_gmp_std_goods o, mpcs_gmp_std p
@@ -3000,7 +3000,7 @@ begin
    and b.goodsid = o.goodsid
    and p.entryid=:OLD.entryid
   -- and nvl(b.ifcheckflag,0)=1
-   and b.GOODSQTY<>nvl(b.eligibgoodsqty,0)--modify bygkm20230620½«´óÓÚĞŞ¸Ä³É²»µÈÓÚ
+   and b.GOODSQTY<>nvl(b.eligibgoodsqty,0)--modify bygkm20230620å°†å¤§äºä¿®æ”¹æˆä¸ç­‰äº
    and b.goodsstatusid=1--add by gkm20230620
    and :NEW.usestatus=2
    and :OLD.rgtype=1
@@ -3008,7 +3008,7 @@ begin
    and b.rgid=:OLD.rgid;
 
   if (v_count>0) then
-     raise_application_error(-20001, 'Èë¿âÊıÁ¿²»µÈÓÚ·ÅĞĞÊıÁ¿!');
+     raise_application_error(-20001, 'å…¥åº“æ•°é‡ä¸ç­‰äºæ”¾è¡Œæ•°é‡!');
   end if;
   end if;
 end;
@@ -3022,14 +3022,14 @@ ALTER TRIGGER ""LYERP"".""BMS_ST_RG_DOC_TRI"" ENABLE"
 declare
   v_count number(1);
 begin
-  --ÓÃÓÚ·ÀÖ¹ÓĞÊÕ»õÏ¸µ¥£¬»¹ÄÜ×÷·Ï¡£
+  --ç”¨äºé˜²æ­¢æœ‰æ”¶è´§ç»†å•ï¼Œè¿˜èƒ½ä½œåºŸã€‚
   if :NEW.usestatus = 0 then
     select count(1)
       into v_count
       from bms_st_re_dtl t
      where t.sucondtlid = :OLD.sucondtlid;
     if v_count > 0 then
-      raise_application_error(-20001, 'ÓĞÊÕ»õµ¥£¡ÇëÏÈÉ¾³ıÔÙ×÷·Ï');
+      raise_application_error(-20001, 'æœ‰æ”¶è´§å•ï¼è¯·å…ˆåˆ é™¤å†ä½œåºŸ');
     end if;
   end if;
 end bms_su_con_dtl_tri;
@@ -3082,7 +3082,7 @@ ALTER TRIGGER ""LYERP"".""BMS_SU_SET_DOC_TRI"" DISABLE"
   for each row
 
 begin
-  --ÓÃÓÚ´¦Àí2053»ØÍËÈ·ÈÏ£¬5075µÄ¼ÇÂ¼Ã»ÓĞÉ¾³ıµÄÎÊÌâ
+  --ç”¨äºå¤„ç†2053å›é€€ç¡®è®¤ï¼Œ5075çš„è®°å½•æ²¡æœ‰åˆ é™¤çš„é—®é¢˜
   if :NEW.usestatus=2 and :OLD.usestatus=1 then
     delete from gsp_transcontrol_record a where a.roadid=:OLD.roadid and a.entryid=:OLD.Entryid;
   end if;
@@ -3143,7 +3143,7 @@ ALTER TRIGGER ""LYERP"".""BMS_TR_POS_DEF_TRI"" ENABLE"
   for each row
 
 begin
-  --²åÈë¶ÁÈ¡ĞÅÏ¢
+  --æ’å…¥è¯»å–ä¿¡æ¯
   delete from GSP_COMPANY_LICENSE_READINFO
    where licenseid = :old.COMPANYID
      and readman = :new.EMPLOYEEID and typeid=2;
@@ -3166,10 +3166,10 @@ declare
   v_count  number(2);
 
 begin
-  --ÅĞ¶Ï³ö¿âµÄÊÇ¹ıÕË±£¹ÜÕÊµÄ
-  --add by gkm20220117Ôö¼ÓÆÎÌï6462
-  --add by gkm20220221Ôö¼ÓÆÎÌï5561
-  --add by gkm20220413Ôö¼ÓÈªÖİ681
+  --åˆ¤æ–­å‡ºåº“çš„æ˜¯è¿‡è´¦ä¿ç®¡å¸çš„
+  --add by gkm20220117å¢åŠ è†ç”°6462
+  --add by gkm20220221å¢åŠ è†ç”°5561
+  --add by gkm20220413å¢åŠ æ³‰å·681
   if :OLD.inoutflag = 0 and :OLD.storageid in (382, 941, 902, 708,6462,5561,681,542) then
     /*select count(1)
      into v_count
@@ -3180,8 +3180,8 @@ begin
      -- and a.comefrom = 75
       and a.sourcetable = 75;
      -- and a.entryid = 6;*/
-    --ÅĞ¶ÏÊÇ¶ÔÏóµ÷²¦»òÕß×Ü²¿µ÷²¦
-    --ÒµÎñÀ´Ô´18£¬ÔùÆ·µÄ²»ÅĞ¶Ï11042
+    --åˆ¤æ–­æ˜¯å¯¹è±¡è°ƒæ‹¨æˆ–è€…æ€»éƒ¨è°ƒæ‹¨
+    --ä¸šåŠ¡æ¥æº18ï¼Œèµ å“çš„ä¸åˆ¤æ–­11042
     if :NEW.sourcetable=18 then
        return;
     end if;
@@ -3208,13 +3208,13 @@ begin
                  and nvl(a.sendflag, 0) = nvl(c.sendflag, 0)
                  and a.movedtlid between c.movedtlid - 200 and
                      c.movedtlid + 200
-              --and c.dtlmemo='ÃÅµêÊÕ»õ×Ô¶¯Éú³É'
+              --and c.dtlmemo='é—¨åº—æ”¶è´§è‡ªåŠ¨ç”Ÿæˆ'
               )
-         and a.dtlmemo = 'ÖĞĞÄÊÕÅäÍË×Ô¶¯Éú³É';
-      --ÅĞ¶Ïµ÷³öÃÅµêÊÇ·ñÒÑ¼ÇÕË
+         and a.dtlmemo = 'ä¸­å¿ƒæ”¶é…é€€è‡ªåŠ¨ç”Ÿæˆ';
+      --åˆ¤æ–­è°ƒå‡ºé—¨åº—æ˜¯å¦å·²è®°è´¦
       if (v_count = 0) then
         raise_application_error(-20001,
-                                'ÑéÊÕÈë¿âÒì³££¬ÇëÖØĞÂµãÑéÊÕ£¡' || v_count);
+                                'éªŒæ”¶å…¥åº“å¼‚å¸¸ï¼Œè¯·é‡æ–°ç‚¹éªŒæ”¶ï¼' || v_count);
       end if;
     end if;
   end if;
@@ -3230,14 +3230,14 @@ declare
   --Pragma autonomous_transaction;
   v_placereturndtlid number;
   v_count  number(2);
----ĞŞ¸ÄÅĞ¶ÏÂß¼­20220707
+---ä¿®æ”¹åˆ¤æ–­é€»è¾‘20220707
 begin
-  --ÅĞ¶Ï³ö¿âµÄÊÇ¹ıÕË±£¹ÜÕÊµÄ
+  --åˆ¤æ–­å‡ºåº“çš„æ˜¯è¿‡è´¦ä¿ç®¡å¸çš„
   if :OLD.inoutflag = 0 and
      :OLD.storageid in (382, 941, 902, 708, 6462, 5561, 681, 542) then
 
-    --ÅĞ¶ÏÊÇ¶ÔÏóµ÷²¦»òÕß×Ü²¿µ÷²¦
-    --ÒµÎñÀ´Ô´18£¬ÔùÆ·µÄ²»ÅĞ¶Ï11042
+    --åˆ¤æ–­æ˜¯å¯¹è±¡è°ƒæ‹¨æˆ–è€…æ€»éƒ¨è°ƒæ‹¨
+    --ä¸šåŠ¡æ¥æº18ï¼Œèµ å“çš„ä¸åˆ¤æ–­11042
     if :NEW.sourcetable = 18 then
       return;
     end if;
@@ -3261,10 +3261,10 @@ begin
         from bms_st_io_doc_tmp a
        where a.placedtlid = v_placereturndtlid
          and nvl(a.comefrom, 0) = 77;
-      --ÅĞ¶Ïµ÷³öÃÅµêÊÇ·ñÒÑ¼ÇÕË
+      --åˆ¤æ–­è°ƒå‡ºé—¨åº—æ˜¯å¦å·²è®°è´¦
       if (v_count > 0) then
         raise_application_error(-20001,
-                                'ÑéÊÕÈë¿âÒì³££¬ÇëÖØĞÂµãÑéÊÕ£¡' || v_count);
+                                'éªŒæ”¶å…¥åº“å¼‚å¸¸ï¼Œè¯·é‡æ–°ç‚¹éªŒæ”¶ï¼' || v_count);
       end if;
     end if;
   end if;
@@ -3282,7 +3282,7 @@ begin
      select count(1) into v_count from bms_st_rg_dtl where rgid=:OLD.rgid and targetsourceid is not null;
 
      if (v_count>0) then
-        raise_application_error(-20001, '±¾µ¥ÒÑÈë¿â£¬ÇëÖØĞÂ²éÑ¯!');
+        raise_application_error(-20001, 'æœ¬å•å·²å…¥åº“ï¼Œè¯·é‡æ–°æŸ¥è¯¢!');
      end if;
   end if;
 end;
@@ -3350,7 +3350,7 @@ Begin
       (Seqid, Entryid, Datatype, Dataid, Content, Flag, Credate,spgs)
       Select t_101134_Seq.Nextval,
              t.Entryid,
-             '¿Í»§',
+             'å®¢æˆ·',
              t.Customid,
              :Old.Content,
              0,
@@ -3422,7 +3422,7 @@ Begin
       (Seqid, Entryid, Datatype, Dataid, Content, Flag, Credate,spgs)
       Select t_101134_Seq.Nextval,
              t.Entryid,
-             '»õÆ·',
+             'è´§å“',
              t.Goodsid,
              :Old.Content,
              0,
@@ -3443,12 +3443,12 @@ ALTER TRIGGER ""LYERP"".""GSP_GOODS_ALTER_APPROVE_TRI"" ENABLE"
   for each row
 
 begin
-  --5034ÓÉÓÚµãÉóÅúµÄÊ±ºòÉóÅúÈËºÍÉóÅúÊÇ2¸ö²»Í¬ÊÂÎñ£¬ÉóÅúÈË¸üĞÂÊÇÔÚC¶Ë¸üĞÂ£¬
-  --¿ÉÄÜÔì³ÉÉóÅúÈËÎª¿ÕµÄÇé¿öÏÂ£¬ÉóÅú±êÖ¾±ä³ÉÒÑÉóÅú¡£
+  --5034ç”±äºç‚¹å®¡æ‰¹çš„æ—¶å€™å®¡æ‰¹äººå’Œå®¡æ‰¹æ˜¯2ä¸ªä¸åŒäº‹åŠ¡ï¼Œå®¡æ‰¹äººæ›´æ–°æ˜¯åœ¨Cç«¯æ›´æ–°ï¼Œ
+  --å¯èƒ½é€ æˆå®¡æ‰¹äººä¸ºç©ºçš„æƒ…å†µä¸‹ï¼Œå®¡æ‰¹æ ‡å¿—å˜æˆå·²å®¡æ‰¹ã€‚
   if updating('appmanid') then
 
     if (nvl(:NEW.appmanid, -1) = -1) then
-      raise_application_error(-20001, 'ÉóÅúÈËÎª¿Õ£¬ÇëÖØĞÂÉóÅú');
+      raise_application_error(-20001, 'å®¡æ‰¹äººä¸ºç©ºï¼Œè¯·é‡æ–°å®¡æ‰¹');
     end if;
 
   end if;
@@ -3500,15 +3500,15 @@ declare
   v_againchkflag number(1);
 
 begin
-  --´¦Àí5110,5023µÚÒ»ÑéÊÕÈËÎª¿ÕµÄÒì³£¡£ÊÇÓÉÓÚ2022»ØÍËÈ·¶¨Ôì³ÉµÄ¡£add by gkm 20190919
-  --Í¬Ê±Ò²´¦ÀíË«ÈË¸´ºËÎŞµÚ¶şÑéÊÕÈËµÄÎÊÌâ¡£
+  --å¤„ç†5110,5023ç¬¬ä¸€éªŒæ”¶äººä¸ºç©ºçš„å¼‚å¸¸ã€‚æ˜¯ç”±äº2022å›é€€ç¡®å®šé€ æˆçš„ã€‚add by gkm 20190919
+  --åŒæ—¶ä¹Ÿå¤„ç†åŒäººå¤æ ¸æ— ç¬¬äºŒéªŒæ”¶äººçš„é—®é¢˜ã€‚
   if (:NEW.checkmanid is null) then
   
     begin
       select t.value
         into v_value
         from Sys_npbusi_config t
-       where t.configname = 'ÊÇ·ñ¿ØÖÆË«ÈË×÷Òµ'
+       where t.configname = 'æ˜¯å¦æ§åˆ¶åŒäººä½œä¸š'
          and t.entryid = :NEW.entryid;
     EXCEPTION
       WHEN NO_DATA_FOUND THEN
@@ -3526,7 +3526,7 @@ begin
     end;
   
     if (v_value = 1 and v_againchkflag = 1) then
-      raise_application_error(-20001, 'ÑéÊÕ×Üµ¥µÄµÚÒ»¸´ºËÈËÎª¿Õ£¬Çëµã±£´æ°´Å¥!!');
+      raise_application_error(-20001, 'éªŒæ”¶æ€»å•çš„ç¬¬ä¸€å¤æ ¸äººä¸ºç©ºï¼Œè¯·ç‚¹ä¿å­˜æŒ‰é’®!!');
     end if;
   
     begin
@@ -3538,10 +3538,10 @@ begin
       WHEN NO_DATA_FOUND THEN
         v_checkmanid := 0;
     end;
-  --×Ô¶¯¸ù¾İÑéÊÕ×Üµ¥µÄµÚÒ»¸´ºËÈËÎ¬»¤½øÈ¥¡£
+  --è‡ªåŠ¨æ ¹æ®éªŒæ”¶æ€»å•çš„ç¬¬ä¸€å¤æ ¸äººç»´æŠ¤è¿›å»ã€‚
     if (v_checkmanid = 0) then
       raise_application_error(-20001,
-                              '×Üµ¥µÚÒ»¸´ºËÈËÎª¿Õ£¬ÇëÈ·ÈÏ' || v_checkmanid);
+                              'æ€»å•ç¬¬ä¸€å¤æ ¸äººä¸ºç©ºï¼Œè¯·ç¡®è®¤' || v_checkmanid);
     else
       :NEW.checkmanid := v_checkmanid;
     end if;
@@ -3561,7 +3561,7 @@ Begin
       (Seqid, Entryid, Datatype, Dataid, Content, Flag, Credate,spgs)
       Select t_101134_Seq.Nextval,
              t.Entryid,
-             '¹©Ó¦ÉÌ',
+             'ä¾›åº”å•†',
              t.Supplyid,
              :Old.Content,
              0,
@@ -3583,7 +3583,7 @@ ALTER TRIGGER ""LYERP"".""GSP_SUPPLYER_ALTER_APPROVE_TRI"" ENABLE"
   for each row
 
 begin
-  --²åÈë¶ÁÈ¡ĞÅÏ¢
+  --æ’å…¥è¯»å–ä¿¡æ¯
   delete from GSP_COMPANY_LICENSE_READINFO
    where licenseid = :old.licenseid
      and readman = :new.TERM and typeid=1;
@@ -3682,7 +3682,7 @@ begin
              '0',
              :OLD.goodsid
         from dual;
-    --Ê×Óª³É¹¦£¬Í¬Ê±²åÈë»õÆ·Ã÷Ï¸
+    --é¦–è¥æˆåŠŸï¼ŒåŒæ—¶æ’å…¥è´§å“æ˜ç»†
     insert into Pm_Edi_to_mes_Tmp
       (queueid, Credate, Queuetype, srcid)
       select Pm_Edi_to_mes_Tmp_seq.Nextval, sysdate, '30', a.goodsdtlid
@@ -3724,7 +3724,7 @@ begin
       select Pm_Edi_to_mes_Tmp_seq.Nextval, sysdate, '30', :NEW.goodsdtlid
         from dual;
   end if;
-  --ÓÉÓÚmesµÄ½Ó¿Ú¡¾»õÆ·Ã÷Ï¸¡¾UNIT¡¿ÔöÁ¿Í¬²½¡¿Ã»ÓĞÊµÏÖÉ¾³ı£¬¹ÊÉ¾³ı²»×ö´¦Àí
+  --ç”±äºmesçš„æ¥å£ã€è´§å“æ˜ç»†ã€UNITã€‘å¢é‡åŒæ­¥ã€‘æ²¡æœ‰å®ç°åˆ é™¤ï¼Œæ•…åˆ é™¤ä¸åšå¤„ç†
   /*if deleting then
     insert into Pm_Edi_to_mes_Tmp
       (queueid, Credate, Queuetype, srcid, deleted)
@@ -3757,7 +3757,7 @@ begin
       select Pm_Edi_to_mes_Tmp_seq.Nextval, sysdate, '29', :NEW.seqid
         from dual;
   end if;
-  --ÓÉÓÚmesµÄ½Ó¿Ú¡¾»õÆ·Ã÷Ï¸¡¾UNIT¡¿ÔöÁ¿Í¬²½¡¿Ã»ÓĞÊµÏÖÉ¾³ı£¬¹ÊÉ¾³ı²»×ö´¦Àí
+  --ç”±äºmesçš„æ¥å£ã€è´§å“æ˜ç»†ã€UNITã€‘å¢é‡åŒæ­¥ã€‘æ²¡æœ‰å®ç°åˆ é™¤ï¼Œæ•…åˆ é™¤ä¸åšå¤„ç†
 end mes_pub_goods_unit_tri;
 
 ALTER TRIGGER ""LYERP"".""MES_PUB_GOODS_UNIT_TRI"" ENABLE"
@@ -3799,7 +3799,7 @@ ALTER TRIGGER ""LYERP"".""MES_PUB_SETTLE_ACCOUNT_TRI"" ENABLE"
     declare
  ctn number;
 begin
-  --ÓĞÉÏÏßµÄ¶ÀÁ¢µ¥Ôª²Å´¥·¢¡£
+  --æœ‰ä¸Šçº¿çš„ç‹¬ç«‹å•å…ƒæ‰è§¦å‘ã€‚
   select count(1) into ctn from mes_entry a where a.entryid=get_entryid_by_deptid(nvl(:new.storerid,:old.storerid));
   if ctn>0 then
     if inserting or updating then
@@ -3824,9 +3824,9 @@ ALTER TRIGGER ""LYERP"".""MES_PUB_STORER_TRI"" ENABLE"
   before insert on mpcs_gmp_pass_notice
   for each row
 begin
-  --ÓÃÓÚ·ÀÖ¹ĞÂÔöµÄ·ÅĞĞÍ¨Öªµ¥Î´±£´æÖ±½ÓÉóºË¡£
+  --ç”¨äºé˜²æ­¢æ–°å¢çš„æ”¾è¡Œé€šçŸ¥å•æœªä¿å­˜ç›´æ¥å®¡æ ¸ã€‚
   if :NEW.usestatus=1 then
-    raise_application_error(-20001,'ÒªÏÈ±£´æ£¬ÔÙµãÉóºË£¬ÇëÉ¾³ı£¬ÔÙÖØĞÂĞÂÔö£¡');
+    raise_application_error(-20001,'è¦å…ˆä¿å­˜ï¼Œå†ç‚¹å®¡æ ¸ï¼Œè¯·åˆ é™¤ï¼Œå†é‡æ–°æ–°å¢ï¼');
   end if;
 end;
 
@@ -3853,25 +3853,25 @@ declare
        and a.rgid = b.rgid;
   r_row c_row%rowtype;
 
-  ---ĞŞ¸ÄÅĞ¶ÏÂß¼­20220707
+  ---ä¿®æ”¹åˆ¤æ–­é€»è¾‘20220707
 begin
   if updating('Usestatus') then
-    --·ÅĞĞÍ¨Öªµ¥µãÉóºËor»ØÍËÉóºË
-    --Òì³£ÏÈ´¦Àí
+    --æ”¾è¡Œé€šçŸ¥å•ç‚¹å®¡æ ¸orå›é€€å®¡æ ¸
+    --å¼‚å¸¸å…ˆå¤„ç†
     if :NEW.Usestatus in (1, 2) then
       begin
         select c.sourceid,nvl(c.sourcetable,0)
           into v_rgdtlid,v_sourcetable
           from MPCS_GMP_CHECK_DOC b, mpcs_gmp_askcheck c
          where b.askcheckid = c.askcheckid
-           --and c.sourcetable = 2 --×¢ÊÍµô£º20250207  2´ú±íÊÕ»õµ¥¡¢1´ú±í²ú³ÉÆ·Èë¿â          
+           --and c.sourcetable = 2 --æ³¨é‡Šæ‰ï¼š20250207  2ä»£è¡¨æ”¶è´§å•ã€1ä»£è¡¨äº§æˆå“å…¥åº“          
            and b.checkdocid = :OLD.checkdocid;
       exception
         when no_data_found then
           raise_application_error(-20001,
-                                  'Ã»ÓĞ¶ÔÓ¦ÑéÊÕÏ¸µ¥ID£¬²»ÔÊĞí·ÅĞĞ£¡');
+                                  'æ²¡æœ‰å¯¹åº”éªŒæ”¶ç»†å•IDï¼Œä¸å…è®¸æ”¾è¡Œï¼');
       end;
-      --·ÇÑéÊÕµ¥Éú³ÉµÄ²»×ßÕâ¸öÁ÷³Ì¡£ add by gkm20250207
+      --ééªŒæ”¶å•ç”Ÿæˆçš„ä¸èµ°è¿™ä¸ªæµç¨‹ã€‚ add by gkm20250207
       if v_sourcetable<>2 then
         return;
       end if;
@@ -3882,17 +3882,17 @@ begin
        where a.rgid = b.rgid
          and b.rgdtlid = v_rgdtlid
          and a.rgtype = 2;
-      --ÏúÍËÉêÇë²úÉúµÄ£¬²»×ßÕâ¸öÁ÷³Ì
+      --é”€é€€ç”³è¯·äº§ç”Ÿçš„ï¼Œä¸èµ°è¿™ä¸ªæµç¨‹
       if v_count = 1 then
         return;
       end if;
 
-      --ĞŞ¸ÄºÏ¸ñÊıÁ¿
+      --ä¿®æ”¹åˆæ ¼æ•°é‡
       if :NEW.Usestatus = 1 and :OLD.freenum > 0 then
         update bms_st_rg_dtl a
            set a.goodsqty = :OLD.freenum, a.noticeid = :OLD.Noticeid
          where a.rgdtlid = v_rgdtlid;
-        --µã»ØÍËÉóºË  usestatus 0:×÷·Ï 1£ºÕı³£ 2£ºÁÙÊ± 3£ºÈ·¶¨¡£ÉóºË¶ÔÓ¦1£¬»ØÍËÉóºË¶ÔÓ¦2
+        --ç‚¹å›é€€å®¡æ ¸  usestatus 0:ä½œåºŸ 1ï¼šæ­£å¸¸ 2ï¼šä¸´æ—¶ 3ï¼šç¡®å®šã€‚å®¡æ ¸å¯¹åº”1ï¼Œå›é€€å®¡æ ¸å¯¹åº”2
       elsif :NEW.Usestatus = 2 then
 
         select count(1)
@@ -3904,7 +3904,7 @@ begin
            and a.usestatus in (2, 3);
         if v_count1 >= 1 then
           raise_application_error(-20001,
-                                  'ÑéÊÕÏ¸µ¥ID:' || v_rgdtlid || 'ÒÑÊÕ»õ£¬ÇëÏÈ»ØÍËÑéÊÕÊÕ»õ£¡');
+                                  'éªŒæ”¶ç»†å•ID:' || v_rgdtlid || 'å·²æ”¶è´§ï¼Œè¯·å…ˆå›é€€éªŒæ”¶æ”¶è´§ï¼');
         end if;
 
         update bms_st_rg_dtl a
@@ -3921,7 +3921,7 @@ begin
         from bms_st_rg_dtl a, bms_st_rg_dtl b
        where a.rgdtlid = v_rgdtlid
          and a.rgid = b.rgid;
-      --2020¶àÌõÏ¸µ¥
+      --2020å¤šæ¡ç»†å•
       if v_rgdtlcnt > 1 then
         select count(1)
           into ctn
@@ -3931,12 +3931,12 @@ begin
            and nvl(b.ifcheckflag, 1) = 1
            and b.RGDTLID <> v_rgdtlid
            and b.noticeid is null;
-        --ÅĞ¶ÏÊÇ·ñ´æÔÚÓ¦¼ìµÄÎ´¼ì
+        --åˆ¤æ–­æ˜¯å¦å­˜åœ¨åº”æ£€çš„æœªæ£€
         if ctn > 0 then
           return;
         end if;
 
-        --¶àÌõÏ¸µ¥£¬¶¼ÒÑ¼ì²¢ÇÒ·ÅĞĞÍ¨Öªµ¥ÒÑÉóºË£¬2020µãÈ·¶¨
+        --å¤šæ¡ç»†å•ï¼Œéƒ½å·²æ£€å¹¶ä¸”æ”¾è¡Œé€šçŸ¥å•å·²å®¡æ ¸ï¼Œ2020ç‚¹ç¡®å®š
         open c_row;
         LOOP
           fetch c_row
@@ -3948,11 +3948,11 @@ begin
 
         return;
       end if;
-      --ºÏ¸ñ
+      --åˆæ ¼
 
     end if;
-    --ºÏ¸ñ£¬ÉóºË 
-    --add dealidea ÅĞ¶Ï ¼ì²éÊÇºÏ¸ñ£¬µ«ÊÇ½ş³öÎïÁÙ½ç±ê×¼£¬×öÍË»õ »ÆÊæéÅ
+    --åˆæ ¼ï¼Œå®¡æ ¸ 
+    --add dealidea åˆ¤æ–­ æ£€æŸ¥æ˜¯åˆæ ¼ï¼Œä½†æ˜¯æµ¸å‡ºç‰©ä¸´ç•Œæ ‡å‡†ï¼Œåšé€€è´§ é»„èˆ’æ¦•
     if :NEW.Usestatus = 1 and :OLD.freenum > 0 and :NEW.dealidea=1 then
 
     /*  update bms_st_rg_dtl a
@@ -3965,19 +3965,19 @@ begin
         (credate, Logtype, Content, Mainid)
       values
         (sysdate,
-         'ÑàÀ´¸£·ÅĞĞ×Ô¶¯Ö´ĞĞ',
-         'ÑéÊÕºÏ¸ñÊıÁ¿' || :OLD.freenum,
+         'ç‡•æ¥ç¦æ”¾è¡Œè‡ªåŠ¨æ‰§è¡Œ',
+         'éªŒæ”¶åˆæ ¼æ•°é‡' || :OLD.freenum,
          v_rgdtlid);
 
-      --ÉóºË ¾Ü¾ø£¬·ÅĞĞÊıÁ¿=0
+      --å®¡æ ¸ æ‹’ç»ï¼Œæ”¾è¡Œæ•°é‡=0
     elsif (:NEW.Usestatus = 1 and :OLD.freenum = 0) or(:NEW.dealidea in(2,5)) then
       mpcs_rg_prod_p.p_create_su(v_rgdtlid, :OLD.Noticeid);
       insert into GKM_T_LOG
         (credate, Logtype, Content, Mainid)
       values
         (sysdate,
-         'ÑàÀ´¸£·ÅĞĞ×Ô¶¯Ö´ĞĞ',
-         'ÑéÊÕ²»ºÏ¸ñÊıÁ¿',
+         'ç‡•æ¥ç¦æ”¾è¡Œè‡ªåŠ¨æ‰§è¡Œ',
+         'éªŒæ”¶ä¸åˆæ ¼æ•°é‡',
          v_rgdtlid);
     end if;
   end if;
@@ -3988,8 +3988,8 @@ begin
           (credate, logtype, content,Mainid)
         Values
           (Sysdate,
-           'ÑàÀ´¸£·ÅĞĞ×Ô¶¯Ö´ĞĞ´íÎó',
-           'ÑéÊÕÏ¸µ¥id' || v_rgdtlid ||'´íÎó´úÂë:' || Sqlcode || substr(Sqlerrm, 1, 2600),v_rgdtlid);
+           'ç‡•æ¥ç¦æ”¾è¡Œè‡ªåŠ¨æ‰§è¡Œé”™è¯¯',
+           'éªŒæ”¶ç»†å•id' || v_rgdtlid ||'é”™è¯¯ä»£ç :' || Sqlcode || substr(Sqlerrm, 1, 2600),v_rgdtlid);
        -- Commit;*/
 end;
 
@@ -4014,7 +4014,7 @@ ALTER TRIGGER ""LYERP"".""MPCS_GMP_STD_GOODS_TRI"" ENABLE"
   for each row
 begin
   if (round(:NEW.manhour,2)<>round(:NEW.piecerate/15,2)) then
-    raise_application_error(-20001, '¹¤Ê±²»µÈÓÚ¼Æ¼ş¹¤×Ê³ıÒÔ15');
+    raise_application_error(-20001, 'å·¥æ—¶ä¸ç­‰äºè®¡ä»¶å·¥èµ„é™¤ä»¥15');
   end if;
 
 end MPCS_MM_PROC_LABOR_tri;
@@ -4039,7 +4039,7 @@ if :NEW.entryid=64 then
                and nvl(a.accflag, 0) in (1, 2));
     if v_count > 0 then
       raise_application_error(-20001,
-                              'Íâ°ü×°´óĞ¡Ğ¡ÓÚµÈÓÚ1,²»ÄÜÑ¡Ğ¡ÓÚµÈÓÚ1µÄ');
+                              'å¤–åŒ…è£…å¤§å°å°äºç­‰äº1,ä¸èƒ½é€‰å°äºç­‰äº1çš„');
     end if;
   end if;
 end mpcs_pr_bom_doc_tri;
@@ -4053,7 +4053,7 @@ declare
   v_count  number(1);
   v_count1 number(1);
   v_count2 number(1);
-  v_count3 number(1); --ÓÃÓÚÅĞ¶ÏÉú²úÈÕÆÚºÍÓĞĞ§ÆÚÊÇ·ñÏàµÈ
+  v_count3 number(1); --ç”¨äºåˆ¤æ–­ç”Ÿäº§æ—¥æœŸå’Œæœ‰æ•ˆæœŸæ˜¯å¦ç›¸ç­‰
   --  a number;
   v_count4 number(1);
   v_bzq    number(2);
@@ -4062,8 +4062,8 @@ begin
   v_count1 := 1;
   v_count2 := 1;
   v_count3 := 0;
-  --add by gkm20250519 Éú²úÈÕÆÚ¼Ó±£ÖÊÆÚ²»µÈÓÚÓĞĞ§ÆÚ±¨´íÌáĞÑ
-  --Ôö¼ÓÏŞÖÆÁÙÊ±×´Ì¬ÈÎÎñµ¥²Å´¥·¢£¬³É±¾¶ÔÏó¹ÜÀíÒ²»á´¥·¢¡£
+  --add by gkm20250519 ç”Ÿäº§æ—¥æœŸåŠ ä¿è´¨æœŸä¸ç­‰äºæœ‰æ•ˆæœŸæŠ¥é”™æé†’
+  --å¢åŠ é™åˆ¶ä¸´æ—¶çŠ¶æ€ä»»åŠ¡å•æ‰è§¦å‘ï¼Œæˆæœ¬å¯¹è±¡ç®¡ç†ä¹Ÿä¼šè§¦å‘ã€‚
   if :NEW.cmdtype = 1 and :NEW.Credate>to_date('2025-05-21','yyyy-mm-dd') and :NEW.Usestatus=1  then
     begin
       select a.bzq
@@ -4084,7 +4084,7 @@ begin
          and a.goodsid = :NEW.pgoodsid
          and add_months(a.proddate, v_bzq * 12) - 1 = a.invaliddate;
       if (v_count4 = 0) then
-        raise_application_error(-20001, 'Éú²úÈÕÆÚ¼Ó±£ÖÊÆÚ²»µÈÓÚÓĞĞ§ÆÚ£¡');
+        raise_application_error(-20001, 'ç”Ÿäº§æ—¥æœŸåŠ ä¿è´¨æœŸä¸ç­‰äºæœ‰æ•ˆæœŸï¼');
       end if;
     
     end if;
@@ -4128,28 +4128,28 @@ begin
 
   if (v_count = 0 or v_count1 = 0 or v_count2 = 0) then
     raise_application_error(-20001,
-                            v_count1 || '»õÆ·idÓëÅúºÅid²»¶ÔÓ¦£¬ÇëÉ¾³ı×Üµ¥£¬ÖØĞÂ×öµ¥' ||
+                            v_count1 || 'è´§å“idä¸æ‰¹å·idä¸å¯¹åº”ï¼Œè¯·åˆ é™¤æ€»å•ï¼Œé‡æ–°åšå•' ||
                             v_count2);
   end if;
 
   if (v_count3 = 1) then
-    raise_application_error(-20001, 'Éú²úÈÕÆÚºÍÓĞĞ§ÆÚÒ»Ñù£¡');
+    raise_application_error(-20001, 'ç”Ÿäº§æ—¥æœŸå’Œæœ‰æ•ˆæœŸä¸€æ ·ï¼');
   end if;
-  --add by gkm20241231,Ôö¼ÓÒÔÏÂÏŞÖÆ
+  --add by gkm20241231,å¢åŠ ä»¥ä¸‹é™åˆ¶
   if updating('usestatus') and :OLD.usestatus = 3 and :NEW.Usestatus = 2 and
      :OLD.Mescmdid is not null then
     raise_application_error(-20001,
-                            'mes²úÉúµÄÉú²úÈÎÎñµ¥£¬²»ÔÊĞí»ØÍËÏÂ´ï£¡');
+                            'mesäº§ç”Ÿçš„ç”Ÿäº§ä»»åŠ¡å•ï¼Œä¸å…è®¸å›é€€ä¸‹è¾¾ï¼');
   end if;
-  --add by gkm20250331,Ôö¼ÓÒÔÏÂÏŞÖÆ
+  --add by gkm20250331,å¢åŠ ä»¥ä¸‹é™åˆ¶
   if updating('usestatus') and :OLD.usestatus = 3 and :NEW.Usestatus = 0 and
      :OLD.Mescmdid is not null then
-    raise_application_error(-20001, 'mes²úÉúµÄÉú²úÈÎÎñµ¥£¬²»ÔÊĞí×÷·Ï£¡');
+    raise_application_error(-20001, 'mesäº§ç”Ÿçš„ç”Ÿäº§ä»»åŠ¡å•ï¼Œä¸å…è®¸ä½œåºŸï¼');
   end if;
   if updating('usestatus') and :OLD.usestatus = 2 and :NEW.Usestatus = 1 and
      :OLD.Mescmdid is not null then
     raise_application_error(-20001,
-                            'mes²úÉúµÄÉú²úÈÎÎñµ¥£¬²»ÔÊĞí»ØÍËÈ·¶¨£¡');
+                            'mesäº§ç”Ÿçš„ç”Ÿäº§ä»»åŠ¡å•ï¼Œä¸å…è®¸å›é€€ç¡®å®šï¼');
   end if;
 
 end mpcs_pr_cmd_doc_tri;
@@ -4171,15 +4171,15 @@ begin
       :NEW.Finishflag <> :OLD.Finishflag or
       :NEW.Companyid <> :OLD.Companyid) then
     raise_application_error(-20001,
-                            'MES²úÉúµÄÈë¿âµ¥£¬²»ÔÊĞíĞŞ¸Ä×Üµ¥ĞÅÏ¢£¡');
+                            'MESäº§ç”Ÿçš„å…¥åº“å•ï¼Œä¸å…è®¸ä¿®æ”¹æ€»å•ä¿¡æ¯ï¼');
   end if;
 
-  /*×ŞÑîÌá³öÄÜ·ñÔÚ¡°Éú²úÈÎÎñµ¥¹ÜÀí¡±ÖĞ£¬Ôö¼Ó¡°Ç¿ÖÆ·ÖÅú´ÎÈë¿â¡±µÄ¹¦ÄÜ£¬ÔÚÅÚÖÆÍê³ÉÊ±£¬ÓÉÅÚÖÆ×é³¤¸ù¾İÅÚÖÆ½á¹û²Ù×÷Ò»ÏÂ£¬
-  ÅäºÏ°ü×°´óĞ¡8888Ê¹ÓÃ£¬ÕâÊ±²Ö¹ÜÔ±¡°Èë¿â²Ù×÷¡±Ôò±ØĞë¡°°´²¿·ÖÍê³É¡±·ÖÅúÈë¿â¡£
-  Èç£ºÅÚÖÆÒ»Åúµ±¹é£¬Íê³ÉÊ±·Ö³ÉÁË¡°´óÆ¬¡±ºÍ¡°Ğ¡Æ¬¡±£¬ÅÚÖÆ×é³¤ÔÚ¡°Éú²úÈÎÎñµ¥¹ÜÀí¡±ÖĞ°´¡°Ç¿ÖÆ·ÖÅú¡±×ö±êÊ¶£¬
-  ²Ö¹ÜÔ±¾Í¿ÉÒÔÖªµÀÕâÅúµ±¹éÓĞ´óĞ¡Ö®·Ö£¬Ğë·ÖÅúÈë¿â¡£*/
+  /*é‚¹æ¨æå‡ºèƒ½å¦åœ¨â€œç”Ÿäº§ä»»åŠ¡å•ç®¡ç†â€ä¸­ï¼Œå¢åŠ â€œå¼ºåˆ¶åˆ†æ‰¹æ¬¡å…¥åº“â€çš„åŠŸèƒ½ï¼Œåœ¨ç‚®åˆ¶å®Œæˆæ—¶ï¼Œç”±ç‚®åˆ¶ç»„é•¿æ ¹æ®ç‚®åˆ¶ç»“æœæ“ä½œä¸€ä¸‹ï¼Œ
+  é…åˆåŒ…è£…å¤§å°8888ä½¿ç”¨ï¼Œè¿™æ—¶ä»“ç®¡å‘˜â€œå…¥åº“æ“ä½œâ€åˆ™å¿…é¡»â€œæŒ‰éƒ¨åˆ†å®Œæˆâ€åˆ†æ‰¹å…¥åº“ã€‚
+  å¦‚ï¼šç‚®åˆ¶ä¸€æ‰¹å½“å½’ï¼Œå®Œæˆæ—¶åˆ†æˆäº†â€œå¤§ç‰‡â€å’Œâ€œå°ç‰‡â€ï¼Œç‚®åˆ¶ç»„é•¿åœ¨â€œç”Ÿäº§ä»»åŠ¡å•ç®¡ç†â€ä¸­æŒ‰â€œå¼ºåˆ¶åˆ†æ‰¹â€åšæ ‡è¯†ï¼Œ
+  ä»“ç®¡å‘˜å°±å¯ä»¥çŸ¥é“è¿™æ‰¹å½“å½’æœ‰å¤§å°ä¹‹åˆ†ï¼Œé¡»åˆ†æ‰¹å…¥åº“ã€‚*/
   if updating('Usestatus') then
-    --71112µãÈ·¶¨£¬ÊÇÈ«²¿Íê¹¤´¥·¢
+    --71112ç‚¹ç¡®å®šï¼Œæ˜¯å…¨éƒ¨å®Œå·¥è§¦å‘
     if :OLD.finishflag = 2 and :NEW.Usestatus = 1 then
       select count(1)
         into ctn1
@@ -4198,7 +4198,7 @@ begin
     end if;
   
     if ctn = 0 and ctn1 > 0 then
-      raise_application_error(-20001, 'ĞèÒª·ÖÅúÈë¿â£¬²»ÄÜÖ±½ÓÈ«²¿Íê¹¤£¡');
+      raise_application_error(-20001, 'éœ€è¦åˆ†æ‰¹å…¥åº“ï¼Œä¸èƒ½ç›´æ¥å…¨éƒ¨å®Œå·¥ï¼');
     end if;
     --20241204
     if :NEW.Usestatus = 1 then
@@ -4209,11 +4209,11 @@ begin
          and c.pstorageid is not null
          and :OLD.tostorageid <> c.pstorageid
          and b.pdinid = :OLD.pdinid;
-      --mesµÄÉú²úÈÎÎñµ¥£¬²»ÔÊĞíÖ±½ÓÔÚERPÉú³É
+      --mesçš„ç”Ÿäº§ä»»åŠ¡å•ï¼Œä¸å…è®¸ç›´æ¥åœ¨ERPç”Ÿæˆ
     
       if ctn2 > 0 then
         raise_application_error(-20001,
-                                'Éú²úÈÎÎñµ¥µÄ±£¹ÜÕËºÍ³ÉÆ·Èë¿âÑ¡ÔñµÄ±£¹ÜÕË²»Ò»ÖÂ£¡');
+                                'ç”Ÿäº§ä»»åŠ¡å•çš„ä¿ç®¡è´¦å’Œæˆå“å…¥åº“é€‰æ‹©çš„ä¿ç®¡è´¦ä¸ä¸€è‡´ï¼');
       end if;
     end if;
     if :NEW.Usestatus = 1 and nvl(:NEW.comefrom, 0) = 0 then
@@ -4227,7 +4227,7 @@ begin
     
       if ctn3 > 0 then
         raise_application_error(-20001,
-                                'mesµÄÉú²úÈÎÎñµ¥£¬²»ÔÊĞíÖ±½ÓÔÚERPÉú³É£¡');
+                                'mesçš„ç”Ÿäº§ä»»åŠ¡å•ï¼Œä¸å…è®¸ç›´æ¥åœ¨ERPç”Ÿæˆï¼');
       end if;
     end if;
   end if;
@@ -4250,12 +4250,12 @@ begin
      and a.moid = b.moid
      and nvl(b.usestatus, 1) = 1
      and a.goodsqty > 0;
-  ---ÓÃÓÚ·ÀÖ¹ÎŞÁìÁÏµ¥£¬¿ÉÒÔ×ö²ú³ÉÆ·Èë¿â¡£
+  ---ç”¨äºé˜²æ­¢æ— é¢†æ–™å•ï¼Œå¯ä»¥åšäº§æˆå“å…¥åº“ã€‚
   if v_count = 0 then
-    raise_application_error(-20001, 'ÁìÁÏµ¥±»É¾³ı,ÇëÏÈÁìÁÏÔÙ×öÈë¿â£¡');
+    raise_application_error(-20001, 'é¢†æ–™å•è¢«åˆ é™¤,è¯·å…ˆé¢†æ–™å†åšå…¥åº“ï¼');
   end if;
 
-  --20250611 Ôö¼Ó¼ì²é£¬ÈôÈÎÎñµ¥µÄ»õÆ·Ã÷Ï¸ID²»Îª¿Õ£¬Ôò²ú³ÉÆ·Èë¿âµ¥µÄ»õÆ·Ã÷Ï¸IDÒªÓëÈÎÎñµ¥Ò»ÖÂ
+  --20250611 å¢åŠ æ£€æŸ¥ï¼Œè‹¥ä»»åŠ¡å•çš„è´§å“æ˜ç»†IDä¸ä¸ºç©ºï¼Œåˆ™äº§æˆå“å…¥åº“å•çš„è´§å“æ˜ç»†IDè¦ä¸ä»»åŠ¡å•ä¸€è‡´
   /*select count(1)
     into v_ctn
     from mpcs_pr_cmd_doc a
@@ -4265,9 +4265,9 @@ begin
      and a.pgoodsdtlid is not null;
   
   if v_ctn = 1 then
-    raise_application_error(-20001, 'Èë¿âµ¥ÓëÈÎÎñµ¥µÄ°ü×°²»Ò»ÖÂ£¡');
+    raise_application_error(-20001, 'å…¥åº“å•ä¸ä»»åŠ¡å•çš„åŒ…è£…ä¸ä¸€è‡´ï¼');
   end if;*/
-  --20250613 Ôö¼Ó¼ì²é£¬ÈôÈÎÎñµ¥µÄ»õÆ·Ã÷Ï¸µÄ°ü×°Ãû³Æ=¼ş8 ´ú¼å£¬Ôò²ú³ÉÆ·Èë¿âµ¥µÄ»õÆ·Ã÷Ï¸IDÒªÓëÈÎÎñµ¥Ò»ÖÂ
+  --20250613 å¢åŠ æ£€æŸ¥ï¼Œè‹¥ä»»åŠ¡å•çš„è´§å“æ˜ç»†çš„åŒ…è£…åç§°=ä»¶8 ä»£ç…ï¼Œåˆ™äº§æˆå“å…¥åº“å•çš„è´§å“æ˜ç»†IDè¦ä¸ä»»åŠ¡å•ä¸€è‡´
   select count(1)
     into v_ctn
     from mpcs_pr_cmd_doc a
@@ -4277,11 +4277,11 @@ begin
      and exists (select 1
             from pub_goods_detail b
            where a.pgoodsid = b.goodsid
-             and b.packname = '¼ş8')
+             and b.packname = 'ä»¶8')
      and a.pgoodsdtlid is not null;
 
   if v_ctn = 1 then
-    raise_application_error(-20001, 'Èë¿âµ¥ÓëÈÎÎñµ¥µÄ°ü×°²»Ò»ÖÂ£¡');
+    raise_application_error(-20001, 'å…¥åº“å•ä¸ä»»åŠ¡å•çš„åŒ…è£…ä¸ä¸€è‡´ï¼');
   end if;
 
 end;
@@ -4292,7 +4292,7 @@ ALTER TRIGGER ""LYERP"".""MPCS_PR_IN_DTL_TRI"" ENABLE"
   before insert on ngpcs_pr_alter_dtl
   for each row
 declare
-  v_alterlevel        number(1); --ÅĞ¶ÏÊÇ·ñÊÇÍ¬Ò»´æ»õÕÊ
+  v_alterlevel        number(1); --åˆ¤æ–­æ˜¯å¦æ˜¯åŒä¸€å­˜è´§å¸
   v_ctn          number(1);
   v_placepointid number(10);
   v_entryid      number(10);
@@ -4308,10 +4308,10 @@ begin
   exception
     when no_data_found then
       raise_application_error(-20001,
-                              'µ÷¼Ûµ¥ID' || :NEW.pralterid ||
-                              '·ÇÁÙÊ±×´Ì¬£¬»òÕß²»´æÔÚ');
+                              'è°ƒä»·å•ID' || :NEW.pralterid ||
+                              'éä¸´æ—¶çŠ¶æ€ï¼Œæˆ–è€…ä¸å­˜åœ¨');
   end;
-  if v_alterlevel = 3 then --ÃÅµêµ÷¼ÛµÄ²Å¼ì²é 65000µ¼Èë¼ì²é
+  if v_alterlevel = 3 then --é—¨åº—è°ƒä»·çš„æ‰æ£€æŸ¥ 65000å¯¼å…¥æ£€æŸ¥
     select count(1)
       into v_ctn
       from pub_goods a
@@ -4319,8 +4319,8 @@ begin
        and a.goodsunit = :NEW.priceunit;
     if v_ctn = 0 then
       raise_application_error(-20001,
-                              '»õÆ·ID' || :NEW.goodsid ||
-                              'µÄ»ù±¾µ¥Î»Î¬»¤´íÎó£¬»òÕß»õÆ·ID²»´æÔÚ£¡');
+                              'è´§å“ID' || :NEW.goodsid ||
+                              'çš„åŸºæœ¬å•ä½ç»´æŠ¤é”™è¯¯ï¼Œæˆ–è€…è´§å“IDä¸å­˜åœ¨ï¼');
     end if;
     begin
       select a.placepointid, b.entryid
@@ -4330,7 +4330,7 @@ begin
          and a.placepointid = b.placepointid;
     exception
       when no_data_found then
-        raise_application_error(-20001, '×Üµ¥µÄÃÅµêÎ¬»¤´íÎó');
+        raise_application_error(-20001, 'æ€»å•çš„é—¨åº—ç»´æŠ¤é”™è¯¯');
       
     end;
   
@@ -4351,7 +4351,7 @@ begin
            usestatus = 1);
     if v_ctn1 = 0 then
       raise_application_error(-20001,
-                              '»õÆ·ID' || :NEW.goodsid || 'Î´Ê×Óª»òÆäËüÔ­Òò£¬²»¿É¶¨¼Û');
+                              'è´§å“ID' || :NEW.goodsid || 'æœªé¦–è¥æˆ–å…¶å®ƒåŸå› ï¼Œä¸å¯å®šä»·');
     end if;
   end if;
 end ngpcs_pr_alter_dtl_tri;
@@ -4438,10 +4438,10 @@ ALTER TRIGGER ""LYERP"".""PUB_CUSTOMER_IMP_TMP_TRI"" ENABLE"
   Before Update On PUB_SETTLE_ACCOUNT
   For Each Row
 Begin
-  --»ØÍË½áÕË ÉèÖÃ²åÈë±êÖ¾Îª0
+  --å›é€€ç»“è´¦ è®¾ç½®æ’å…¥æ ‡å¿—ä¸º0
   If :New.usestatus = 1 And :Old.usestatus = 3 Then
     :New.INSFLAG := 0;
-    --Ô­À´Õâ¸ö×Ö¶ÎÊÇ´æ²åÈë½ğµûµÄÊ±¼ä£¬ÏÖÔÚ¸Ä³É»ØÍË½áÕËµÄÊ±¼ä£¬ÓÃÓÚ²åÈë½ğµûÊ±ÅĞ¶Ï add by ybh 2022Äê7ÔÂ22ÈÕ 
+    --åŸæ¥è¿™ä¸ªå­—æ®µæ˜¯å­˜æ’å…¥é‡‘è¶çš„æ—¶é—´ï¼Œç°åœ¨æ”¹æˆå›é€€ç»“è´¦çš„æ—¶é—´ï¼Œç”¨äºæ’å…¥é‡‘è¶æ—¶åˆ¤æ–­ add by ybh 2022å¹´7æœˆ22æ—¥ 
     :new.Insdate := Sysdate;
   End If;
 End PUB_SETTLE_ACCOUNT_tri;
@@ -4477,11 +4477,11 @@ select count(1)
    and b.sudocdtlid = :NEW.acceptdtlid;
 if v_count = 1  then
   if :NEW.bunkermanid is null  then
-    raise_application_error(-20001, '×°¶·ÈË²»ÔÊĞíÎª¿Õ£¡');
+    raise_application_error(-20001, 'è£…æ–—äººä¸å…è®¸ä¸ºç©ºï¼');
   end if;
 
   if  nvl(:NEW.checkmanid,-1)=:NEW.bunkermanid  then
-    raise_application_error(-20001, '×°¶·ÈËºÍ¸´ºËÈË²»ÄÜÍ¬Ò»¸öÈË£¡');
+    raise_application_error(-20001, 'è£…æ–—äººå’Œå¤æ ¸äººä¸èƒ½åŒä¸€ä¸ªäººï¼');
   end if;
 
 end if;
@@ -6339,13 +6339,13 @@ BEGIN
       PRODLICENSENO,
       LOTID,
       PRINTMONTHFLAG,
-      lotnofactname,--ÅúºÅÉú²ú³§¼Ò add by wanghuaiyu 2013Äê7ÔÂ25ÈÕ 18:23:00
-      tolotnofactname,--µ÷ÕûºóµÄÅúºÅÉú²ú³§¼Ò add by wanghuaiyu 2013Äê7ÔÂ25ÈÕ 18:23:00
+      lotnofactname,--æ‰¹å·ç”Ÿäº§å‚å®¶ add by wanghuaiyu 2013å¹´7æœˆ25æ—¥ 18:23:00
+      tolotnofactname,--è°ƒæ•´åçš„æ‰¹å·ç”Ÿäº§å‚å®¶ add by wanghuaiyu 2013å¹´7æœˆ25æ—¥ 18:23:00
       DEL_DATE,
-      killlotno,--add by xyue 2019-12-05 Ôö¼ÓÃğ¾úÅúºÅµÄĞŞ¸Ä
-      tokilllotno,--add by xyue 2019-12-05 Ôö¼ÓÃğ¾úÅúºÅµÄĞŞ¸Ä
-      mah,--add by xyue 2019-12-05 Ôö¼ÓÉÏÊĞĞí¿É³ÖÓĞÈËµÄĞŞ¸Ä
-      tomah,--add by xyue 2019-12-05 Ôö¼ÓÉÏÊĞĞí¿É³ÖÓĞÈËµÄĞŞ¸Ä
+      killlotno,--add by xyue 2019-12-05 å¢åŠ ç­èŒæ‰¹å·çš„ä¿®æ”¹
+      tokilllotno,--add by xyue 2019-12-05 å¢åŠ ç­èŒæ‰¹å·çš„ä¿®æ”¹
+      mah,--add by xyue 2019-12-05 å¢åŠ ä¸Šå¸‚è®¸å¯æŒæœ‰äººçš„ä¿®æ”¹
+      tomah,--add by xyue 2019-12-05 å¢åŠ ä¸Šå¸‚è®¸å¯æŒæœ‰äººçš„ä¿®æ”¹
       validdate2,
       tovaliddate2,
       PRINTEXPIREFLAG,
@@ -6370,10 +6370,10 @@ BEGIN
       :OLD.lotnofactname,
       :OLD.tolotnofactname,
       SYSDATE,
-      :OLD.killlotno,--add by xyue 2019-12-05 Ôö¼ÓÃğ¾úÅúºÅµÄĞŞ¸Ä
-      :OLD.tokilllotno,--add by xyue 2019-12-05 Ôö¼ÓÃğ¾úÅúºÅµÄĞŞ¸Ä
-      :OLD.mah,--add by xyue 2019-12-05 Ôö¼ÓÉÏÊĞĞí¿É³ÖÓĞÈËµÄĞŞ¸Ä
-      :OLD.tomah,--add by xyue 2019-12-05 Ôö¼ÓÉÏÊĞĞí¿É³ÖÓĞÈËµÄĞŞ¸Ä
+      :OLD.killlotno,--add by xyue 2019-12-05 å¢åŠ ç­èŒæ‰¹å·çš„ä¿®æ”¹
+      :OLD.tokilllotno,--add by xyue 2019-12-05 å¢åŠ ç­èŒæ‰¹å·çš„ä¿®æ”¹
+      :OLD.mah,--add by xyue 2019-12-05 å¢åŠ ä¸Šå¸‚è®¸å¯æŒæœ‰äººçš„ä¿®æ”¹
+      :OLD.tomah,--add by xyue 2019-12-05 å¢åŠ ä¸Šå¸‚è®¸å¯æŒæœ‰äººçš„ä¿®æ”¹
       :old.validdate2,
       :old.tovaliddate2,
       :old.Printexpireflag,
@@ -6510,19 +6510,19 @@ ALTER TRIGGER ""LYERP"".""TRG_ZX_SALES_INVNO_HIS"" ENABLE"
   CREATE OR REPLACE TRIGGER ""LYERP"".""TRG_ZX_SENDTMS"" 
   before update of tmsstatus on bms_sa_doc
   for each row
---erpÏúÊÛ·¢»õµ¥ÏÂ´«tmsÉú³ÉÔËÊäÈÎÎñµ¥´¥·¢Æ÷ add by xyue 2018-09-19
+--erpé”€å”®å‘è´§å•ä¸‹ä¼ tmsç”Ÿæˆè¿è¾“ä»»åŠ¡å•è§¦å‘å™¨ add by xyue 2018-09-19
 declare
   v_trid    number;
   v_tmstrid number;
-  pragma autonomous_transaction; --×ÔÖÎÊÂÎñ
+  pragma autonomous_transaction; --è‡ªæ²»äº‹åŠ¡
 begin
-  --Ä¿Ç°Ö»Ö§³ÖÑàÀ´¸£µÄ¶©µ¥ÇÒÖ»ÏÂ´«µ½ÏÃÃÅÎïÁ÷ÖĞĞÄ
+  --ç›®å‰åªæ”¯æŒç‡•æ¥ç¦çš„è®¢å•ä¸”åªä¸‹ä¼ åˆ°å¦é—¨ç‰©æµä¸­å¿ƒ
   if nvl(:old.tmsstatus, 0) <> nvl(:new.tmsstatus, 0) and
      :old.entryid in (64) and :new.tmsstatus = 1 then
-    /*ÏÂ´«TMS*/
+    /*ä¸‹ä¼ TMS*/
     select tms_tr_doc_seq.nextval@lywms into v_trid from dual;
   
-    -- ²åÈëÔËÊäÈÎÎñµ¥×Üµ¥
+    -- æ’å…¥è¿è¾“ä»»åŠ¡å•æ€»å•
     insert into tms_luyan_tr_doc@lywms
       (trid,
        warehid,
@@ -6535,12 +6535,12 @@ begin
        SCATTERPACKS,
        WHOLEPACKS,
        TOTALPACKS,
-       comefrom, --ÊÖ¹¤Â¼Èë
-       sourceid, --Ëæ»õÍ¬ĞĞºÅ
+       comefrom, --æ‰‹å·¥å½•å…¥
+       sourceid, --éšè´§åŒè¡Œå·
        memo,
-       INPUTMANID, --Â¼ÈëÈËÏµÍ³¹ÜÀíÔ±
-       CHAINFLAG, --ÀäÁ´±êÖ¾
-       TGFLAG, --ÌØ¹Ü±êÖ¾
+       INPUTMANID, --å½•å…¥äººç³»ç»Ÿç®¡ç†å‘˜
+       CHAINFLAG, --å†·é“¾æ ‡å¿—
+       TGFLAG, --ç‰¹ç®¡æ ‡å¿—
        province,
        city,
        district,
@@ -6557,19 +6557,19 @@ begin
              1,
              a.entryid,
              a.credate,
-             0, --ÈÎÎñÀàĞÍ£¬0ÊÇËÍ»õ
-             0, --¼Ó¼±±êÖ¾
+             0, --ä»»åŠ¡ç±»å‹ï¼Œ0æ˜¯é€è´§
+             0, --åŠ æ€¥æ ‡å¿—
              d.entryname,
              e.translinename,
              a.totalpacks,
              0 WHOLEPACKS,
              a.totalpacks,
-             2, --ÊÖ¹¤Â¼Èë
-             a.salesid, --Ëæ»õÍ¬ĞĞºÅ
+             2, --æ‰‹å·¥å½•å…¥
+             a.salesid, --éšè´§åŒè¡Œå·
              a.memo,
-             0, --Â¼ÈëÈËÏµÍ³¹ÜÀíÔ±
-             0, --ÀäÁ´±êÖ¾
-             0, --ÌØ¹Ü±êÖ¾
+             0, --å½•å…¥äººç³»ç»Ÿç®¡ç†å‘˜
+             0, --å†·é“¾æ ‡å¿—
+             0, --ç‰¹ç®¡æ ‡å¿—
              c.province,
              c.city,
              c.district,
@@ -6591,12 +6591,12 @@ begin
          and a.salerid = b.employeeid
          and a.entryid = d.entryid(+)
          and c.translineid = e.translineid(+)
-         and a.entryid = 64 --ÏÃÃÅÑàÀ´¸£µ¥¾İ
-         and a.usestatus = 1 --ÕıÊ½×´Ì¬
-         and a.satypeid = 1 --ÏúÊÛÀàĞÍ
+         and a.entryid = 64 --å¦é—¨ç‡•æ¥ç¦å•æ®
+         and a.usestatus = 1 --æ­£å¼çŠ¶æ€
+         and a.satypeid = 1 --é”€å”®ç±»å‹
          and a.salesid = :old.salesid;
   
-    -- ²åÈëÔËÊäÈÎÎñµ¥Ï¸µ¥
+    -- æ’å…¥è¿è¾“ä»»åŠ¡å•ç»†å•
     insert into tms_luyan_tr_dtl@lywms
       (trid,
        trdtlid,
@@ -6627,22 +6627,22 @@ begin
         from zx_tms_luyan_tr_dtl_v tt
        where tt.salesid = :old.salesid;
   
-    --»ØÌîÔËÊäÈÎÎñµ¥µ½ÏúÊÛ·¢»õ×Üµ¥ÉÏ£¬ÓÃÓÚ»ØÍËÊ±ºòÊ¹ÓÃ
+    --å›å¡«è¿è¾“ä»»åŠ¡å•åˆ°é”€å”®å‘è´§æ€»å•ä¸Šï¼Œç”¨äºå›é€€æ—¶å€™ä½¿ç”¨
     select v_trid into :new.tmstrid from dual;
     commit;
   end if;
 
   if nvl(:old.tmsstatus, 0) = 1 and :old.entryid in (64) and
      nvl(:new.tmsstatus, 0) = 0 then
-    /*È¡ÏûTMS*/
+    /*å–æ¶ˆTMS*/
     select a.tmstrid
       into v_tmstrid
       from bms_sa_doc a
      where a.salesid = :old.salesid;
-    --É¾³ıÔËÊäÈÎÎñµ¥£¬ÊÇ·ñÊÇ´ıÅÉ³µ×´Ì¬ÒÑ¾­ÔÚ°´Å¥ÉÏ¿ØÖÆ
+    --åˆ é™¤è¿è¾“ä»»åŠ¡å•ï¼Œæ˜¯å¦æ˜¯å¾…æ´¾è½¦çŠ¶æ€å·²ç»åœ¨æŒ‰é’®ä¸Šæ§åˆ¶
     delete tms_luyan_tr_dtl@lywms a where a.trid = v_tmstrid;
     delete tms_luyan_tr_doc@lywms a where a.trid = v_tmstrid;
-    --Í¬Ê±Çå¿Õ¶©µ¥ÉÏµÄÔËÊäÈÎÎñµ¥ID
+    --åŒæ—¶æ¸…ç©ºè®¢å•ä¸Šçš„è¿è¾“ä»»åŠ¡å•ID
     select null into :new.tmstrid from dual;
     commit;
   end if;
@@ -6675,7 +6675,7 @@ ALTER TRIGGER ""LYERP"".""TRG_ZZ_WX_SEND_REWARD_HIS"" ENABLE"
      
 begin
   if :new.usestatus=1 and :old.usestatus=2 then
-     --EMF Õı³£×´Ì¬µÄÊÕ»ñÃ÷Ï¸Éú³ÉRFÉÏ¼ÜÈÎÎñ±í
+     --EMF æ­£å¸¸çŠ¶æ€çš„æ”¶è·æ˜ç»†ç”ŸæˆRFä¸Šæ¶ä»»åŠ¡è¡¨
     insert into emf_rflist_carryin(rggoodsdtlid,rfmanid,flag)
     select a.rgdtlid,min(b.rfmanid),0
     from bms_st_rg_dtl a,emf_rf_man b,bms_storer_pos c
@@ -6683,7 +6683,7 @@ begin
      and a.rgid=:new.rgid
     group by a.rgdtlid;
   elsif :new.usestatus=2 and :old.usestatus=1 then
-    --EMF ÊÕ»õµ¥È·¶¨ºóÉ¾³ıÈÎÎñ±í
+    --EMF æ”¶è´§å•ç¡®å®šååˆ é™¤ä»»åŠ¡è¡¨
     delete from emf_rflist_carryin a where a.rggoodsdtlid in
     (select b.rgdtlid from bms_st_rg_dtl b where b.rgid=:new.rgid);
   end if;
@@ -6698,7 +6698,7 @@ ON BMS_ST_IO_DTL_TMP
 REFERENCING OLD AS OLD NEW AS NEW
 FOR EACH ROW 
   begin
-  --EMFÉ¾³ıRF¼ğ»õÈÎÎñ±í
+  --EMFåˆ é™¤RFæ‹£è´§ä»»åŠ¡è¡¨
   delete from emf_rflist_pickup where stiodtlid=:old.iodtlid;
 end tri_bfdel_bms_st_io_dtl_tmp;
 
@@ -6739,11 +6739,11 @@ ALTER TRIGGER ""LYERP"".""TRI_BMS_TR_POS_DEF"" ENABLE"
 Declare
   v_opname Varchar2(100);
 Begin
-  --Í¬²½²åÈë¹¤×÷ÈÕÖ¾
-  If :new.gxrid = 1503 And :New.Type Not  In ('ÏµÍ³¸üĞÂ')  Then
+  --åŒæ­¥æ’å…¥å·¥ä½œæ—¥å¿—
+  If :new.gxrid = 1503 And :New.Type Not  In ('ç³»ç»Ÿæ›´æ–°')  Then
     If :new.opid Is Not Null Then
       If :New.Systype = 'erp' Then
-        If :New.Type In ('×¨Ïî¹¦ÄÜ', 'ÏµÍ³¸üĞÂ', 'Êı¾İ¿â') Then
+        If :New.Type In ('ä¸“é¡¹åŠŸèƒ½', 'ç³»ç»Ÿæ›´æ–°', 'æ•°æ®åº“') Then
           Select a.opname
             Into v_opname
             From Np_Op a
@@ -6760,7 +6760,7 @@ Begin
       End If;
     
       If :New.Systype = 'wms' Then
-        If :New.Type In ('×¨Ïî¹¦ÄÜ', 'ÏµÍ³¸üĞÂ', 'Êı¾İ¿â') Then
+        If :New.Type In ('ä¸“é¡¹åŠŸèƒ½', 'ç³»ç»Ÿæ›´æ–°', 'æ•°æ®åº“') Then
           Select a.opname
             Into v_opname
             From Lywms.Np_Op a
@@ -6797,9 +6797,9 @@ ALTER TRIGGER ""LYERP"".""TRI_ERPUPDATERECORD"" ENABLE"
   for each row
 DECLARE
   v_count number;
-  pragma autonomous_transaction; --×ÔÖÎÊÂÎï
+  pragma autonomous_transaction; --è‡ªæ²»äº‹ç‰©
 begin
-  --Ö»ÓĞºóÃæĞÂÔöµÄµ¥×Ó²Å»á¼ì²âentryid lotidÖØ¸´ÎÊÌâ
+  --åªæœ‰åé¢æ–°å¢çš„å•å­æ‰ä¼šæ£€æµ‹entryid lotidé‡å¤é—®é¢˜
  if nvl(:new.fcheckid,:old.fcheckid)>329990 then
 
   select count(1)
@@ -6807,10 +6807,10 @@ begin
     from GSP_GOODS_FACTORY_CHECK t
    where nvl(t.entryid, -1) = nvl(:new.entryid, -1)
      and nvl(t.lotid, -1) = nvl(:new.lotid,-1)
-     and rowid<>:new.rowid  --ÅÅ³ı×ÔÉí
+     and rowid<>:new.rowid  --æ’é™¤è‡ªèº«
      ;
   if v_count > 0 then
-    RAISE_APPLICATION_ERROR(-20001, '¶ÀÁ¢µ¥Ôªid ÅúºÅid²»ÄÜÖØ¸´');
+    RAISE_APPLICATION_ERROR(-20001, 'ç‹¬ç«‹å•å…ƒid æ‰¹å·idä¸èƒ½é‡å¤');
   end if;
 
   end if;
@@ -6824,48 +6824,48 @@ ALTER TRIGGER ""LYERP"".""TRI_GSP_GOODS_FACTORY_CHECK"" ENABLE"
   Before Insert On ybh_t_khxyed_kdsp
   For Each Row
 Declare
-  -- ½â¾ö´íÎóORA-04091
+  -- è§£å†³é”™è¯¯ORA-04091
   Pragma Autonomous_Transaction;
-  v_cqts               Number; --³¬ÆÚÌìÊı
-  v_cqje               Number; --³¬ÆÚ½ğ¶î
-  v_cxyed              Number; --³¬ĞÅÓş¶î¶È
-  v_yjxse              Number; --ÔÂ¾ùÏúÊÛ¶î
-  v_hkje               Number; --±¾ÔÂÀÛ¼Æ»Ø¿î½ğ¶î
-  v_hkje3              Number; --Ç°Èı¸öÔÂÔÂ¾ù»Ø¿î½ğ¶î
+  v_cqts               Number; --è¶…æœŸå¤©æ•°
+  v_cqje               Number; --è¶…æœŸé‡‘é¢
+  v_cxyed              Number; --è¶…ä¿¡èª‰é¢åº¦
+  v_yjxse              Number; --æœˆå‡é”€å”®é¢
+  v_hkje               Number; --æœ¬æœˆç´¯è®¡å›æ¬¾é‡‘é¢
+  v_hkje3              Number; --å‰ä¸‰ä¸ªæœˆæœˆå‡å›æ¬¾é‡‘é¢
   v_customid           Number;
   v_entryid            Number;
-  v_ZX_XYEDYJHKJE_LAST Number; --ÉÏÔÂ³¬ÆÚ¿îÔ¤¼Æ»Ø¿î½ğ¶î
-  v_ZX_XYEDYJHKRQ_LAST Date; --ÉÏÔÂ³¬ÆÚ¿îÔ¤¼Æ»Ø¿îÈÕÆÚ
-  v_ZX_XYEDSQLY_LAST   Varchar(3000); --ÉÏÔÂÉêÇëÀíÓÉ
-  v_ZX_SYSJHKZE        Number; --ÉÏÔÂÊµ¼Ê»Ø¿î×Ü¶î
-  v_ZX_BYLJKDJE        Number; --±¾ÔÂÀÛ¼Æ¿ªµ¥½ğ¶î
+  v_ZX_XYEDYJHKJE_LAST Number; --ä¸Šæœˆè¶…æœŸæ¬¾é¢„è®¡å›æ¬¾é‡‘é¢
+  v_ZX_XYEDYJHKRQ_LAST Date; --ä¸Šæœˆè¶…æœŸæ¬¾é¢„è®¡å›æ¬¾æ—¥æœŸ
+  v_ZX_XYEDSQLY_LAST   Varchar(3000); --ä¸Šæœˆç”³è¯·ç†ç”±
+  v_ZX_SYSJHKZE        Number; --ä¸Šæœˆå®é™…å›æ¬¾æ€»é¢
+  v_ZX_BYLJKDJE        Number; --æœ¬æœˆç´¯è®¡å¼€å•é‡‘é¢
 Begin
 
-  --¸üĞÂ ĞÅÓşÇé¿ö ÉóÅú½Úµã ±ÜÃâ²éÑ¯ËÙ¶ÈÂı --add by ybh 2023Äê2ÔÂ13ÈÕ 
-  --ĞÅÓşÇé¿ö
+  --æ›´æ–° ä¿¡èª‰æƒ…å†µ å®¡æ‰¹èŠ‚ç‚¹ é¿å…æŸ¥è¯¢é€Ÿåº¦æ…¢ --add by ybh 2023å¹´2æœˆ13æ—¥ 
+  --ä¿¡èª‰æƒ…å†µ
   :New.Xyqk := ybh_f_get_xyqk(:new.Salesid, Sysdate);
-  --ÉóÅú½Úµã
+  --å®¡æ‰¹èŠ‚ç‚¹
   :New.Flow_Node := ybh_f_get_flow_node_sale(:new.Salesid);
 
-  --¼ÇÂ¼³¬ÆÚÌìÊı ³¬ÆÚ½ğ¶î ³¬ĞÅÓş¶î¶È  ÓÃÓÚ±¨±íÕ¹Ê¾ ¶à¸öÈ¡×î´ó --add by ybh 2023Äê3ÔÂ28ÈÕ 
+  --è®°å½•è¶…æœŸå¤©æ•° è¶…æœŸé‡‘é¢ è¶…ä¿¡èª‰é¢åº¦  ç”¨äºæŠ¥è¡¨å±•ç¤º å¤šä¸ªå–æœ€å¤§ --add by ybh 2023å¹´3æœˆ28æ—¥ 
 
-  Select GREATEST(Ybh_f_khedkz5(a.salesid, '³¬ÆÚÌìÊı', Null),
-                  Ybh_f_khedkz5(a.salesid, '³¬ÆÚÌìÊı', 1),
-                  Ybh_f_khedkz5(a.salesid, '³¬ÆÚÌìÊı', 2),
-                  Ybh_f_khedkz5(a.salesid, '³¬ÆÚÌìÊı', 3)) cqts,
-         Greatest(Ybh_f_khedkz5(a.salesid, '³¬ÆÚ½ğ¶î', Null),
-                  Ybh_f_khedkz5(a.salesid, '³¬ÆÚ½ğ¶î', 1),
-                  Ybh_f_khedkz5(a.salesid, '³¬ÆÚ½ğ¶î', 2),
-                  Ybh_f_khedkz5(a.salesid, '³¬ÆÚ½ğ¶î', 3)) cqje,
+  Select GREATEST(Ybh_f_khedkz5(a.salesid, 'è¶…æœŸå¤©æ•°', Null),
+                  Ybh_f_khedkz5(a.salesid, 'è¶…æœŸå¤©æ•°', 1),
+                  Ybh_f_khedkz5(a.salesid, 'è¶…æœŸå¤©æ•°', 2),
+                  Ybh_f_khedkz5(a.salesid, 'è¶…æœŸå¤©æ•°', 3)) cqts,
+         Greatest(Ybh_f_khedkz5(a.salesid, 'è¶…æœŸé‡‘é¢', Null),
+                  Ybh_f_khedkz5(a.salesid, 'è¶…æœŸé‡‘é¢', 1),
+                  Ybh_f_khedkz5(a.salesid, 'è¶…æœŸé‡‘é¢', 2),
+                  Ybh_f_khedkz5(a.salesid, 'è¶…æœŸé‡‘é¢', 3)) cqje,
          
-         Greatest(Ybh_f_khedkz5(a.salesid, '³¬ĞÅÓş¶î¶È', Null),
-                  Ybh_f_khedkz5(a.salesid, '³¬ĞÅÓş¶î¶È', 1),
-                  Ybh_f_khedkz5(a.salesid, '³¬ĞÅÓş¶î¶È', 2),
-                  Ybh_f_khedkz5(a.salesid, '³¬ĞÅÓş¶î¶È', 3)) cxyed,
-         Greatest(Ybh_f_khedkz5(a.salesid, 'ÔÂ¾ùÏúÊÛ¶î', Null),
-                  Ybh_f_khedkz5(a.salesid, 'ÔÂ¾ùÏúÊÛ¶î', 1),
-                  Ybh_f_khedkz5(a.salesid, 'ÔÂ¾ùÏúÊÛ¶î', 2),
-                  Ybh_f_khedkz5(a.salesid, 'ÔÂ¾ùÏúÊÛ¶î', 3)) yjxse
+         Greatest(Ybh_f_khedkz5(a.salesid, 'è¶…ä¿¡èª‰é¢åº¦', Null),
+                  Ybh_f_khedkz5(a.salesid, 'è¶…ä¿¡èª‰é¢åº¦', 1),
+                  Ybh_f_khedkz5(a.salesid, 'è¶…ä¿¡èª‰é¢åº¦', 2),
+                  Ybh_f_khedkz5(a.salesid, 'è¶…ä¿¡èª‰é¢åº¦', 3)) cxyed,
+         Greatest(Ybh_f_khedkz5(a.salesid, 'æœˆå‡é”€å”®é¢', Null),
+                  Ybh_f_khedkz5(a.salesid, 'æœˆå‡é”€å”®é¢', 1),
+                  Ybh_f_khedkz5(a.salesid, 'æœˆå‡é”€å”®é¢', 2),
+                  Ybh_f_khedkz5(a.salesid, 'æœˆå‡é”€å”®é¢', 3)) yjxse
     Into v_cqts, v_cqje, v_cxyed, v_yjxse
     From bms_sa_doc a
    Where a.salesid = :new.Salesid;
@@ -6880,7 +6880,7 @@ Begin
     From bms_sa_doc a
    Where a.salesid = :new.Salesid;
 
-  --±¾ÔÂÀÛ¼Æ»Ø¿î½ğ¶î  --add by ybh 2023Äê3ÔÂ28ÈÕ 
+  --æœ¬æœˆç´¯è®¡å›æ¬¾é‡‘é¢  --add by ybh 2023å¹´3æœˆ28æ—¥ 
 
   /* Select Sum(b.total_line)
     Into v_hkje
@@ -6894,7 +6894,7 @@ Begin
   
   ;*/
 
-  --add by ybh 2023Äê5ÔÂ22ÈÕ ÊÕ¿îÔö¼ÓÔ¤ÊÕºËÏúµÄÊı¾İ
+  --add by ybh 2023å¹´5æœˆ22æ—¥ æ”¶æ¬¾å¢åŠ é¢„æ”¶æ ¸é”€çš„æ•°æ®
   Select Sum(a.total_line)
     Into v_hkje
     From v_cqce_sk a
@@ -6902,7 +6902,7 @@ Begin
      And a.customid = v_customid
      And a.entryid = v_entryid;
 
-  --Ç°Èı¸öÔÂÔÂ¾ù»Ø¿î½ğ¶î
+  --å‰ä¸‰ä¸ªæœˆæœˆå‡å›æ¬¾é‡‘é¢
 
   /* Select round(Sum(b.total_line) / 3, 2)
     Into v_hkje3
@@ -6925,7 +6925,7 @@ Begin
      And a.customid = v_customid
      And a.entryid = v_entryid;
 
-  --add by ybh 2023Äê6ÔÂ16ÈÕ  ÉÏÔÂÊµ¼Ê»Ø¿î×Ü¶î
+  --add by ybh 2023å¹´6æœˆ16æ—¥  ä¸Šæœˆå®é™…å›æ¬¾æ€»é¢
   Select Sum(a.total_line)
     Into v_ZX_SYSJHKZE
     From v_cqce_sk a
@@ -6936,7 +6936,7 @@ Begin
 
   :new.Zx_Sysjhkze := v_ZX_SYSJHKZE;
 
-  --add by ybh 2023Äê7ÔÂ26ÈÕ ±¾ÔÂÀÛ¼Æ¿ªµ¥½ğ¶î 
+  --add by ybh 2023å¹´7æœˆ26æ—¥ æœ¬æœˆç´¯è®¡å¼€å•é‡‘é¢ 
   Select Nvl(Sum(b.total_line), 0)
     Into v_ZX_BYLJKDJE
     From bms_sa_doc a, bms_sa_dtl b
@@ -6949,11 +6949,11 @@ Begin
      And Nvl(a.initflag, 0) = 0;
   :new.zx_byljkdje := v_ZX_BYLJKDJE;
   
-  --»ñÈ¡ÉÏÔÂÊ×´ÎÉêÇëµ¥ÉêÇëÀíÓÉ  ³¬ÆÚ¿îÔ¤¼Æ»Ø¿î½ğ¶î ³¬ÆÚ¿îÔ¤¼Æ»Ø¿îÈÕÆÚ  add by ybh 2023Äê6ÔÂ16ÈÕ 
+  --è·å–ä¸Šæœˆé¦–æ¬¡ç”³è¯·å•ç”³è¯·ç†ç”±  è¶…æœŸæ¬¾é¢„è®¡å›æ¬¾é‡‘é¢ è¶…æœŸæ¬¾é¢„è®¡å›æ¬¾æ—¥æœŸ  add by ybh 2023å¹´6æœˆ16æ—¥ 
   Begin
     Select a.zx_xyedsqly, a.ZX_XYEDYJHKJE, a.ZX_XYEDYJHKRQ
       Into v_ZX_XYEDSQLY_LAST, v_ZX_XYEDYJHKJE_LAST, v_ZX_XYEDYJHKRQ_LAST
-      From (Select 'ÉêÇëÈÕÆÚ:' || to_char(t.sqrq, 'yyyy-mm-dd') || ' ' ||
+      From (Select 'ç”³è¯·æ—¥æœŸ:' || to_char(t.sqrq, 'yyyy-mm-dd') || ' ' ||
                    t.zx_xyedsqly zx_xyedsqly,
                    t.ZX_XYEDYJHKJE,
                    t.ZX_XYEDYJHKRQ
@@ -6976,9 +6976,9 @@ Begin
   :new.Hkje  := v_hkje;
   :new.Hkje3 := v_hkje3;
 
-  --´øÁ¿ĞÅÏ¢ --add by ybh 2023Äê3ÔÂ28ÈÕ 
-  :new.Lncqts := ybh_f_get_dl_gkxx(:new.Salesid, 'Á¿ÄÚ³¬ÆÚÌìÊı');
-  :new.Lwcqts := ybh_f_get_dl_gkxx(:new.Salesid, 'Á¿Íâ³¬ÆÚÌìÊı');
+  --å¸¦é‡ä¿¡æ¯ --add by ybh 2023å¹´3æœˆ28æ—¥ 
+  :new.Lncqts := ybh_f_get_dl_gkxx(:new.Salesid, 'é‡å†…è¶…æœŸå¤©æ•°');
+  :new.Lwcqts := ybh_f_get_dl_gkxx(:new.Salesid, 'é‡å¤–è¶…æœŸå¤©æ•°');
 
 End tri_ins_YBH_T_KHXYED_KDSP;
 
@@ -6992,20 +6992,20 @@ Declare
 
   v_employeeid  Number;
   v_roleid      Number;
-  v_modify_info Varchar(1000); --ĞŞ¸ÄÈËĞÅÏ¢
+  v_modify_info Varchar(1000); --ä¿®æ”¹äººä¿¡æ¯
   v_content     Varchar(4000);
 Begin
-  v_modify_info := 'ip:' || SYS_CONTEXT('USERENV', 'IP_ADDRESS') || ' Ö÷»ú:' ||
-                   sys_context('USERENV', 'HOST') || ' ÓÃ»§Ãû:' ||
+  v_modify_info := 'ip:' || SYS_CONTEXT('USERENV', 'IP_ADDRESS') || ' ä¸»æœº:' ||
+                   sys_context('USERENV', 'HOST') || ' ç”¨æˆ·å:' ||
                    sys_context('USERENV', 'OS_USER');
   v_employeeid  := nvl(:New.employeeid, :old.employeeid);
   v_roleid      := nvl(:New.roleid, :old.roleid);
   If inserting Then
-    v_content := 'ĞÂÔöÈËÔ±ÊÚÈ¨ ';
+    v_content := 'æ–°å¢äººå‘˜æˆæƒ ';
   End If;
 
   If deleting Then
-    v_content := 'É¾³ıÈËÔ±ÊÚÈ¨ ';
+    v_content := 'åˆ é™¤äººå‘˜æˆæƒ ';
   End If;
 
   Insert Into t_101204
@@ -7029,11 +7029,11 @@ Declare
   -- local variables here
   v_opid        Number;
   v_roleid      Number;
-  v_modify_info Varchar(1000); --ĞŞ¸ÄÈËĞÅÏ¢
+  v_modify_info Varchar(1000); --ä¿®æ”¹äººä¿¡æ¯
   v_content     Varchar(4000);
 Begin
-  v_modify_info := 'ip:' || SYS_CONTEXT('USERENV', 'IP_ADDRESS') || ' Ö÷»ú:' ||
-                   sys_context('USERENV', 'HOST') || ' ÓÃ»§Ãû:' ||
+  v_modify_info := 'ip:' || SYS_CONTEXT('USERENV', 'IP_ADDRESS') || ' ä¸»æœº:' ||
+                   sys_context('USERENV', 'HOST') || ' ç”¨æˆ·å:' ||
                    sys_context('USERENV', 'OS_USER');
 
   Select a.opid, a.roleid
@@ -7041,18 +7041,18 @@ Begin
     From np_role_op a
    Where a.roleopid = nvl(:Old.Roleopid, :new.Roleopid);
   If inserting Then
-    v_content := 'ĞÂÔöÊÚÈ¨ aptype:' || :new.Aptype || ' apname:' || :new.Apname ||
+    v_content := 'æ–°å¢æˆæƒ aptype:' || :new.Aptype || ' apname:' || :new.Apname ||
                  ' apvalue:' || :new.Apvalue;
   End If;
 
   If deleting Then
-    v_content := 'É¾³ıÊÚÈ¨ aptype:' || :old.Aptype || ' apname:' || :old.Apname ||
+    v_content := 'åˆ é™¤æˆæƒ aptype:' || :old.Aptype || ' apname:' || :old.Apname ||
                  ' apvalue:' || :old.Apvalue;
   End If;
   If updating Then
-    v_content := 'ĞŞ¸ÄÊÚÈ¨ aptypeÓÉ ' || :old.aptype || ' ¸Ä³É ' || :new.aptype ||
-                 ' ApnameÓÉ ' || :old.Apname || ' ¸Ä³É ' || :new.Apname ||
-                 ' apvalueÓÉ ' || :old.Apvalue || ' ¸Ä³É ' || :new.Apvalue;
+    v_content := 'ä¿®æ”¹æˆæƒ aptypeç”± ' || :old.aptype || ' æ”¹æˆ ' || :new.aptype ||
+                 ' Apnameç”± ' || :old.Apname || ' æ”¹æˆ ' || :new.Apname ||
+                 ' apvalueç”± ' || :old.Apvalue || ' æ”¹æˆ ' || :new.Apvalue;
   End If;
 
   Insert Into t_101202
@@ -7079,20 +7079,20 @@ Declare
   -- local variables here
   v_opid        Number;
   v_roleid      Number;
-  v_modify_info Varchar(1000); --ĞŞ¸ÄÈËĞÅÏ¢
+  v_modify_info Varchar(1000); --ä¿®æ”¹äººä¿¡æ¯
   v_content     Varchar(4000);
 Begin
-  v_modify_info := 'ip:' || SYS_CONTEXT('USERENV', 'IP_ADDRESS') || ' Ö÷»ú:' ||
-                   sys_context('USERENV', 'HOST') || ' ÓÃ»§Ãû:' ||
+  v_modify_info := 'ip:' || SYS_CONTEXT('USERENV', 'IP_ADDRESS') || ' ä¸»æœº:' ||
+                   sys_context('USERENV', 'HOST') || ' ç”¨æˆ·å:' ||
                    sys_context('USERENV', 'OS_USER');
   v_opid        := nvl(:New.Opid, :old.Opid);
   v_roleid      := nvl(:New.roleid, :old.roleid);
   If inserting Then
-    v_content := 'ĞÂÔö¹¦ÄÜ';
+    v_content := 'æ–°å¢åŠŸèƒ½';
   End If;
 
   If deleting Then
-    v_content := 'É¾³ı¹¦ÄÜ';
+    v_content := 'åˆ é™¤åŠŸèƒ½';
   End If;
 
   Insert Into t_101202
@@ -7129,7 +7129,7 @@ ALTER TRIGGER ""LYERP"".""TRI_PUB_EMPLOYEE_ESHOP"" ENABLE"
 before insert or update   on T_HPSKFLBM
 for each row
 begin
-  --½â¾ö¹¦ÄÜ101052£¬Ë°¿Ø·ÖÀà±àÂëÇ°ºóÌí¼Ó¿Õ¸ñ»Ø³µµ¼ÖÂÖØ¸´Êı¾İ
+  --è§£å†³åŠŸèƒ½101052ï¼Œç¨æ§åˆ†ç±»ç¼–ç å‰åæ·»åŠ ç©ºæ ¼å›è½¦å¯¼è‡´é‡å¤æ•°æ®
   :new.skflbm:=replace(replace(trim(:new.skflbm),chr(10),''),chr(13),'');
 end;
 
@@ -7149,7 +7149,7 @@ Begin
      And a.entryid In (6);*/
 
   If :new.usestatus = 1 /*And v_count > 0*/ Then
-    --modify by ybh 2022Äê7ÔÂ11ÈÕ 9:16:30  Ôö¼Ó¹ØÁª ½×Ìİ ÀàĞÍ
+    --modify by ybh 2022å¹´7æœˆ11æ—¥ 9:16:30  å¢åŠ å…³è” é˜¶æ¢¯ ç±»å‹
     Insert Into zz_wx_send_reward
       (rsadtlid)
       Select b.rsadtlid
@@ -7186,7 +7186,7 @@ ALTER TRIGGER ""LYERP"".""TRI_YBH_T_TEST"" DISABLE"
   for each row
 DECLARE
   v_count number;
-  pragma autonomous_transaction; --×ÔÖÎÊÂÎï
+  pragma autonomous_transaction; --è‡ªæ²»äº‹ç‰©
 begin
  --RAISE_APPLICATION_ERROR(-20001, nvl(:new.c4,-1));
  /* select count(1)
@@ -7278,10 +7278,10 @@ FOR EACH ROW
 --WHEN (nvl(new.posid,-1) = -1)
 BEGIN
   /*IF NVL(:new.posid,-1) = -1 THEN
-    RAISE_APPLICATION_ERROR(-20001, '»õÎ»²»ÄÜÎª¿Õ');
+    RAISE_APPLICATION_ERROR(-20001, 'è´§ä½ä¸èƒ½ä¸ºç©º');
   END IF;*/
    IF NVL(:new.goodsdtlid,-1) = -1 THEN
-     RAISE_APPLICATION_ERROR(-20002, '»õÆ·Ã÷Ï¸²»ÄÜÎª¿Õ£¬Çëµã»÷»õÆ·²Ù×÷ÂëHOV£¬Ñ¡Ôñ°ü×°ĞÅÏ¢');
+     RAISE_APPLICATION_ERROR(-20002, 'è´§å“æ˜ç»†ä¸èƒ½ä¸ºç©ºï¼Œè¯·ç‚¹å‡»è´§å“æ“ä½œç HOVï¼Œé€‰æ‹©åŒ…è£…ä¿¡æ¯');
     END IF;
 END;
 
@@ -7293,7 +7293,7 @@ BEFORE DELETE ON BMS_ST_RG_DTL
 FOR EACH ROW
 begin
   if nvl(:old.targetsourceid,-1) != -1 then
-  raise_application_error(-20002, 'ÒÑ¾­Éú³ÉÒµÎñµ¥¾İ,½ûÖ¹É¾³ı!');
+  raise_application_error(-20002, 'å·²ç»ç”Ÿæˆä¸šåŠ¡å•æ®,ç¦æ­¢åˆ é™¤!');
   END IF;
 END;
 
@@ -7351,7 +7351,7 @@ Begin
         Begin
         
           Select retailcenterid
-            Into p_centerid¡¡from gpcs_placepoint b
+            Into p_centeridã€€from gpcs_placepoint b
            Where b.placepointid = :new.placepointid;
           If p_centerid = 1507 Then
             Select Count(1)
@@ -7390,7 +7390,7 @@ after insert
 
   if :new.gathertype=14 then
     begin
-     select retailcenterid into p_centerid¡¡from gresa_sa_doc a,gpcs_placepoint b
+     select retailcenterid into p_centeridã€€from gresa_sa_doc a,gpcs_placepoint b
      where a.placepointid=b.placepointid and a.rsaid=:new.rsaid;
      if p_centerid=32507 then
         insert into zz_wxorder@lyerp22(rsalstid,rsaid,realmoney)
@@ -7466,9 +7466,9 @@ ALTER TRIGGER ""LYERP"".""TR_PUB_EMPLOYEE"" ENABLE"
 
   IF :NEW.usestatus = 0 THEN
 
-    RAISE_APPLICATION_ERROR(-20001, '²»ÄÜÓÉÕı³£¸ÄÎªÍ£ÓÃ');
+    RAISE_APPLICATION_ERROR(-20001, 'ä¸èƒ½ç”±æ­£å¸¸æ”¹ä¸ºåœç”¨');
   END IF;
-  --RAISE_APPLICATION_ERROR(-20001, 'Õı³£´¥·¢');
+  --RAISE_APPLICATION_ERROR(-20001, 'æ­£å¸¸è§¦å‘');
 END;
 
 
@@ -7534,13 +7534,13 @@ ALTER TRIGGER ""LYERP"".""TR_UPDATE_PRESCRIPTION"" ENABLE"
  for each row
 
  Begin
-   --¸üĞÂËÍÉóÊ±¼ä
+   --æ›´æ–°é€å®¡æ—¶é—´
    If :New.usestatus=1 And Nvl(:Old.usestatus,0)<>1 Then
 
           :new.sssj:=Sysdate;
 
    End If;
-    --¸üĞÂÉó·½Ê±¼ä
+    --æ›´æ–°å®¡æ–¹æ—¶é—´
    If :New.usestatus In (2,3) And Nvl(:Old.usestatus,0)<>Nvl(:new.usestatus,0) Then
 
           :new.sfsj:=Sysdate;
@@ -7572,7 +7572,7 @@ BEGIN
   if v_entryid in(64,550) then
      UPDATE BMS_SA_DOC SET  zx_issign=0 WHERE SALESID = :OLD.SALESID;
   else
-     UPDATE BMS_SA_DOC SET memo = replace(REPLACE(memo,'ÒÑÇ©ÊÕ£º',''),to_char(:old.receiptname),''),zx_issign=0
+     UPDATE BMS_SA_DOC SET memo = replace(REPLACE(memo,'å·²ç­¾æ”¶ï¼š',''),to_char(:old.receiptname),''),zx_issign=0
       WHERE SALESID = :OLD.SALESID;
   end if;
 END;
@@ -7590,7 +7590,7 @@ BEGIN
   if v_entryid in(64,550) then
      UPDATE BMS_SA_DOC SET  zx_issign=1 WHERE SALESID = :NEW.SALESID;
   else
-     UPDATE BMS_SA_DOC SET memo=memo||'ÒÑÇ©ÊÕ£º'||to_char(:new.receiptname),zx_issign=1
+     UPDATE BMS_SA_DOC SET memo=memo||'å·²ç­¾æ”¶ï¼š'||to_char(:new.receiptname),zx_issign=1
       WHERE SALESID = :NEW.SALESID;
   end if;
 END;
@@ -7602,9 +7602,9 @@ ALTER TRIGGER ""LYERP"".""TR_ZZ_SALE_RECEIPT_I"" ENABLE"
   Before Update Of   Bhqk  On t_101142
   For Each Row
 Declare
-  v_CZR      Varchar2(200);  --²Ù×÷ÈË
-  v_CZRENTRY Varchar(200);  --²Ù×÷ÈË¶ÀÁ¢µ¥Ôª
-  v_Bhqk       Varchar(200); --²É¹º¼Æ»®×´Ì¬
+  v_CZR      Varchar2(200);  --æ“ä½œäºº
+  v_CZRENTRY Varchar(200);  --æ“ä½œäººç‹¬ç«‹å•å…ƒ
+  v_Bhqk       Varchar(200); --é‡‡è´­è®¡åˆ’çŠ¶æ€
 Begin
    
     Select t.Employeename
@@ -7623,7 +7623,7 @@ Begin
      And t.Ddlid = :New.Bhqk;
   :New.Log := :Old.Log || Chr(10) ||
               To_Char(Sysdate, 'yyyy-mm-dd hh24:mi:ss') || ' ' ||
-              v_CZRENTRY || ' ' || v_CZR || 'µã»÷' || v_Bhqk;
+              v_CZRENTRY || ' ' || v_CZR || 'ç‚¹å‡»' || v_Bhqk;
 
 End t_101142_Tri;
 
@@ -7649,7 +7649,7 @@ ALTER TRIGGER ""LYERP"".""T_101180_SET_DEL_TRI"" ENABLE"
 Declare
   v_maxpx Number;
 Begin
-  --¸üĞÂÅÅĞò
+  --æ›´æ–°æ’åº
   Select Max(t.px) Into v_maxpx From t_101180_set t;
 
   If :new.px > v_maxpx Then
@@ -7676,7 +7676,7 @@ Declare
 Begin
 
   If :old.seqid <> :new.seqid Then
-    raise_application_error('-20002', '²»ÔÊĞí¸Äseqid,»áÓ°Ïìµ½ºÏ¼ÆĞĞÒıÓÃ');
+    raise_application_error('-20002', 'ä¸å…è®¸æ”¹seqid,ä¼šå½±å“åˆ°åˆè®¡è¡Œå¼•ç”¨');
   
   End If;
 
@@ -7686,11 +7686,11 @@ Begin
     :new.px := v_maxpx;
   End If;
 \*raise_application_error('-20002',
-                          'Ö´ĞĞ-ºó old:' || :old.px || ' new:' || :new.px ||
+                          'æ‰§è¡Œ-å old:' || :old.px || ' new:' || :new.px ||
                           ' max' || v_maxpx||'oldseqid:'||:old.seqid);*\
   If :old.px < :new.px Then
     \*raise_application_error('-20002',
-    'Ö´ĞĞ- old:' || :old.px || ' new:' || :new.px ||
+    'æ‰§è¡Œ- old:' || :old.px || ' new:' || :new.px ||
     ' max' || v_maxpx);*\
   
     Update t_101180_set t
@@ -7702,14 +7702,14 @@ Begin
   End If;
 
   \*raise_application_error('-20002',
-                          'Ö´ĞĞ-ºó old:' || :old.px || ' new:' || :new.px ||
+                          'æ‰§è¡Œ-å old:' || :old.px || ' new:' || :new.px ||
                           ' max' || v_maxpx||'oldseqid:'||:old.seqid);*\
                           
                           
 
   If :old.px > :new.px Then
     raise_application_error('-20002',
-                            'Ö´ĞĞ+old:' || :old.px || ' new:' || :new.px ||
+                            'æ‰§è¡Œ+old:' || :old.px || ' new:' || :new.px ||
                             ' max' || v_maxpx);
   
     Update t_101180_set t
@@ -7721,7 +7721,7 @@ Begin
   End If;
 
 raise_application_error('-20002',
-                          'Ö´ĞĞcommit old:' || :old.px || ' new:' || :new.px ||
+                          'æ‰§è¡Œcommit old:' || :old.px || ' new:' || :new.px ||
                           ' max' || v_maxpx||'oldseqid:'||:old.seqid);
   Commit;*/
 End;
@@ -7738,7 +7738,7 @@ Begin
   If :New.Khjhid Is Null And :new.Pckhjhid Is Null Then
   
     raise_application_error('-20002',
-                            '¿Í»§¼¯ºÏid¡¢ÅÅ³ı¿Í»§¼¯ºÏid²»ÄÜ¶¼Îª¿Õ');
+                            'å®¢æˆ·é›†åˆidã€æ’é™¤å®¢æˆ·é›†åˆidä¸èƒ½éƒ½ä¸ºç©º');
   
   End If;
 
@@ -7754,17 +7754,17 @@ Declare
   Pragma Autonomous_Transaction;
   v_count Number;
 Begin
-  --¿ØÖÆ¹¦ÄÜÒ©Æ··ÖÏúÏîÄ¿¹ÜÀí »õÆ·²»ÄÜ³öÏÖ¶à¸ö¿¼ºËµ¥¼Ûµ¼ÖÂÒ©Æ··ÖÏúÄ£¿éÏîÄ¿ÏúÊÛÇé¿ö»ã×Ü±í½ğ¶îÓĞÎó
+  --æ§åˆ¶åŠŸèƒ½è¯å“åˆ†é”€é¡¹ç›®ç®¡ç† è´§å“ä¸èƒ½å‡ºç°å¤šä¸ªè€ƒæ ¸å•ä»·å¯¼è‡´è¯å“åˆ†é”€æ¨¡å—é¡¹ç›®é”€å”®æƒ…å†µæ±‡æ€»è¡¨é‡‘é¢æœ‰è¯¯
   If (:new.Ksrq Is Not Null And :new.Jsrq Is Null) Or
      (:new.Ksrq Is Null And :new.Jsrq Is Not Null) Then
   
     raise_application_error('-20002',
-                            '¿ªÊ¼ÈÕÆÚ¡¢½áÊøÈÕÆÚÒªÃ´¶¼Ìî,ÒªÃ´¶¼²»Ìî');
+                            'å¼€å§‹æ—¥æœŸã€ç»“æŸæ—¥æœŸè¦ä¹ˆéƒ½å¡«,è¦ä¹ˆéƒ½ä¸å¡«');
   End If;
 
   If :new.Ksrq Is Not Null And :new.Jsrq Is Not Null Then
     If :new.Ksrq > :new.Jsrq Then
-      raise_application_error('-20002', '¿ªÊ¼ÈÕÆÚ²»ÄÜ´óÓÚ½áÊøÈÕÆÚ');
+      raise_application_error('-20002', 'å¼€å§‹æ—¥æœŸä¸èƒ½å¤§äºç»“æŸæ—¥æœŸ');
     
     End If;
     /*raise_application_error('-20002',
@@ -7787,7 +7787,7 @@ Begin
     ;
     If v_count > 0 Then
       raise_application_error('-20002',
-                              'Í¬Ò»¸öÏîÄ¿Í¬Ò»¸ö»õÆ·id²»ÄÜÓĞÊ±¼äÖØµş');
+                              'åŒä¸€ä¸ªé¡¹ç›®åŒä¸€ä¸ªè´§å“idä¸èƒ½æœ‰æ—¶é—´é‡å ');
     End If;
   
   End If;
@@ -7804,7 +7804,7 @@ Begin
        And a.jsrq Is Null;
     If v_count > 0 Then
       raise_application_error('-20002',
-                              'Í¬Ò»¸öÏîÄ¿Í¬Ò»¸ö»õÆ·id Ê±¼ä¶¼Îª¿ÕµÄ¼ÇÂ¼Ö»ÄÜÓĞÒ»Ìõ');
+                              'åŒä¸€ä¸ªé¡¹ç›®åŒä¸€ä¸ªè´§å“id æ—¶é—´éƒ½ä¸ºç©ºçš„è®°å½•åªèƒ½æœ‰ä¸€æ¡');
     End If;
   
   End If;
@@ -7832,7 +7832,7 @@ ALTER TRIGGER ""LYERP"".""T_101227_DEL_TRI"" ENABLE"
 Declare
   v_maxpx Number;
 Begin
-  --¸üĞÂÅÅĞò
+  --æ›´æ–°æ’åº
   Select Max(t.px) Into v_maxpx From T_101227 t;
 
   If :new.px > v_maxpx Then
@@ -7852,27 +7852,27 @@ ALTER TRIGGER ""LYERP"".""T_101227_INS_TRI"" ENABLE"
 BEFORE INSERT OR UPDATE ON T_103025
 FOR EACH ROW
 BEGIN
-    -- ¼ì²éµ± type = 4 Ê±£¬goodsid ÊÇ·ñÎª¿Õ
+    -- æ£€æŸ¥å½“ type = 4 æ—¶ï¼Œgoodsid æ˜¯å¦ä¸ºç©º
     IF :NEW.type = '4' AND :NEW.goodsid IS NULL THEN
-        RAISE_APPLICATION_ERROR(-20001, 'µ±ÀàĞÍÎª °´»õÆ· Ê±£¬»õÆ·ID²»ÄÜÎª¿Õ£¡');
+        RAISE_APPLICATION_ERROR(-20001, 'å½“ç±»å‹ä¸º æŒ‰è´§å“ æ—¶ï¼Œè´§å“IDä¸èƒ½ä¸ºç©ºï¼');
     END IF;
 
-    -- ¼ì²éµ± type = 1 Ê±£¬customid ÊÇ·ñÎª¿Õ£¬ÇÒ deptname ºÍ goodstype ±ØĞëÎª¿Õ
+    -- æ£€æŸ¥å½“ type = 1 æ—¶ï¼Œcustomid æ˜¯å¦ä¸ºç©ºï¼Œä¸” deptname å’Œ goodstype å¿…é¡»ä¸ºç©º
     IF :NEW.type = '1' AND (:NEW.customid IS NULL OR :NEW.deptname IS NOT NULL OR :NEW.goodstype IS NOT NULL) THEN
-    RAISE_APPLICATION_ERROR(-20002, 'µ±ÀàĞÍÎª °´¿Í»§ Ê±£¬¿Í»§ID²»ÄÜÎª¿Õ£¬²úÆ·Àà±ğºÍÒµÎñ²¿ÃÅ±ØĞëÎª¿Õ£¡');
+    RAISE_APPLICATION_ERROR(-20002, 'å½“ç±»å‹ä¸º æŒ‰å®¢æˆ· æ—¶ï¼Œå®¢æˆ·IDä¸èƒ½ä¸ºç©ºï¼Œäº§å“ç±»åˆ«å’Œä¸šåŠ¡éƒ¨é—¨å¿…é¡»ä¸ºç©ºï¼');
     END IF;
 
-      -- ¼ì²éµ± type = 2 Ê±£¬customid ºÍ deptname ÊÇ·ñÎª¿Õ
+      -- æ£€æŸ¥å½“ type = 2 æ—¶ï¼Œcustomid å’Œ deptname æ˜¯å¦ä¸ºç©º
     IF :NEW.type = '2' AND (:NEW.customid IS NOT NULL OR :NEW.deptname IS NOT NULL OR :NEW.goodstype IS NULL) THEN
-        RAISE_APPLICATION_ERROR(-20003, 'µ±ÀàĞÍÎª °´¿Í»§+ÒµÎñ²¿ÃÅ Ê±£¬¿Í»§ID¡¢ÒµÎñ²¿ÃÅÃû³Æ²»ÄÜÎª¿Õ, ²úÆ·Àà±ğ±ØĞëÎª¿Õ£¡');
+        RAISE_APPLICATION_ERROR(-20003, 'å½“ç±»å‹ä¸º æŒ‰å®¢æˆ·+ä¸šåŠ¡éƒ¨é—¨ æ—¶ï¼Œå®¢æˆ·IDã€ä¸šåŠ¡éƒ¨é—¨åç§°ä¸èƒ½ä¸ºç©º, äº§å“ç±»åˆ«å¿…é¡»ä¸ºç©ºï¼');
     END IF;
 
-       -- ¼ì²éµ± type = 2 Ê±£¬customid ºÍ deptname ÊÇ·ñÎª¿Õ
+       -- æ£€æŸ¥å½“ type = 2 æ—¶ï¼Œcustomid å’Œ deptname æ˜¯å¦ä¸ºç©º
     IF :NEW.type = '3' AND (:NEW.customid IS NULL OR :NEW.deptname IS NULL OR :NEW.goodstype IS NULL) THEN
-        RAISE_APPLICATION_ERROR(-20003, 'µ±ÀàĞÍÎª °´¿Í»§+ÒµÎñ²¿ÃÅ+²úÆ·Àà±ğ Ê±£¬¿Í»§ID¡¢ÒµÎñ²¿ÃÅ¡¢²úÆ·Àà±ğÃû³Æ²»ÄÜÎª¿Õ£¡');
+        RAISE_APPLICATION_ERROR(-20003, 'å½“ç±»å‹ä¸º æŒ‰å®¢æˆ·+ä¸šåŠ¡éƒ¨é—¨+äº§å“ç±»åˆ« æ—¶ï¼Œå®¢æˆ·IDã€ä¸šåŠ¡éƒ¨é—¨ã€äº§å“ç±»åˆ«åç§°ä¸èƒ½ä¸ºç©ºï¼');
     END IF;
 
-       -- µ±ĞÂÔö¼ÇÂ¼Ê±£¬»ØĞ´µ±Ç°Ê±¼äµ½ created_at ×Ö¶Î
+       -- å½“æ–°å¢è®°å½•æ—¶ï¼Œå›å†™å½“å‰æ—¶é—´åˆ° created_at å­—æ®µ
     IF INSERTING THEN
         :NEW.created_at := SYSDATE;
     END IF;
@@ -7890,7 +7890,7 @@ Declare
   l_response     Clob;
 Begin
 
-  -- ²âÊÔ±£´æÇ°µ÷½Ó¿ÚÑéÖ¤ÄÜ²»ÄÜ±£´æ³É¹¦£¬½Ó¿Ú·µ»Ø1´ú±íÄÜ±£´æ³É¹¦£¬ÆäËû´ú±í²»ÄÜ±£´æ³É¹¦
+  -- æµ‹è¯•ä¿å­˜å‰è°ƒæ¥å£éªŒè¯èƒ½ä¸èƒ½ä¿å­˜æˆåŠŸï¼Œæ¥å£è¿”å›1ä»£è¡¨èƒ½ä¿å­˜æˆåŠŸï¼Œå…¶ä»–ä»£è¡¨ä¸èƒ½ä¿å­˜æˆåŠŸ
   
   l_request_body := '{
         ""field1"": ""' || :New.Dtlmemo || '"",
@@ -7899,23 +7899,23 @@ Begin
                     TO_CHAR(SYSTIMESTAMP, 'YYYY-MM-DD""T""HH24:MI:SS.FF3""Z""') || '""
     }';
 
-  -- µ÷ÓÃ´æ´¢¹ı³Ì(POST·½·¨)
+  -- è°ƒç”¨å­˜å‚¨è¿‡ç¨‹(POSTæ–¹æ³•)
   ybh_call_http_api(p_url          => l_url,
                     p_method       => 'POST',
                     p_request_body => l_request_body,
                     p_response     => l_response);
 
-  -- Êä³öÏìÓ¦
+  -- è¾“å‡ºå“åº”
   DBMS_OUTPUT.PUT_LINE('POST Response: ' || l_response);
 
-  -- ½âÎö1±íÊ¾³É¹¦ ÆäËû±íÊ¾Ê§°Ü
+  -- è§£æ1è¡¨ç¤ºæˆåŠŸ å…¶ä»–è¡¨ç¤ºå¤±è´¥
   If l_response Like '1' Then
   
-   -- DBMS_OUTPUT.PUT_LINE('³É¹¦ ');
+   -- DBMS_OUTPUT.PUT_LINE('æˆåŠŸ ');
     Return;
   
   Else
-   -- DBMS_OUTPUT.PUT_LINE('Ê§°ÜÔ­Òò ' || l_response);
+   -- DBMS_OUTPUT.PUT_LINE('å¤±è´¥åŸå›  ' || l_response);
     RAISE_APPLICATION_ERROR(-20001, l_response);
   End If;
 
@@ -7987,7 +7987,7 @@ Declare
   -- v_oldpx Number;
 Begin
   If :old.seqid <> :new.seqid Then
-    raise_application_error('-20002', '²»ÔÊĞí¸Äseqid,»áÓ°Ïìµ½ºÏ¼ÆĞĞÒıÓÃ');
+    raise_application_error('-20002', 'ä¸å…è®¸æ”¹seqid,ä¼šå½±å“åˆ°åˆè®¡è¡Œå¼•ç”¨');
   
   End If;
   v_newpx := :new.px;
@@ -8035,12 +8035,12 @@ Declare
   v_newpx Number;
   -- v_oldpx Number;
 Begin
-  --´Ë´¥·¢Æ÷ÓÃÓÚ¸üĞÂ Ö´ĞĞupdate v_T_101227 Ê±µ÷ÓÃ
+  --æ­¤è§¦å‘å™¨ç”¨äºæ›´æ–° æ‰§è¡Œupdate v_T_101227 æ—¶è°ƒç”¨
   If :new.px <= 0 Then
-    Raise_application_error(-20000, 'ÅÅĞò²»ÄÜĞ¡ÓÚµÈÓÚ0');
+    Raise_application_error(-20000, 'æ’åºä¸èƒ½å°äºç­‰äº0');
   
   End If;
-  --¸üĞÂÅÅĞò
+  --æ›´æ–°æ’åº
   If :old.px <> :new.px And :new.px Is Not Null Then
   
     v_newpx := :new.px;
@@ -8085,7 +8085,7 @@ ALTER TRIGGER ""LYERP"".""V_T_101227_UPD_TRI"" ENABLE"
   For Each Row
 
 Begin
-  --´Ë´¥·¢Æ÷ÓÃÓÚÇ°Ì¨¹¦ÄÜ101196 °´Å¥ ²åÈë¶ÓÁĞ±íÖØĞÂÍ¬²½ Ê¹ÓÃ
+  --æ­¤è§¦å‘å™¨ç”¨äºå‰å°åŠŸèƒ½101196 æŒ‰é’® æ’å…¥é˜Ÿåˆ—è¡¨é‡æ–°åŒæ­¥ ä½¿ç”¨
   If :New.INS_QUEUE_FLAG = 1 Then
   
     Insert Into t_goods_erp_to_wms_queue
@@ -8126,9 +8126,9 @@ begin
          and b.prodcompanyid <> :OLD.companyid;
     end if;
     if (v_count > 0) then
-      raise_application_error(-20001, 'ÁìÁÏ²¿ÃÅÑ¡´íÁË£¬ÇëÈ·ÈÏ£¡');
+      raise_application_error(-20001, 'é¢†æ–™éƒ¨é—¨é€‰é”™äº†ï¼Œè¯·ç¡®è®¤ï¼');
     end if;
-    --µãÈ·¶¨µÄÊ±ºòÅĞ¶ÏÊÇ·ñ´æÔÚmes²úÉúµÄÈÎÎñµ¥£¬Ö±½ÓÔÚerpÁìÁÏµÄµ¥¾İ¡£
+    --ç‚¹ç¡®å®šçš„æ—¶å€™åˆ¤æ–­æ˜¯å¦å­˜åœ¨mesäº§ç”Ÿçš„ä»»åŠ¡å•ï¼Œç›´æ¥åœ¨erpé¢†æ–™çš„å•æ®ã€‚
     if :OLD.comefrom is null and  nvl(:NEW.falsereturn, 0) = 0 then
       select count(1)
         into v_count1
@@ -8138,7 +8138,7 @@ begin
          and b.moid = :NEW.moid;
       if (v_count1 > 0) then
         raise_application_error(-20001,
-                                'mes²úÉúµÄÈÎÎñµ¥£¬²»ÄÜÖ±½ÓÔÚERPÁìÁÏ£¡');
+                                'mesäº§ç”Ÿçš„ä»»åŠ¡å•ï¼Œä¸èƒ½ç›´æ¥åœ¨ERPé¢†æ–™ï¼');
       end if;
     end if;
   end if;
@@ -8154,7 +8154,7 @@ declare
   V_CHECKBASECONTENT varchar2(150);
   v_cmdid number(10);
 begin
-  --ÓÃÓÚ¼°Ê±±£´æ»õÆ·¶ÔÓ¦µÄ¼ìÑéÒÀ¾İ
+  --ç”¨äºåŠæ—¶ä¿å­˜è´§å“å¯¹åº”çš„æ£€éªŒä¾æ®
   if inserting then
     select b.CHECKBASECONTENT,c.cmdid
       into V_CHECKBASECONTENT,v_cmdid
@@ -8187,7 +8187,7 @@ begin
          and a.pdinid=:OLD.pdinid and b.prodcompanyid<>:OLD.companyid;
       end if;
     if (v_count > 0) then
-      raise_application_error(-20001, 'Éú²ú²¿ÃÅÑ¡´íÁË£¬ÇëÈ·ÈÏ£¡');
+      raise_application_error(-20001, 'ç”Ÿäº§éƒ¨é—¨é€‰é”™äº†ï¼Œè¯·ç¡®è®¤ï¼');
     end if;
   end if;
 
@@ -8197,8 +8197,8 @@ end ylf_podin_doc_tri;
 ALTER TRIGGER ""LYERP"".""YLF_PODIN_DOC_TRI"" ENABLE"
 "LYERP","ZX116056_TRG","ZX_116056_UDI_T","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYERP"".""ZX116056_TRG"" 
-before insert on ""ZX_116056_UDI_T""  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on ""ZX_116056_UDI_T""  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
 	select zx116056udi_seq.nextval into :new.zxid from dual;
 end;
@@ -8213,7 +8213,7 @@ for each row
 begin
   :new.modifydate:=sysdate;
   if :new.tdgoodsname like '\u%' then 
-    :new.raw_goodsname := replace(:new.tdgoodsname,'\u',''); --ÕâÌõ¸üĞÂÒ»¶¨Òª·Å×ª»»Ç°     
+    :new.raw_goodsname := replace(:new.tdgoodsname,'\u',''); --è¿™æ¡æ›´æ–°ä¸€å®šè¦æ”¾è½¬æ¢å‰     
     :new.tdgoodsname := utl_raw.cast_to_nvarchar2(replace(:new.tdgoodsname,'\u',''));
     
   end if;
@@ -8222,7 +8222,7 @@ begin
     :new.tdgoodstype := utl_raw.cast_to_nvarchar2(replace(:new.tdgoodstype,'\u',''));
     
   end if;
-  --²åÈë»õÆ·»ù´¡Êı¾İ¶ÓÁĞ
+  --æ’å…¥è´§å“åŸºç¡€æ•°æ®é˜Ÿåˆ—
   insert into pm_edi_queue
     (queueid, goodsownerid, credate, queuetype, srcid)
     select pm_edi_queue_seq.nextval as queueid,
@@ -8279,7 +8279,7 @@ ALTER TRIGGER ""LYERP"".""ZX_111037QX_ZXID_TRG"" ENABLE"
   Before Insert On zx_111037_doc
   For Each Row
 Begin
-  --modify by ybh 20240605  Ôö¼ÓÅĞ¶Ï£¬±ÜÃâ²åÈëÊ±£¬°ÑÖ¸¶¨µÄorderidÌæ»»³ÉÆäËûÖµ
+  --modify by ybh 20240605  å¢åŠ åˆ¤æ–­ï¼Œé¿å…æ’å…¥æ—¶ï¼ŒæŠŠæŒ‡å®šçš„orderidæ›¿æ¢æˆå…¶ä»–å€¼
   If :New.orderid Is Null Then
     Select zx_111037_doc_seq.nextval Into :new.orderid From dual;
   
@@ -8297,8 +8297,8 @@ end;
 ALTER TRIGGER ""LYERP"".""ZX_111037_DTL_TRG"" ENABLE"
 "LYERP","ZX_111037_ID","ZX_111037_SUINV","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYERP"".""ZX_111037_ID"" 
-before insert on zx_111037_suinv  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_111037_suinv  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
 	select zx_111037_SEQ.nextval into :new.zxid from dual;
 end;
@@ -8363,8 +8363,8 @@ end;
 ALTER TRIGGER ""LYERP"".""ZX_111055_TRG"" ENABLE"
 "LYERP","ZX_111061_TRG","ZX_111061","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYERP"".""ZX_111061_TRG"" 
-before insert on zx_111061  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_111061  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
 	select zx_111061_seq.nextval into :new.zxid from dual;
 end;
@@ -8373,8 +8373,8 @@ end;
 ALTER TRIGGER ""LYERP"".""ZX_111061_TRG"" ENABLE"
 "LYERP","ZX_111064DTLTMP_ID_TRG","ZX_111064_DTL_TMP","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYERP"".""ZX_111064DTLTMP_ID_TRG"" 
-before insert on zx_111064_dtl_tmp  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_111064_dtl_tmp  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
 	select zx_111064dtl_id_seq.nextval into :new.zxdtlid from dual;
 end;
@@ -8383,8 +8383,8 @@ end;
 ALTER TRIGGER ""LYERP"".""ZX_111064DTLTMP_ID_TRG"" ENABLE"
 "LYERP","ZX_111064DTL_ID_TRG","ZX_111064_DTL","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYERP"".""ZX_111064DTL_ID_TRG"" 
-before insert on zx_111064_dtl  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_111064_dtl  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
 	select zx_111064dtl_id_seq.nextval into :new.zxdtlid from dual;
 end;
@@ -8413,8 +8413,8 @@ end;
 ALTER TRIGGER ""LYERP"".""ZX_111065_DTL_ID"" ENABLE"
 "LYERP","ZX_111068_SEQ_TRG","ZX_111068","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYERP"".""ZX_111068_SEQ_TRG"" 
-before insert on zx_111068  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_111068  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
 	select zx_111068_SEQ.nextval into :new.zxid from dual;
 end;
@@ -8423,8 +8423,8 @@ end;
 ALTER TRIGGER ""LYERP"".""ZX_111068_SEQ_TRG"" ENABLE"
 "LYERP","ZX_1116054_TRG","ZX_1116054","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYERP"".""ZX_1116054_TRG"" 
-before insert on zx_1116054  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_1116054  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
 	select zx_1116054_seq.nextval into :new.zxid from dual;
 end;
@@ -8507,8 +8507,8 @@ end;
 ALTER TRIGGER ""LYERP"".""ZX_116060_TRG"" ENABLE"
 "LYERP","ZX_116064_TRG","ZX_116064","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYERP"".""ZX_116064_TRG"" 
-before insert on zx_116064  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_116064  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
   select zx_116064_seq.nextval into :new.zxid from dual;
 end;
@@ -8522,7 +8522,7 @@ declare
   v_count number(1);
   v_count1 number(1);
 
-  ---ĞŞ¸ÄÅĞ¶ÏÂß¼­20220707
+  ---ä¿®æ”¹åˆ¤æ–­é€»è¾‘20220707
 begin
   if inserting then
     select count(1)
@@ -8539,10 +8539,10 @@ begin
      not REGEXP_LIKE(:NEW.cpid, '^[0-9]+(,[0-9]+)*$');
   end if;
   if (v_count > 0) then
-    raise_application_error(-20001, '´ó³ÉÆ·»õÆ·IDÂ¼Èë¸ñÊ½ÓĞÎó£¡Çë°´123,123ÕâÖÖ¸ñÊ½Â¼Èë' || v_count);
+    raise_application_error(-20001, 'å¤§æˆå“è´§å“IDå½•å…¥æ ¼å¼æœ‰è¯¯ï¼è¯·æŒ‰123,123è¿™ç§æ ¼å¼å½•å…¥' || v_count);
   end if;
   if (v_count1 > 0) then
-    raise_application_error(-20001, '³ÉÆ·»õÆ·IDÂ¼Èë¸ñÊ½ÓĞÎó£¡Çë°´123,123ÕâÖÖ¸ñÊ½Â¼Èë' || v_count);
+    raise_application_error(-20001, 'æˆå“è´§å“IDå½•å…¥æ ¼å¼æœ‰è¯¯ï¼è¯·æŒ‰123,123è¿™ç§æ ¼å¼å½•å…¥' || v_count);
   end if;
 end;
 
@@ -8555,8 +8555,8 @@ ALTER TRIGGER ""LYERP"".""ZX_121031_TRI"" ENABLE"
 
 begin
   if (:old.sendflag is not null and :new.sendflag is null) then
-     raise_application_error(-20011,'²É¹ººÏÍ¬Ï¸µ¥(Ï¸µ¥ID'||:old.sucondtlid||'
-     £¬×Üµ¥ID'||:old.suconid||')½«sendflag±êÖ¾ÖÃ¿ÕÒì³£');
+     raise_application_error(-20011,'é‡‡è´­åˆåŒç»†å•(ç»†å•ID'||:old.sucondtlid||'
+     ï¼Œæ€»å•ID'||:old.suconid||')å°†sendflagæ ‡å¿—ç½®ç©ºå¼‚å¸¸');
   end if;
 end bms_su_set_doc_tri;
 
@@ -8602,7 +8602,7 @@ ALTER TRIGGER ""LYERP"".""ZX_CERT_DOC_TRI"" ENABLE"
   after insert on zx_mpcs_plan_doc
   for each row
 begin
-  --Ä¬ÈÏ²»ÅÅ²ú¾²ÖÆ
+  --é»˜è®¤ä¸æ’äº§é™åˆ¶
   if(nvl(:NEW.If_Jz,0)=0) then
   
     insert into zx_mpcs_plan_dtl
@@ -8627,7 +8627,7 @@ begin
          and a.bomid = :NEW.bomid
          and a.processid<>22;
     end if;
-    --Ö»ÅÅ²ú¾»ÖÆ
+    --åªæ’äº§å‡€åˆ¶
     if(nvl(:NEW.If_Jz,0)=1) then
   
     insert into zx_mpcs_plan_dtl
@@ -8666,12 +8666,12 @@ begin
      nvl(:OLD.schedulingdate, trunc(sysdate)) then
     if :NEW.schedulingdate is not null and
        :NEW.schedulingdate < trunc(sysdate) then
-      raise_application_error(-20001, 'ÅÅ²úÈÕÆÚÓ¦¸Ã²»ÔÊĞíĞ¡ÓÚµ±Ç°Ê±¼ä');
+      raise_application_error(-20001, 'æ’äº§æ—¥æœŸåº”è¯¥ä¸å…è®¸å°äºå½“å‰æ—¶é—´');
     end if;
   
     if :NEW.schedulingdate is null then
       raise_application_error(-20001,
-                              'ÅÅ²úÈÕÆÚ²»ÄÜĞŞ¸Ä³É¿Õ£¬Èô²»ÅÅ²ú£¬Ö±½ÓĞŞ¸Ä³ÉÍê¹¤×´Ì¬');
+                              'æ’äº§æ—¥æœŸä¸èƒ½ä¿®æ”¹æˆç©ºï¼Œè‹¥ä¸æ’äº§ï¼Œç›´æ¥ä¿®æ”¹æˆå®Œå·¥çŠ¶æ€');
     end if;
   
     update zx_mpcs_plan_dtl a
@@ -8681,7 +8681,7 @@ begin
   
   if nvl(:NEW.schedulingdays, 0) <> nvl(:OLD.schedulingdays, 0) then
     if :NEW.schedulingdays is null then
-      raise_application_error(-20001, 'ÅÅ²úÌìÊı²»ÄÜÎª¿Õ');
+      raise_application_error(-20001, 'æ’äº§å¤©æ•°ä¸èƒ½ä¸ºç©º');
     end if;
     update zx_mpcs_plan_dtl a
        set a.schedulingdays = :NEW.Schedulingdays
@@ -8700,21 +8700,21 @@ begin
      nvl(:OLD.schedulingdate, trunc(sysdate)) then
     if :NEW.schedulingdate is not null and
        :NEW.schedulingdate < trunc(sysdate) then
-      raise_application_error(-20001, 'ÅÅ²úÈÕÆÚÓ¦¸Ã²»ÔÊĞíĞ¡ÓÚµ±Ç°Ê±¼ä');
+      raise_application_error(-20001, 'æ’äº§æ—¥æœŸåº”è¯¥ä¸å…è®¸å°äºå½“å‰æ—¶é—´');
     end if;
 
     if :NEW.schedulingdate is null and nvl(:NEW.ifartificial,0)=1 then
       raise_application_error(-20001,
-                              'ÈË¹¤Ö¸¶¨ÅÅ²ú£¬ÅÅ²úÈÕÆÚ²»ÄÜÎª¿Õ');
+                              'äººå·¥æŒ‡å®šæ’äº§ï¼Œæ’äº§æ—¥æœŸä¸èƒ½ä¸ºç©º');
     end if;
-    --ÅÅ²úÈÕÆÚÈË¹¤Ö¸¶¨µÄ£¬Õâ¸ö±êÖ¾=1
+    --æ’äº§æ—¥æœŸäººå·¥æŒ‡å®šçš„ï¼Œè¿™ä¸ªæ ‡å¿—=1
     --:NEW.ifartificial := 1;
     
   end if;
 
   if nvl(:NEW.schedulingdays, 0) <> nvl(:OLD.schedulingdays, 0) then
     if :NEW.schedulingdays is null then
-      raise_application_error(-20001, 'ÅÅ²úÌìÊı²»ÄÜÎª¿Õ');
+      raise_application_error(-20001, 'æ’äº§å¤©æ•°ä¸èƒ½ä¸ºç©º');
     end if;
   end if;
   if(nvl(:NEW.ifartificial,0)=1 or nvl(:OLD.ifartificial,0)=1) then
@@ -8729,7 +8729,7 @@ ALTER TRIGGER ""LYERP"".""ZX_MPCS_PLAN_DTL_TRI"" ENABLE"
   before update of product_invaliddate on pub_entry_goods
   for each row
 declare
-PRAGMA AUTONOMOUS_TRANSACTION;--×ÔÖÆÊÂÎñ´¦Àí¡£´¥·¢Æ÷ºÍ´¥·¢ËüµÄDMLÊÇÍ¬Ò»¸öÊÂÎñ  add by gkx on 20240717
+PRAGMA AUTONOMOUS_TRANSACTION;--è‡ªåˆ¶äº‹åŠ¡å¤„ç†ã€‚è§¦å‘å™¨å’Œè§¦å‘å®ƒçš„DMLæ˜¯åŒä¸€ä¸ªäº‹åŠ¡  add by gkx on 20240717
  v_goodsid number;
  v_entryid number;
  v_product_invaliddate date;
@@ -8743,11 +8743,11 @@ v_product_invaliddate := :new.product_invaliddate;
 
 /*select count(1) into v_count1 from (
 select a.goodsid  from pub_goods a,v_101319_dtl b where a.busiscope=b.scopedefid and b.licensetypeid=65 and a.goodsid = v_goodsid
-); \*ÅĞ¶Ï»õÆ·ÊÇ·ñĞèÒªÎ¬»¤²úÆ·Åú¼ş*\*/
+); \*åˆ¤æ–­è´§å“æ˜¯å¦éœ€è¦ç»´æŠ¤äº§å“æ‰¹ä»¶*\*/
 select count(1) into v_count1 from (
 select b.goodsid  from gsp_goods_license_view b 
 where b.licensetypeid=65 and b.goodsid = v_goodsid and b.entryid=594
-); /*ÅĞ¶Ï»õÆ·ÊÇ·ñÒÑÎ¬»¤Åú¼şĞÅÏ¢£¬ÒÑÎ¬»¤²Å×¥È¡*/
+); /*åˆ¤æ–­è´§å“æ˜¯å¦å·²ç»´æŠ¤æ‰¹ä»¶ä¿¡æ¯ï¼Œå·²ç»´æŠ¤æ‰æŠ“å–*/
 
 if v_count1>0 then
 select max(product_invaliddate) into v_maxdate from pub_entry_goods p
@@ -8781,7 +8781,7 @@ ALTER TRIGGER ""LYERP"".""ZZ_PUB_GOODS_TMP_TRI"" ENABLE"
        on bond_warehouse_inorder
        for each row
 declare
-  v_count number;--¼ÆÊı
+  v_count number;--è®¡æ•°
   cursor c_bond_warehouse_inorderdtl1 is
          select b.seqid,b.seqdtlid,b.declared_quantity
                 from bond_warehouse_qty_lst a ,bond_warehouse_inorderdtl b--,bond_warehouse_inorder c
@@ -8799,14 +8799,14 @@ declare
   r_bond_warehouse_inorderdtl2 c_bond_warehouse_inorderdtl2%rowtype;
 begin
      if :old.usestatus = :new.usestatus then
-          Raise_Application_Error(-20001,'²»ÄÜ·´¸´È·ÈÏ»ò»ØÍËÈ·ÈÏ£¡');
+          Raise_Application_Error(-20001,'ä¸èƒ½åå¤ç¡®è®¤æˆ–å›é€€ç¡®è®¤ï¼');
      end if;
-     --È·ÈÏÂß¼­
-     --1.ÅĞ¶ÏseqdtlidÓĞ´æÔÚ ²»ÔÊĞí²åÈë£»
-     --2.²»´æÔÚ ¾Í²åÈë
+     --ç¡®è®¤é€»è¾‘
+     --1.åˆ¤æ–­seqdtlidæœ‰å­˜åœ¨ ä¸å…è®¸æ’å…¥ï¼›
+     --2.ä¸å­˜åœ¨ å°±æ’å…¥
      if :new.usestatus = 1 then
-        select (case when count(1) > 0 then 1 --¿â´æ±íÃ»ÓĞ¸ÃÏ¸µ¥
-                     else 0 end) counts --¿â´æ±íÓĞ¸Ã×Üµ¥ºÍÏ¸µ¥
+        select (case when count(1) > 0 then 1 --åº“å­˜è¡¨æ²¡æœ‰è¯¥ç»†å•
+                     else 0 end) counts --åº“å­˜è¡¨æœ‰è¯¥æ€»å•å’Œç»†å•
                into v_count
                from bond_warehouse_qty_lst a ,bond_warehouse_inorderdtl b
                     where a.seqdtlid(+) = b.seqdtlid
@@ -8818,7 +8818,7 @@ begin
                  from bond_warehouse_qty_lst
                  where seqid = :new.seqid;
         end if;
-        --²åÈë¿â´æ±íÃ»ÓĞµÄÏ¸µ¥
+        --æ’å…¥åº“å­˜è¡¨æ²¡æœ‰çš„ç»†å•
         if v_count = 1 then
           open c_bond_warehouse_inorderdtl1;
           loop
@@ -8834,7 +8834,7 @@ begin
           end loop;
           close c_bond_warehouse_inorderdtl1;
          end if;
-         --²åÈë¿â´æ±íÃ»ÓĞµÄËùÓĞÏ¸µ¥
+         --æ’å…¥åº“å­˜è¡¨æ²¡æœ‰çš„æ‰€æœ‰ç»†å•
           if v_count = 3 then
               open c_bond_warehouse_inorderdtl2;
               loop
@@ -8851,10 +8851,10 @@ begin
               close c_bond_warehouse_inorderdtl2;
            end if;
      end if;
-     --»ØÍËÈ·ÈÏÂß¼­
-     --1.ÅĞ¶ÏseqdtlidÊÇ·ñ´æÔÚ ´æÔÚ²»ÔÊĞí»ØÍË
-     --2.´æÔÚµÄ»° ÅĞ¶Ï ¿â´æÊıÁ¿goodsqtyÊÇ·ñ=Èë¿â¶©µ¥ÉÏµÄÊıÁ¿£¬Èç¹û¿â´æ²»¹»»ØÍËÊ§°Ü
-     --3.»ØÍË³É¹¦ É¾³ı¿â´æ±í¼ÇÂ¼
+     --å›é€€ç¡®è®¤é€»è¾‘
+     --1.åˆ¤æ–­seqdtlidæ˜¯å¦å­˜åœ¨ å­˜åœ¨ä¸å…è®¸å›é€€
+     --2.å­˜åœ¨çš„è¯ åˆ¤æ–­ åº“å­˜æ•°é‡goodsqtyæ˜¯å¦=å…¥åº“è®¢å•ä¸Šçš„æ•°é‡ï¼Œå¦‚æœåº“å­˜ä¸å¤Ÿå›é€€å¤±è´¥
+     --3.å›é€€æˆåŠŸ åˆ é™¤åº“å­˜è¡¨è®°å½•
      if nvl(:new.usestatus,0) = 0 then
         open c_bond_warehouse_inorderdtl2;
         loop
@@ -8864,7 +8864,7 @@ begin
           if c_bond_warehouse_inorderdtl2 %notfound then
             exit;
           end if;
-          --ÒÑ³ö¿âµÄ²»ÄÜ»ØÍË
+          --å·²å‡ºåº“çš„ä¸èƒ½å›é€€
           select count(1) into v_count
                  from bond_warehouse_inorderdtl a,bond_warehouse_outorderdtl b,bond_warehouse_outorder c
                       where a.seqdtlid = b.seqdtlid
@@ -8872,7 +8872,7 @@ begin
                             and c.usestatus = 1
                             and a.seqdtlid = r_bond_warehouse_inorderdtl2.seqdtlid;
           if v_count <> 0 then
-             Raise_Application_Error(-20001,'»ØÍËÈ·¶¨--Ï¸µ¥¡¾'||r_bond_warehouse_inorderdtl2.seqdtlid||'¡¿ÒÑ³ö¿â,²»ÔÊĞí»ØÍË!');
+             Raise_Application_Error(-20001,'å›é€€ç¡®å®š--ç»†å•ã€'||r_bond_warehouse_inorderdtl2.seqdtlid||'ã€‘å·²å‡ºåº“,ä¸å…è®¸å›é€€!');
             exit;
           end if;
 
@@ -8885,7 +8885,7 @@ begin
             delete from bond_warehouse_qty_lst where seqdtlid =  r_bond_warehouse_inorderdtl2.seqdtlid;
 
           else
-            Raise_Application_Error(-20001,'»ØÍËÈ·¶¨ºóÏ¸µ¥¡¾'||r_bond_warehouse_inorderdtl2.seqdtlid||'¡¿»õÆ·¿â´æÊıÁ¿Ğ¡ÓÚ0,²»ÔÊĞí»ØÍË!');
+            Raise_Application_Error(-20001,'å›é€€ç¡®å®šåç»†å•ã€'||r_bond_warehouse_inorderdtl2.seqdtlid||'ã€‘è´§å“åº“å­˜æ•°é‡å°äº0,ä¸å…è®¸å›é€€!');
             exit;
           end if;
         end loop;
@@ -8900,8 +8900,8 @@ ALTER TRIGGER ""LYWMS"".""BOND_WAREHOUSE_INORDER_TRG"" ENABLE"
        on bond_warehouse_outorder
        for each row
 declare
-       v_count number;--¼ÆÊı
-       v_sum number;--¼ÆËã×ÜºÍ
+       v_count number;--è®¡æ•°
+       v_sum number;--è®¡ç®—æ€»å’Œ
        cursor c_bond_warehouse_outorder is
          select a.seqdtlid,nvl(b.goodsqty,0)-nvl(a.goodsqty,0) inventory,a.goodsqty
                from bond_warehouse_outorderdtl a,bond_warehouse_qty_lst b,bond_warehouse_inorderdtl c
@@ -8911,14 +8911,14 @@ declare
        r_bond_warehouse_outorder  c_bond_warehouse_outorder%rowtype;
 begin
        if :old.usestatus = :new.usestatus then
-          Raise_Application_Error(-20001,'²»ÄÜ·´¸´È·ÈÏ»ò»ØÍËÈ·ÈÏ£¡');
+          Raise_Application_Error(-20001,'ä¸èƒ½åå¤ç¡®è®¤æˆ–å›é€€ç¡®è®¤ï¼');
        end if;
 
-       /*È·¶¨Âß¼­£º
-       1.ÅĞ¶ÏseqdtlidÊÇ·ñ´æÔÚ ²»´æÔÚÔòÈ·¶¨Ê§°Ü£»
-       2.Èç¹û´æÔÚ£¬ÅĞ¶Ï³ö¿âÏ¸µ¥ÉÏµÄ³ö¿âÊıÁ¿ÊÇ·ñĞ¡ÓÚ»òµÈÓÚ¿â´æÊıÁ¿£¬
-       Í¨¹ıseqdtlid¹ØÁª£»¿â´æ×ã¹»È·¶¨³É¹¦£¬
-       update¿â´æ±íµÄ¿â´æÊıÁ¿=¿â´æÊıÁ¿-³ö¿âÊıÁ¿£»¿â´æ²»¹»È·¶¨Ê§°Ü£»*/
+       /*ç¡®å®šé€»è¾‘ï¼š
+       1.åˆ¤æ–­seqdtlidæ˜¯å¦å­˜åœ¨ ä¸å­˜åœ¨åˆ™ç¡®å®šå¤±è´¥ï¼›
+       2.å¦‚æœå­˜åœ¨ï¼Œåˆ¤æ–­å‡ºåº“ç»†å•ä¸Šçš„å‡ºåº“æ•°é‡æ˜¯å¦å°äºæˆ–ç­‰äºåº“å­˜æ•°é‡ï¼Œ
+       é€šè¿‡seqdtlidå…³è”ï¼›åº“å­˜è¶³å¤Ÿç¡®å®šæˆåŠŸï¼Œ
+       updateåº“å­˜è¡¨çš„åº“å­˜æ•°é‡=åº“å­˜æ•°é‡-å‡ºåº“æ•°é‡ï¼›åº“å­˜ä¸å¤Ÿç¡®å®šå¤±è´¥ï¼›*/
 
       if :new.usestatus = 1 then
          open c_bond_warehouse_outorder;
@@ -8930,7 +8930,7 @@ begin
              end if;
 
              if r_bond_warehouse_outorder.inventory < 0 then
-                Raise_Application_Error(-20001,'È·¶¨Ê§°Ü,Ï¸µ¥¡¾'||r_bond_warehouse_outorder.seqdtlid||'¡¿»õÆ·¿â´æÊıÁ¿Ğ¡ÓÚ³ö¿âÊıÁ¿,²»ÔÊĞí³ö¿â!');
+                Raise_Application_Error(-20001,'ç¡®å®šå¤±è´¥,ç»†å•ã€'||r_bond_warehouse_outorder.seqdtlid||'ã€‘è´§å“åº“å­˜æ•°é‡å°äºå‡ºåº“æ•°é‡,ä¸å…è®¸å‡ºåº“!');
              else
                 update bond_warehouse_qty_lst set goodsqty = r_bond_warehouse_outorder.inventory where  seqdtlid = r_bond_warehouse_outorder.seqdtlid;
              end if;
@@ -8938,11 +8938,11 @@ begin
          close c_bond_warehouse_outorder;
       end if;
 
-      /*»ØÍËÈ·¶¨Âß¼­£º
-      1.ÅĞ¶ÏseqdtlidÊÇ·ñ´æÔÚ ²»´æÔÚ»ØÍËÊ§°Ü
-      2.´æÔÚµÄ»° ÅĞ¶Ï ¿â´æÊıÁ¿+»ØÍËÊıÁ¿ ÊÇ·ñĞ¡ÓÚ
-      Èë¿â¶©µ¥µÄÊıÁ¿(seqdtlid¹ØÁª)£»Ğ¡ÓÚ»òµÈÓÚÈë¿â¶©µ¥ÊıÁ¿£¬Ôò»ØÍË³É¹¦£¬
-      ¸üĞÂ¿â´æ±íÊıÁ¿Îª¿â´æÊıÁ¿+»ØÍËÊıÁ¿£»Èç¹û´óÓÚ£¬»ØÍËÈ·¶¨Ê§°Ü*/
+      /*å›é€€ç¡®å®šé€»è¾‘ï¼š
+      1.åˆ¤æ–­seqdtlidæ˜¯å¦å­˜åœ¨ ä¸å­˜åœ¨å›é€€å¤±è´¥
+      2.å­˜åœ¨çš„è¯ åˆ¤æ–­ åº“å­˜æ•°é‡+å›é€€æ•°é‡ æ˜¯å¦å°äº
+      å…¥åº“è®¢å•çš„æ•°é‡(seqdtlidå…³è”)ï¼›å°äºæˆ–ç­‰äºå…¥åº“è®¢å•æ•°é‡ï¼Œåˆ™å›é€€æˆåŠŸï¼Œ
+      æ›´æ–°åº“å­˜è¡¨æ•°é‡ä¸ºåº“å­˜æ•°é‡+å›é€€æ•°é‡ï¼›å¦‚æœå¤§äºï¼Œå›é€€ç¡®å®šå¤±è´¥*/
 
       if :new.usestatus = 0 then
          open c_bond_warehouse_outorder;
@@ -8959,7 +8959,7 @@ begin
                              and a.seqdtlid is null;
 
            if v_count > 0  then
-              Raise_Application_Error(-20001,'Ï¸µ¥ÓĞ²»´æÔÚµÄ¿â´æ»õÆ·,»ØÍËÊ§°Ü£¡');
+              Raise_Application_Error(-20001,'ç»†å•æœ‰ä¸å­˜åœ¨çš„åº“å­˜è´§å“,å›é€€å¤±è´¥ï¼');
               exit;
            end if;
 
@@ -8973,7 +8973,7 @@ begin
                               and a.outseqid = :new.outseqid
                               GROUP BY a.seqdtlid,c.declared_quantity;
            if v_sum = 1 then
-              Raise_Application_Error(-20001,'¿â´æÀ´Ô´ID¡¾'||r_bond_warehouse_outorder.seqdtlid||'¡¿»ØÍË»õÆ·Êı¹ı¶à,»ØÍËÊ§°Ü£¡');
+              Raise_Application_Error(-20001,'åº“å­˜æ¥æºIDã€'||r_bond_warehouse_outorder.seqdtlid||'ã€‘å›é€€è´§å“æ•°è¿‡å¤š,å›é€€å¤±è´¥ï¼');
               exit;
            elsif v_sum = 2 then
                update bond_warehouse_qty_lst set goodsqty = r_bond_warehouse_outorder.goodsqty where seqdtlid = r_bond_warehouse_outorder.seqdtlid;
@@ -9079,43 +9079,43 @@ ALTER TRIGGER ""LYWMS"".""TRG_INTER_WMS_TASK"" ENABLE"
   Before Update On tpl_purchase_order
   For Each Row
    WHEN (nvl(new.rollbackstatus,0) = 1
-       AND nvl(old.rollbackstatus,0) = 0 --±ØĞëÊÇ0·ñÔòËùÓĞµÄÊÕÅäÍËºÍÅäËÍ²îÒìÎïÁ÷¶©µ¥ÎŞ·¨¸ü¸Ä
-       and nvl(old.operationtype,0) in(42,44) --±ØĞëÊÇÊÕÅäÍËºÍÅäËÍ²îÒì
+       AND nvl(old.rollbackstatus,0) = 0 --å¿…é¡»æ˜¯0å¦åˆ™æ‰€æœ‰çš„æ”¶é…é€€å’Œé…é€å·®å¼‚ç‰©æµè®¢å•æ— æ³•æ›´æ”¹
+       and nvl(old.operationtype,0) in(42,44) --å¿…é¡»æ˜¯æ”¶é…é€€å’Œé…é€å·®å¼‚
        AND nvl(old.feedbackstatus,0) = 1
        and nvl(old.usestatus,0) = 3
        and nvl(new.goodsownerid,0) in(6, 244, 284, 304, 424, 444, 636, 658, 682)
        ) Declare
   v_rowcount number;
-  v_xyd number;--²îÒìµ¥
+  v_xyd number;--å·®å¼‚å•
 BEGIN
     select count(1) into v_xyd from (
     select distinct a.dtlzxcolumn4,a.porderid 
                           from Tpl_purchase_order_dtl a where a.dtlzxcolumn4 = :new.srcno) b ;
                           
     If  v_xyd = 1 Then
-       --±ØĞëÏÂµ¥×´Ì¬ÇÒÊÇÊÕÅäÍË²ÅÄÜÉ¾³ı
+       --å¿…é¡»ä¸‹å•çŠ¶æ€ä¸”æ˜¯æ”¶é…é€€æ‰èƒ½åˆ é™¤
        delete from wms_in_order_dtl t
         where t.inid in (select distinct t1.inid
                           from wms_in_order t1, wms_in_order_dtl tt
                          where  t1.inid = tt.inid
                            and t1.oldid = :new.porderid
-                           and t1.usestatus = 1 --ÏÂµ¥×´Ì¬
-                           and nvl(tt.clflag, 0)=0 --Î´ÊÕ»õ
+                           and t1.usestatus = 1 --ä¸‹å•çŠ¶æ€
+                           and nvl(tt.clflag, 0)=0 --æœªæ”¶è´§
                            and t1.operationtype = :new.operationtype);
        v_rowcount := SQL%ROWCOUNT;
        if v_rowcount > 0 then
-         --É¾³ıÎïÁ÷Èë¿â×Üµ¥
+         --åˆ é™¤ç‰©æµå…¥åº“æ€»å•
          delete from wms_in_order t where t.oldid = :new.porderid and t.usestatus = 1;
-         --É¾³ıÆ½Ì¨Èë¿âÏ¸µ¥
+         --åˆ é™¤å¹³å°å…¥åº“ç»†å•
          delete from tpl_in_order_dtl t where t.inid = (select inid from tpl_in_order t where t.oldid= :new.porderid);
-         --É¾³ıÆ½Ì¨Èë¿â×Üµ¥
+         --åˆ é™¤å¹³å°å…¥åº“æ€»å•
          delete from tpl_in_order t where t.oldid = :new.porderid;
-         -- Ö±½ÓĞŞ¸Äµ±Ç°ĞĞµÄ×Ö¶ÎÖµ
+         -- ç›´æ¥ä¿®æ”¹å½“å‰è¡Œçš„å­—æ®µå€¼
          :new.usestatus := -1;
-         :new.error_msg := 'ÊÕÅäÍËÀàĞÍµÄÈë¿â¶©µ¥ĞèÒªÉóºË!';
+         :new.error_msg := 'æ”¶é…é€€ç±»å‹çš„å…¥åº“è®¢å•éœ€è¦å®¡æ ¸!';
          :new.feedbackstatus := 0;
        else
-         Raise_Application_Error(-20001,'¶©µ¥×Üµ¥ID:'||:new.porderid||',ÒÑÊÕ»õ,²»ÄÜ»ØÍË!                            
+         Raise_Application_Error(-20001,'è®¢å•æ€»å•ID:'||:new.porderid||',å·²æ”¶è´§,ä¸èƒ½å›é€€!                            
                                                                            
                                                                                       
                                                                                               
@@ -9128,7 +9128,7 @@ BEGIN
                                                                                                ');
        end if;
        elsif v_xyd > 1 then
-         Raise_Application_Error(-20002,'¶©µ¥×Üµ¥ID:'||:new.porderid||',ÒÑÉú³É²îÒìµ¥,²»ÔÊĞí»ØÍË!                            
+         Raise_Application_Error(-20002,'è®¢å•æ€»å•ID:'||:new.porderid||',å·²ç”Ÿæˆå·®å¼‚å•,ä¸å…è®¸å›é€€!                            
                                                                            
                                                                                       
                                                                                               
@@ -10383,7 +10383,7 @@ begin
       if nvl(:old.usestatus,0) <> :new.usestatus and :old.goodsownerid in (340,520) and :new.usestatus=2 then
       
       select tpl_edi_queue_seq.nextval into p from dual;
--- usestatus 1.ÁÙÊ± 2.È·¶¨
+-- usestatus 1.ä¸´æ—¶ 2.ç¡®å®š
         insert into tpl_edi_queue
           values (:old.goodsownerid,
                  sysdate,
@@ -10586,7 +10586,7 @@ ALTER TRIGGER ""LYWMS"".""TRG_WMS_GOODSGROUP_TMP_HIS"" ENABLE"
   after update on wms_box_dtl
   for each row
      begin
-  --µ±ĞŞ¸Ä×°Ïäµ¥×Üµ¥Ê±É¾³ıÒ½ÔºÊÕ»õ·şÎñµ¥¡£
+  --å½“ä¿®æ”¹è£…ç®±å•æ€»å•æ—¶åˆ é™¤åŒ»é™¢æ”¶è´§æœåŠ¡å•ã€‚
   if :old.docid <> :new.docid then
     delete from wms_his_patch t
     where exists(select 1 from wms_turnbox_to_box_rel t1
@@ -10665,7 +10665,7 @@ ALTER TRIGGER ""LYWMS"".""TRG_ZX_PURCHASE_INVNO_HIS"" ENABLE"
   REFERENCING OLD AS OLD NEW AS NEW
   FOR EACH ROW
 
---change by xyue 2017-11-28 Ôö¼Ó·¢Æ±´úÂë×Ö¶Î
+--change by xyue 2017-11-28 å¢åŠ å‘ç¥¨ä»£ç å­—æ®µ
 BEGIN
   insert into ZX_SALES_INVNO_his
     (salesdtlid,
@@ -10935,11 +10935,11 @@ ALTER TRIGGER ""LYWMS"".""T_WCS_TO_WMS_WORKFINISH_TRG"" ENABLE"
   for each row
 
 declare
-  v_count number;--¼ÆÊı
-  v_newqty number; --¸üĞÂºó¿â´æ
+  v_count number;--è®¡æ•°
+  v_newqty number; --æ›´æ–°ååº“å­˜
 
 begin
-  --Èë¿âµ¥ÓÉ¡¾ÁÙÊ±¡¿->¡¾ÕıÊ½¡¿,ÏÈ°´goodsid²é¿â´æ±íÊÇ·ñ´æÔÚ,´æÔÚ¾ÍÊıÁ¿µş¼Ó,²»´æÔÚ¾ÍĞÂÔöÒ»Ìõ¿â´æ¼ÇÂ¼
+  --å…¥åº“å•ç”±ã€ä¸´æ—¶ã€‘->ã€æ­£å¼ã€‘,å…ˆæŒ‰goodsidæŸ¥åº“å­˜è¡¨æ˜¯å¦å­˜åœ¨,å­˜åœ¨å°±æ•°é‡å åŠ ,ä¸å­˜åœ¨å°±æ–°å¢ä¸€æ¡åº“å­˜è®°å½•
   if :new.usestatus = 1 then 
     select count(1)
       into v_count
@@ -10958,8 +10958,8 @@ begin
     end if;
   end if;
   
-  --Èë¿âµ¥»ØÍËÈ·¶¨ÓÉ¡¾ÕıÊ½¡¿->¡¾ÁÙÊ±¡¿,ÏÈ°´goodsid²é¿â´æ±í¿Û¼õ¿â´æ£¬¿Û¼õ³öÏÖ¸ºÊı¾Í±¨´í
-  --¿Û¼õÍê³Éºó¿â´æÊıÁ¿Îª0,ÔòÉ¾³ı¼ÇÂ¼
+  --å…¥åº“å•å›é€€ç¡®å®šç”±ã€æ­£å¼ã€‘->ã€ä¸´æ—¶ã€‘,å…ˆæŒ‰goodsidæŸ¥åº“å­˜è¡¨æ‰£å‡åº“å­˜ï¼Œæ‰£å‡å‡ºç°è´Ÿæ•°å°±æŠ¥é”™
+  --æ‰£å‡å®Œæˆååº“å­˜æ•°é‡ä¸º0,åˆ™åˆ é™¤è®°å½•
   if nvl(:new.usestatus,0) = 0 then 
     select nvl(max(t.goodsqty), 0) - :new.goodsqty
       into v_newqty
@@ -10970,10 +10970,10 @@ begin
       update wcs_device_goods_qty t
          set t.goodsqty = v_newqty
        where t.goodsid = :new.goodsid;
-    elsif v_newqty = 0 then --¸üĞÂºó¿â´æÎª0 É¾³ı¿â´æ±í¼ÇÂ¼
+    elsif v_newqty = 0 then --æ›´æ–°ååº“å­˜ä¸º0 åˆ é™¤åº“å­˜è¡¨è®°å½•
       delete wcs_device_goods_qty t where t.goodsid = :new.goodsid;
     else
-      Raise_Application_Error(-20001,'»ØÍËÈ·¶¨ºó¸Ã»õÆ·¿â´æÊıÁ¿Ğ¡ÓÚ0,²»ÔÊĞí»ØÍË!');
+      Raise_Application_Error(-20001,'å›é€€ç¡®å®šåè¯¥è´§å“åº“å­˜æ•°é‡å°äº0,ä¸å…è®¸å›é€€!');
     end if;  
   end if;
   
@@ -10987,12 +10987,12 @@ ALTER TRIGGER ""LYWMS"".""WCS_DEVICE_GOODS_IN_TRG"" ENABLE"
   for each row
 
 declare
-  v_count number;--¼ÆÊı
-  v_newqty number; --¸üĞÂºó¿â´æ
+  v_count number;--è®¡æ•°
+  v_newqty number; --æ›´æ–°ååº“å­˜
 
 begin
-  --³ö¿âµ¥È·¶¨ÓÉ¡¾ÕıÊ½¡¿->¡¾ÁÙÊ±¡¿,ÏÈ°´goodsid²é¿â´æ±í¿Û¼õ¿â´æ£¬¿Û¼õ³öÏÖ¸ºÊı¾Í±¨´í
-  --¿Û¼õÍê³Éºó¿â´æÊıÁ¿Îª0,ÔòÉ¾³ı¼ÇÂ¼
+  --å‡ºåº“å•ç¡®å®šç”±ã€æ­£å¼ã€‘->ã€ä¸´æ—¶ã€‘,å…ˆæŒ‰goodsidæŸ¥åº“å­˜è¡¨æ‰£å‡åº“å­˜ï¼Œæ‰£å‡å‡ºç°è´Ÿæ•°å°±æŠ¥é”™
+  --æ‰£å‡å®Œæˆååº“å­˜æ•°é‡ä¸º0,åˆ™åˆ é™¤è®°å½•
   if nvl(:new.usestatus,0) = 1 then 
     select nvl(max(t.goodsqty), 0) - :new.goodsqty
       into v_newqty
@@ -11003,14 +11003,14 @@ begin
       update wcs_device_goods_qty t
          set t.goodsqty = v_newqty
        where t.goodsid = :new.goodsid;
-    elsif v_newqty = 0 then --¸üĞÂºó¿â´æÎª0 É¾³ı¿â´æ±í¼ÇÂ¼
+    elsif v_newqty = 0 then --æ›´æ–°ååº“å­˜ä¸º0 åˆ é™¤åº“å­˜è¡¨è®°å½•
       delete wcs_device_goods_qty t where t.goodsid = :new.goodsid;
     else
-      Raise_Application_Error(-20001,'³ö¿âµ¥È·¶¨ºó¸Ã»õÆ·¿â´æÊıÁ¿Ğ¡ÓÚ0,²»ÔÊĞíÈ·¶¨!Çë¼ì²é¿â´æÊıÁ¿!');
+      Raise_Application_Error(-20001,'å‡ºåº“å•ç¡®å®šåè¯¥è´§å“åº“å­˜æ•°é‡å°äº0,ä¸å…è®¸ç¡®å®š!è¯·æ£€æŸ¥åº“å­˜æ•°é‡!');
     end if;  
   end if;
   
-  --³ö¿âµ¥ÓÉ¡¾ÕıÊ½¡¿->¡¾ÁÙÊ±¡¿,ÏÈ°´goodsid²é¿â´æ±íÊÇ·ñ´æÔÚ,´æÔÚ¾ÍÊıÁ¿µş¼Ó,²»´æÔÚ¾ÍĞÂÔöÒ»Ìõ¿â´æ¼ÇÂ¼
+  --å‡ºåº“å•ç”±ã€æ­£å¼ã€‘->ã€ä¸´æ—¶ã€‘,å…ˆæŒ‰goodsidæŸ¥åº“å­˜è¡¨æ˜¯å¦å­˜åœ¨,å­˜åœ¨å°±æ•°é‡å åŠ ,ä¸å­˜åœ¨å°±æ–°å¢ä¸€æ¡åº“å­˜è®°å½•
   if nvl(:new.usestatus,0) = 0 then 
     select count(1)
       into v_count
@@ -11057,8 +11057,8 @@ end;
 ALTER TRIGGER ""LYWMS"".""ZX_710031_TRG"" ENABLE"
 "LYWMS","ZX_710037_TRG","ZX_710037","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYWMS"".""ZX_710037_TRG"" 
-before insert on zx_710037  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_710037  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
 	select zx_710037_seq.nextval into :new.zxid from dual;
 end;
@@ -11067,8 +11067,8 @@ end;
 ALTER TRIGGER ""LYWMS"".""ZX_710037_TRG"" ENABLE"
 "LYWMS","ZX_710091_ID","ZX_710091","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYWMS"".""ZX_710091_ID"" 
-before insert on zx_710091  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_710091  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
 	select zx_710091_ID_SEQ.nextval into :new.zxid from dual;
 end;
@@ -11076,8 +11076,8 @@ end;
 ALTER TRIGGER ""LYWMS"".""ZX_710091_ID"" ENABLE"
 "LYWMS","ZX_710092_ID","ZX_710092","INSERT","BEFORE EACH ROW","
   CREATE OR REPLACE TRIGGER ""LYWMS"".""ZX_710092_ID"" 
-before insert on zx_710092  --before:Ö´ĞĞDMLµÈ²Ù×÷Ö®Ç°´¥·¢
-for each row  --ĞĞ¼¶´¥·¢Æ÷
+before insert on zx_710092  --before:æ‰§è¡ŒDMLç­‰æ“ä½œä¹‹å‰è§¦å‘
+for each row  --è¡Œçº§è§¦å‘å™¨
 begin
   select zx_710092_ID_SEQ.nextval into :new.zxid from dual;
 end;
@@ -11099,29 +11099,29 @@ p_packsize number(12);
 p_wholeqty number(12);
 p_exist number(2);
 BEGIN
----Ëã³öÉÏÏÂ¼Ü·Ö¿ªµÄ
+---ç®—å‡ºä¸Šä¸‹æ¶åˆ†å¼€çš„
 select t1.executetype
 into p_executype
 from wms_trade_order t1
 where  t1.tradeid = :new.tradeid;
 p_userstatus:=:new.USESTATUS;
 select count(*) into p_exist from zx_WMS_Trade_Dtl where tradedtlid = :new.tradedtlid;
-   --ÔÚÉú³ÉÕû¼ş²¨´Î³ö¿âµÄ³öÈë¿âÃ÷Ï¸Ê±£¬Éú³É10¼şÒÔÏÂµÄ±êÇ©Êı
+   --åœ¨ç”Ÿæˆæ•´ä»¶æ³¢æ¬¡å‡ºåº“çš„å‡ºå…¥åº“æ˜ç»†æ—¶ï¼Œç”Ÿæˆ10ä»¶ä»¥ä¸‹çš„æ ‡ç­¾æ•°
 
- if nvl(p_executype,0) = 2 and nvl(p_userstatus,0) = 2 and nvl(p_exist,0) = 0 then ---²¹»õ¡¢ÉÏÏÂ¼Ü·Ö¿ªÖ´ĞĞ
-       -----È¡°ü×°´óĞ¡¡£
+ if nvl(p_executype,0) = 2 and nvl(p_userstatus,0) = 2 and nvl(p_exist,0) = 0 then ---è¡¥è´§ã€ä¸Šä¸‹æ¶åˆ†å¼€æ‰§è¡Œ
+       -----å–åŒ…è£…å¤§å°ã€‚
        select packsize
        into p_packsize
        from tpl_pub_goods_packs
        where goodspackid = :new.goodspackid ;
-       -----È¡³ö¼şÊı¡£
+       -----å–å‡ºä»¶æ•°ã€‚
        if nvl(p_packsize,0) <> 0 then
           p_wholeqty := ceil(:new.qty/p_packsize);
        else
           p_wholeqty := 1;
        end if;
 
-       if (nvl(p_wholeqty,0)>=1 and nvl(p_wholeqty,0)<10)then    --³¬¹ı10¼şÖ»´òÓ¡Ò»ÕÅ£¬µÍÓÚ10¼şµÄ²Å´òÓ¡¶ÔÓ¦¼şÊıµÄ±êÇ©ÊıÁ¿
+       if (nvl(p_wholeqty,0)>=1 and nvl(p_wholeqty,0)<10)then    --è¶…è¿‡10ä»¶åªæ‰“å°ä¸€å¼ ï¼Œä½äº10ä»¶çš„æ‰æ‰“å°å¯¹åº”ä»¶æ•°çš„æ ‡ç­¾æ•°é‡
          for i in 1..p_wholeqty loop
          insert into zx_WMS_Trade_Dtl(ZXTRADEID,TRADEDTLID,printflag,seqno,wholeqty)
                 values(zx_WMS_Trade_Dtl_SEQ.NEXTVAL,:new.tradedtlid,0,i,p_wholeqty);
@@ -11225,43 +11225,43 @@ ON wms_st_io_doc
 REFERENCING OLD AS OLD NEW AS NEW
 FOR EACH ROW
 /*************************************************************/
-/*  ÖĞÎÄÃû³Æ£º³öÈë¿âÃ÷Ï¸                                      */
-/*  ¹¦ÄÜÃèÊö£ºÔÚÕû¼ş³ö¿â±êÇ©µÄ´òÓ¡Ê±»õÎ»ÉÏ²»Í¬µÄ³ö¿â¼şÊı        */
-/*              ´òÓ¡µÄ±êÇ©ÊıÓĞËù²»Í¬¡£                         */
-/*  ±àĞ´ÈË£ºwanghuaiyu      ±àĞ´Ê±¼ä£º20130622                  */
-/*  ĞŞ¸ÄÈË£º      ĞŞ¸ÄÊ±¼ä£º                                    */
+/*  ä¸­æ–‡åç§°ï¼šå‡ºå…¥åº“æ˜ç»†                                      */
+/*  åŠŸèƒ½æè¿°ï¼šåœ¨æ•´ä»¶å‡ºåº“æ ‡ç­¾çš„æ‰“å°æ—¶è´§ä½ä¸Šä¸åŒçš„å‡ºåº“ä»¶æ•°        */
+/*              æ‰“å°çš„æ ‡ç­¾æ•°æœ‰æ‰€ä¸åŒã€‚                         */
+/*  ç¼–å†™äººï¼šwanghuaiyu      ç¼–å†™æ—¶é—´ï¼š20130622                  */
+/*  ä¿®æ”¹äººï¼š      ä¿®æ”¹æ—¶é—´ï¼š                                    */
 /**************************************************************/
 declare
-  v_autoprtparam number(1);--±êÇ©´òÓ¡¼şÊıÉÏÏŞ
-  v_wholeqty number(8);--Õû¼şÊıÁ¿
-  v_prtperpackflag number(1);--Ã¿Ïä´òÓ¡³ö¿â±êÇ©
+  v_autoprtparam number(1);--æ ‡ç­¾æ‰“å°ä»¶æ•°ä¸Šé™
+  v_wholeqty number(8);--æ•´ä»¶æ•°é‡
+  v_prtperpackflag number(1);--æ¯ç®±æ‰“å°å‡ºåº“æ ‡ç­¾
 
 BEGIN
   if :new.comefrom = 3 then
-    --²éÑ¯³ö¼ğ»õ¹¤×÷Çø¶¨ÒåÖĞµÄ""±êÇ©´òÓ¡¼şÊıÉÏÏŞ""
+    --æŸ¥è¯¢å‡ºæ‹£è´§å·¥ä½œåŒºå®šä¹‰ä¸­çš„""æ ‡ç­¾æ‰“å°ä»¶æ•°ä¸Šé™""
     select nvl(b.autoprtparam,0),nvl(b.prtperpackflag, 0) 
       into v_autoprtparam,v_prtperpackflag
       from wms_pickarea b
      where b.pickareaid = nvl(:new.pickareaid,0);
-    v_wholeqty := :new.wholeqty;--Õû¼şÊıÁ¿
+    v_wholeqty := :new.wholeqty;--æ•´ä»¶æ•°é‡
     if nvl(v_wholeqty,0) > 0 then
-      --Èç¹û¡°Ã¿Ïä´òÓ¡³ö¿â±êÇ©¡±Ã»ÓĞÑ¡ÉÏ£¬¼´Öµ²»µÈÓÚ 1£¬Ö»²åÈëÒ»Ìõ¼ÇÂ¼
+      --å¦‚æœâ€œæ¯ç®±æ‰“å°å‡ºåº“æ ‡ç­¾â€æ²¡æœ‰é€‰ä¸Šï¼Œå³å€¼ä¸ç­‰äº 1ï¼Œåªæ’å…¥ä¸€æ¡è®°å½•
       if(v_prtperpackflag <> 1) then
          insert into zx_out_label_print(seqid, inoutid, labelseq, wholeqty, credate)
           values(zx_out_label_print_seq.NEXTVAL, :new.inoutid, v_wholeqty, v_wholeqty, sysdate);
-      --Èç¹ûÑ¡ÔñÁË¡°Ã¿Ïä´òÓ¡³ö¿â±êÇ©¡±£¬¼´ÖµµÈÓÚ1
+      --å¦‚æœé€‰æ‹©äº†â€œæ¯ç®±æ‰“å°å‡ºåº“æ ‡ç­¾â€ï¼Œå³å€¼ç­‰äº1
       elsif(v_prtperpackflag = 1)then
-        --Èç¹û "" ±êÇ©´òÓ¡¼şÊıÉÏÏŞ "" Îª¿Õ»ò 0 
+        --å¦‚æœ "" æ ‡ç­¾æ‰“å°ä»¶æ•°ä¸Šé™ "" ä¸ºç©ºæˆ– 0 
         if(v_autoprtparam = 0) then
           insert into zx_out_label_print(seqid, inoutid, labelseq, wholeqty, credate)
           values(zx_out_label_print_seq.NEXTVAL, :new.inoutid, v_wholeqty, v_wholeqty, sysdate);
-        --Èç¹û "" ±êÇ©´òÓ¡¼şÊıÉÏÏŞ "" ²»Îª¿Õ»òÕß0 £¬ÇÒ´óÓÚÕû¼şÊıÁ¿£¬²åÈëÕû¼şÊıÁ¿Ìõ¼ÇÂ¼
+        --å¦‚æœ "" æ ‡ç­¾æ‰“å°ä»¶æ•°ä¸Šé™ "" ä¸ä¸ºç©ºæˆ–è€…0 ï¼Œä¸”å¤§äºæ•´ä»¶æ•°é‡ï¼Œæ’å…¥æ•´ä»¶æ•°é‡æ¡è®°å½•
         elsif(v_autoprtparam >= v_wholeqty) then
           for i in 1 .. v_wholeqty loop
             insert into zx_out_label_print(seqid,inoutid,labelseq,wholeqty,credate)
             values(zx_out_label_print_seq.NEXTVAL, :new.inoutid, i, v_wholeqty,sysdate);
           end loop;
-        --Èç¹ûÕû¼şÊıÁ¿´óÓÚ"" ±êÇ©´òÓ¡¼şÊıÉÏÏŞ "" ,²åÈë5 Ìõ¼ÇÂ¼
+        --å¦‚æœæ•´ä»¶æ•°é‡å¤§äº"" æ ‡ç­¾æ‰“å°ä»¶æ•°ä¸Šé™ "" ,æ’å…¥5 æ¡è®°å½•
         elsif(nvl(v_wholeqty, 0) > v_autoprtparam) then
         	for i in 1 .. v_autoprtparam loop
             insert into zx_out_label_print(seqid,inoutid,labelseq,wholeqty,credate)
@@ -13536,7 +13536,7 @@ declare
   v_count  number(2);
 
 begin
-  --ÅĞ¶Ï³ö¿âµÄÊÇ¹ıÕË±£¹ÜÕÊµÄ
+  --åˆ¤æ–­å‡ºåº“çš„æ˜¯è¿‡è´¦ä¿ç®¡å¸çš„
   if :OLD.inoutflag = 0 and :OLD.storageid in (382, 941, 902, 708) then
     /*select count(1)
      into v_count
@@ -13547,7 +13547,7 @@ begin
      -- and a.comefrom = 75
       and a.sourcetable = 75;
      -- and a.entryid = 6;*/
-    --ÅĞ¶ÏÊÇ¶ÔÏóµ÷²¦»òÕß×Ü²¿µ÷²¦
+    --åˆ¤æ–­æ˜¯å¯¹è±¡è°ƒæ‹¨æˆ–è€…æ€»éƒ¨è°ƒæ‹¨
     select count(1)
       into v_count1
       from gpcs_placesupply t
@@ -13571,13 +13571,13 @@ begin
                  and nvl(a.sendflag, 0) = nvl(c.sendflag, 0)
                  and a.movedtlid between c.movedtlid - 200 and
                      c.movedtlid + 200
-              --and c.dtlmemo='ÃÅµêÊÕ»õ×Ô¶¯Éú³É'
+              --and c.dtlmemo='é—¨åº—æ”¶è´§è‡ªåŠ¨ç”Ÿæˆ'
               )
-         and a.dtlmemo = 'ÖĞĞÄÊÕÅäÍË×Ô¶¯Éú³É';
-      --ÅĞ¶Ïµ÷³öÃÅµêÊÇ·ñÒÑ¼ÇÕË
+         and a.dtlmemo = 'ä¸­å¿ƒæ”¶é…é€€è‡ªåŠ¨ç”Ÿæˆ';
+      --åˆ¤æ–­è°ƒå‡ºé—¨åº—æ˜¯å¦å·²è®°è´¦
       if (v_count = 0) then
         raise_application_error(-20001,
-                                'ÑéÊÕÈë¿âÒì³££¬ÇëÖØĞÂµãÑéÊÕ£¡' || v_count);
+                                'éªŒæ”¶å…¥åº“å¼‚å¸¸ï¼Œè¯·é‡æ–°ç‚¹éªŒæ”¶ï¼' || v_count);
       end if;
     end if;
   end if;

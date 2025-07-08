@@ -121,3 +121,25 @@ tasks:
     flag: YES
     deps: [warehouse_order_receive_dtl]
     sql: $FILE{"warehouse_in_time_update.sql"}
+
+  # 运输层
+  - name: tms_dispatch_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_in_time]
+    sql: $FILE{"tms_dispatch_doc_update.sql"}
+
+  - name: tms_order_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [tms_dispatch_doc]
+    sql: $FILE{"tms_order_doc_update.sql"}
+
+  - name: tms_tr_doc
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [tms_order_doc]
+    sql: $FILE{"tms_tr_doc_update.sql"}

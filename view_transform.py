@@ -1,15 +1,18 @@
 import csv
 import os
 
-input_csv = "log/wms_view.csv"  # 你的 CSV 文件路径
-output_dir = "wms_view"  # 输出目录
+input_csv = "log/erp_function.csv"  # 你的 CSV 文件路径
+output_dir = "sql/function/wms/oracle"  # 输出目录
 os.makedirs(output_dir, exist_ok=True)
 
 with open(input_csv, "r", encoding="utf-8") as f:
     reader = csv.DictReader(f)
     for row in reader:
-        view_name = row["VIEW_NAME"]
-        raw_sql = row["VIEW_DDL"]
+        if row["OWNER"] != "LYWMS":
+            continue
+
+        view_name = row["FUNCTION_NAME"]
+        raw_sql = row["FUNCTION_DDL"]
 
         # 处理 Oracle CSV 中的 CLOB 转义
         # 把双双引号 ("") 还原成单个双引号 (")

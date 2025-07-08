@@ -28,7 +28,7 @@ CREATE TABLE
 
         -- udi码
         udicode bigint COMMENT 'udi码'
-    ) UNIQUE KEY (recordid, dw_updatetime) DISTRIBUTED BY HASH (recordid) PROPERTIES (
+    ) UNIQUE KEY (recordid) DISTRIBUTED BY HASH (recordid) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",
         "storage_format" = "V2",

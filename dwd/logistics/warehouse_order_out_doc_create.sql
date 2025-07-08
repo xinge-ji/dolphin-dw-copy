@@ -18,12 +18,17 @@ CREATE TABLE
         -- 时间
         create_time DATETIME COMMENT '下单时间',
 
+        -- 部门
+        deptno bigint COMMENT '部门ID',
+        dept_name varchar COMMENT '部门名称',
+
         -- 其他
         is_eshop tinyint COMMENT '是否云商订单',
         is_autopass tinyint COMMENT '是否自动转单',
         is_passing tinyint COMMENT '是否转单',
         use_status varchar COMMENT '订单状态',
-        operation_type varchar COMMENT '业务类型'
+        operation_type varchar COMMENT '业务类型',
+        outmode varchar COMMENT '出库模式:1-送货/0-自提',
     ) UNIQUE KEY (outid) DISTRIBUTED BY HASH (outid) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",
@@ -44,7 +49,10 @@ INSERT INTO dwd.logistics_warehouse_order_out_doc (
     is_autopass,
     is_passing,
     use_status,
-    operation_type
+    operation_type,
+    outmode,
+    deptno,
+    dept_name
 )
 SELECT 
     a.outid,
@@ -70,7 +78,14 @@ SELECT
         WHEN a.usestatus = 7 THEN '出库取消'
         ELSE '其他'
     END as use_status,
-    s.ddlname as operation_type
+    s.ddlname as operation_type,
+    CASE IFNULL(a.outmode, 0)
+        WHEN 1 THEN '送货'
+        WHEN 0 THEN '自提'
+        ELSE '其他'
+    END as outmode,
+    a.deptno,
+    IFNULL(a.deptname, '其他') as dept_name
 FROM ods_wms.wms_out_order a
 LEFT JOIN ods_wms.sys_ddl_dtl s ON a.operationtype = s.ddlid AND s.sysid = 389 AND s.is_active = 1
 WHERE a.is_active = 1;

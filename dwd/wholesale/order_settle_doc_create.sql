@@ -31,10 +31,10 @@ INSERT INTO dwd.wholesale_order_settle_doc (
     inputman_name
 )
 SELECT
-    a.sasettleid,                               -- 订单结算单id
-    a.dw_updatetime,                            -- 更新时间
-    a.credate,                                  -- 创建时间
-    a.confirmdate,                              -- 确认时间
+    a.sasettleid,                                      -- 订单结算单id
+    a.dw_updatetime,                                   -- 更新时间
+    IFNULL(a.credate, a.confirmdate) AS create_date,   -- 创建时间
+    a.confirmdate,                                     -- 确认时间
     CASE
     	WHEN a.usestatus=0 THEN '作废'
         WHEN a.usestatus=1 THEN '正式'
@@ -49,7 +49,7 @@ FROM
     ods_erp.bms_sa_settle_doc a                 -- 结算单主表
 LEFT JOIN 
     dim.employee e ON a.inputmanid = e.employeeid
-    AND a.credate >= e.dw_starttime AND a.credate < e.dw_endtime  -- 员工维度表
+    AND IFNULL(a.credate, a.confirmdate) >= e.dw_starttime AND IFNULL(a.credate, a.confirmdate) < e.dw_endtime  -- 员工维度表
 WHERE 
     a.is_active=1;
 

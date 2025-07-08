@@ -37,3 +37,10 @@ tasks:
     flag: YES
     deps: [warehouse_out_goodsowner_d]
     sql: $FILE{"warehouse_out_d_update.sql"}
+  
+  - name: tms_vehicle_time
+    task_type: Sql
+    datasource_name: "dwd"
+    flag: YES
+    deps: [warehouse_out_d]
+    sql: $FILE{"tms_vehicle_time_update.sql"}

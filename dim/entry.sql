@@ -176,7 +176,7 @@ finance_category AS (
       WHEN e.entryid in (628,632,684) THEN '海南药品分销'
       WHEN e.entryid in (4,264,660,650,676,666,668,662,656,5,144,204,224,104,124,164,696) THEN '医疗器械'
       WHEN e.entryid in (64,550,702,614) THEN '燕来福'
-      WHEN e.entryid in (600) THEN '毫州中药'
+      WHEN e.entryid in (564, 600) THEN '毫州中药'
       WHEN e.entryid in (6,686,304,424,284,444,528,658,244,636,682) THEN '零售'
       WHEN e.entryid in (640,654,708) THEN '新业态'
       WHEN e.entryid in (688,3,704) THEN '其他模块'

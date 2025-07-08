@@ -17,7 +17,10 @@ INSERT INTO dwd.logistics_warehouse_order_out_doc (
     is_autopass,
     is_passing,
     use_status,
-    operation_type
+    operation_type,
+    outmode,
+    deptno,
+    dept_name
 )
 SELECT 
     a.outid,
@@ -43,7 +46,14 @@ SELECT
         WHEN a.usestatus = 7 THEN '出库取消'
         ELSE '其他'
     END as use_status,
-    s.ddlname as operation_type
+    s.ddlname as operation_type,
+    CASE IFNULL(a.outmode, 0)
+        WHEN 1 THEN '送货'
+        WHEN 0 THEN '自提'
+        ELSE '其他'
+    END as outmode,
+    a.deptno,
+    IFNULL(a.deptname, '其他') as dept_name
 FROM ods_wms.wms_out_order a
 LEFT JOIN ods_wms.sys_ddl_dtl s ON a.operationtype = s.ddlid AND s.sysid = 389 AND s.is_active = 1
 WHERE a.is_active = 1

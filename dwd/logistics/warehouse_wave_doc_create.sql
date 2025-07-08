@@ -13,7 +13,7 @@ CREATE TABLE
         -- 仓库
         warehid bigint COMMENT '仓库ID',
         warehouse_name varchar COMMENT '仓库名称'
-    ) UNIQUE KEY (wavedocid, dw_updatetime) DISTRIBUTED BY HASH (wavedocid) PROPERTIES (
+    ) UNIQUE KEY (wavedocid) DISTRIBUTED BY HASH (wavedocid) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",
         "storage_format" = "V2",

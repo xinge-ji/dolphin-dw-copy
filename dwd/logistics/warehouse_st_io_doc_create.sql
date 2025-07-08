@@ -34,7 +34,7 @@ CREATE TABLE
         goods_category varchar COMMENT '商品分类:冷链/中药/其他',
         whole_qty decimal COMMENT '整件件数',
         scatter_qty decimal(16,6) COMMENT '散件件数'        
-    ) UNIQUE KEY (inoutid, dw_updatetime) DISTRIBUTED BY HASH (inoutid) PROPERTIES (
+    ) UNIQUE KEY (inoutid) DISTRIBUTED BY HASH (inoutid) PROPERTIES (
         "replication_allocation" = "tag.location.default: 3",
         "in_memory" = "false",
         "storage_format" = "V2",
