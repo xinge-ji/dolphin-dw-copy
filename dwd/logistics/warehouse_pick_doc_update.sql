@@ -1,7 +1,7 @@
 INSERT INTO dwd.logistics_warehouse_pick_doc (pickid, __DORIS_DELETE_SIGN__)
-SELECT a.pickid, 1
+SELECT a.inoutid as pickid, 1
 FROM ods_wms.wms_st_io_doc AS a
-JOIN dwd.logistics_warehouse_pick_doc AS b ON a.pickid = b.inoutid
+JOIN dwd.logistics_warehouse_pick_doc AS b ON a.inoutid = b.inoutid
 WHERE a.is_active = 0 AND a.dw_updatetime >= b.dw_updatetime;
 
 INSERT INTO dwd.logistics_warehouse_pick_doc (
@@ -142,7 +142,7 @@ LEFT JOIN ods_wms.tpl_warehouse x ON a.warehid = x.warehid AND x.is_active = 1
 WHERE a.tasktype = 1  -- 拣货任务（波次生成）
   AND b.comefrom in (2, 3)  -- 波次出库
   AND a.is_active = 1
-  AND b.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_pick_doc.dw_updatetime)
+  AND b.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_pick_doc)
 
 UNION ALL
 
@@ -232,4 +232,4 @@ WHERE a.tasktype = 2  -- 拣货任务（波次生成）
   AND b.comefrom = 4  -- 库内变动
   AND e.subtype IN (1, 2, 3, 4, 5)  -- 1 波次补货 2 报警补货 3 闲时补货 4手工补货 5波次预补货
   AND a.is_active = 1
-  AND b.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_pick_doc.dw_updatetime);
+  AND b.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_pick_doc);

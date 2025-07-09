@@ -68,7 +68,7 @@ receive_base AS (
         SUM(CASE WHEN a.order_to_receive_time <= 7 THEN 1 ELSE 0 END) as order_to_receive_7d_count
     FROM filtered_in_dtl a
     LEFT JOIN section_info_indtlid si ON a.indtlid = si.indtlid AND si.rn = 1
-    WHERE a.receive_time >= CURRENTDATE() - INTERVAL 60 DAY
+    WHERE a.receive_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         DATE(a.receive_time), a.warehid, a.goodsownerid, a.goods_category,
         a.operation_type, a.warehouse_name, a.goodsowner_name,
@@ -94,7 +94,7 @@ check_detail AS (
     FROM dwd.logistics_warehouse_order_receive_dtl b
     JOIN filtered_in_dtl f ON b.indtlid = f.indtlid
     WHERE b.check_time IS NOT NULL
-        AND b.check_time >= CURRENTDATE() - INTERVAL 60 DAY
+        AND b.check_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         DATE(b.check_time), f.warehid, f.goodsownerid, f.goods_category,
         f.operation_type, f.warehouse_name, f.goodsowner_name,
@@ -121,7 +121,7 @@ flat_shelf_detail AS (
     WHERE c.shelf_time IS NOT NULL
         AND c.rfmanid != 0
         AND c.is_iwcs != 1  -- 平库数据
-        AND c.shelf_time >= CURRENTDATE() - INTERVAL 60 DAY
+        AND c.shelf_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         DATE(c.shelf_time), f.warehid, f.goodsownerid, f.goods_category,
         f.operation_type, f.warehouse_name, f.goodsowner_name, c.section_name
@@ -145,7 +145,7 @@ auto_shelf_detail AS (
     JOIN dwd.logistics_warehouse_order_receive_dtl b ON b.receiveid = d.receiveid
     JOIN filtered_in_dtl f ON b.indtlid = f.indtlid
     WHERE d.create_time IS NOT NULL
-        AND d.create_time >= CURRENTDATE() - INTERVAL 60 DAY
+        AND d.create_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         DATE(d.create_time), f.warehid, f.goodsownerid, f.goods_category, f.operation_type,
         f.warehouse_name, f.goodsowner_name, b.section_name
@@ -162,7 +162,7 @@ ecode_detail AS (
     JOIN filtered_in_dtl f ON e.sourceid = f.indtlid
     JOIN dwd.logistics_warehouse_shelf_doc s ON s.sourceid = e.sourceid
     WHERE e.create_time IS NOT NULL
-        AND e.create_time >= CURRENTDATE() - INTERVAL 60 DAY
+        AND e.create_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         DATE(e.create_time), f.warehid, f.goodsownerid, f.goods_category, f.operation_type,
         f.warehouse_name, f.goodsowner_name, s.section_name
@@ -179,7 +179,7 @@ udicode_detail AS (
     JOIN filtered_in_dtl f ON e.sourceid = f.indtlid
     JOIN dwd.logistics_warehouse_shelf_doc s ON s.sourceid = e.sourceid
     WHERE e.create_time IS NOT NULL
-        AND e.create_time >= CURRENTDATE() - INTERVAL 60 DAY
+        AND e.create_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         DATE(e.create_time), f.warehid, f.goodsownerid, f.goods_category, f.operation_type,
         f.warehouse_name, f.goodsowner_name, s.section_name

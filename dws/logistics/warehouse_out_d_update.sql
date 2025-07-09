@@ -39,7 +39,7 @@ WITH flat_pick_data AS (
     WHERE p.io_comefrom in ('订单出库', '波次出库') 
         AND p.rfmanid != 0  -- 非系统管理员
         AND p.is_iwcs = 0
-        AND p.pick_time >= CURRENTDATE() - INTERVAL 60 DAY
+        AND p.pick_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         DATE(p.pick_time),
         p.warehid,
@@ -69,7 +69,7 @@ auto_pick_data AS (
     JOIN
         dwd.logistics_warehouse_iwcs_pick i ON p.inoutid = i.wms_inout_id
     WHERE p.io_comefrom in ('订单出库', '波次出库') 
-    AND i.pick_time >= CURRENTDATE() - INTERVAL 60 DAY
+    AND i.pick_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         DATE(i.pick_time),
         p.warehid,
@@ -98,7 +98,7 @@ auto_udi_data AS (
     JOIN 
         ods_wms.iwcs_ssc_picking_carton_detail_udi u ON i.wms_inout_id = u.wms_inout_id
     WHERE p.io_comefrom in ('订单出库', '波次出库') 
-    AND i.pick_time >= CURRENTDATE() - INTERVAL 60 DAY
+    AND i.pick_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         DATE(i.pick_time),
         p.warehid,
@@ -123,7 +123,7 @@ last_pick_data AS (
     FROM dwd.logistics_warehouse_pick_doc p
     WHERE p.io_comefrom in ('订单出库', '波次出库') 
     AND p.rfmanid != 0  -- 非系统管理员
-    AND p.pick_time >= CURRENTDATE() - INTERVAL 60 DAY
+    AND p.pick_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         p.sourceid
     
@@ -143,7 +143,7 @@ last_pick_data AS (
     JOIN
         dwd.logistics_warehouse_iwcs_pick i ON p.inoutid = i.wms_inout_id
     WHERE p.io_comefrom in ('订单出库', '波次出库') 
-    AND i.pick_time >= CURRENTDATE() - INTERVAL 60 DAY
+    AND i.pick_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         p.sourceid
 ),
@@ -164,7 +164,7 @@ wave_out_data AS (
     FROM dwd.logistics_warehouse_wave_dtl w
     JOIN last_pick_data p ON w.wavedtlid = p.sourceid
     WHERE w.print_time IS NOT NULL
-    AND w.print_time >= CURRENTDATE() - INTERVAL 60 DAY
+    AND w.print_time >= CURRENT_DATE() - INTERVAL 60 DAY
     GROUP BY 
         DATE(w.print_time),
         w.warehid,

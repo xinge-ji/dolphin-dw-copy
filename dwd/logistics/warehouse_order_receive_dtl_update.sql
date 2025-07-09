@@ -28,7 +28,7 @@ WITH filtered_receive AS (
     SELECT receiveid, dw_updatetime, indtlid, warehid, sectionid, checkdate, goodsid, scatterqty, wholeqty
     FROM ods_wms.wms_receive_dtl 
     WHERE is_active = 1 
-    AND dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_order_receive_dtl);
+    AND dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_order_receive_dtl)
 ),
 latest_shelf AS (
     -- 只处理有关联的shelf数据

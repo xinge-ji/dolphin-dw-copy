@@ -1,7 +1,7 @@
 INSERT INTO dwd.logistics_warehouse_shelf_doc (shelfid, __DORIS_DELETE_SIGN__)
-SELECT a.shelfid, 1
+SELECT a.inoutid as shelfid, 1
 FROM ods_wms.wms_st_io_doc AS a
-JOIN dwd.logistics_warehouse_shelf_doc AS b ON a.shelfid = b.inoutid
+JOIN dwd.logistics_warehouse_shelf_doc AS b ON a.inoutid = b.inoutid
 WHERE a.is_active = 0 AND a.dw_updatetime >= b.dw_updatetime;
 
 INSERT INTO dwd.logistics_warehouse_shelf_doc (
@@ -114,7 +114,7 @@ LEFT JOIN ods_wms.sys_ddl_dtl s ON b.operationtype = s.ddlid AND s.sysid = 389 A
 WHERE a.tasktype = 3  -- 上架任务
   AND b.comefrom = 1  -- 入库
   AND a.is_active = 1
-  AND b.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_shelf_doc.dw_updatetime)
+  AND b.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_shelf_doc)
 
 UNION ALL
 
@@ -190,4 +190,4 @@ WHERE a.tasktype = 3  -- 上架
   AND b.comefrom = 4  -- 库内下架任务（指库内变动单生成的下架任务）
   AND e.subtype IN (1, 2, 3, 4, 5)  -- 1 波次补货 2 报警补货 3 闲时补货 4手工补货 5波次预补货
   AND a.is_active = 1
-  AND b.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_shelf_doc.dw_updatetime)
+  AND b.dw_updatetime >= (SELECT MAX(dw_updatetime) - INTERVAL 60 DAY FROM dwd.logistics_warehouse_shelf_doc)
