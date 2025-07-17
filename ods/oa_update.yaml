@@ -1,0 +1,76 @@
+workflow:
+    name: oa_manual_update
+    schedule: 0 0 6 ? * * *
+    project: oa_ods
+
+tasks:
+  - name: t_cqcekd_doc_ods_tmp
+    task_type: SeaTunnel
+    fail_retry_times: 4
+    fail_retry_interval: 5
+    startup_script: "seatunnel.sh"
+    use_custom: true
+    deploy_mode: "cluster"
+    flag: YES
+    deps: []
+    raw_script: |
+        env{
+          parallelism = 2
+          job.mode = "BATCH"
+        }
+        source{
+          Jdbc {
+            url = "jdbc:mysql://10.10.30.123:3306/soa"
+            driver = "com.mysql.cj.jdbc.Driver"
+            connection_check_timeout_sec = 100
+            decimal_type_narrowing = false
+            user = "soa"
+            password = "yRiEhFGkzNpJApcC"
+            table_path = "soa.t_cqcekd_doc"
+            query = """select t.billid, sha2(concat(COALESCE(SUBSTRING(CAST(t.billid AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.jl_is_del AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.ts AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.billno AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.billstatus AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.billdate AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.pk_billtype AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.make_user AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.make_date AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.modify_user AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.modify_time AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.approve_user AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.approve_time AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.approve_note AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.seqid AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.salesid AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.sqr AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.sqrq AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.entryname AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.entryid AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.customname AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.customid AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.financeclassname AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.xyqk AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.total AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.sqly AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.node_bmjl AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.node_fgld AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.node_cwfzr AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.node_zjl AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.node_qyglzx AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.node_ypfxsyb AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.node_jtfgld AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.flow_config_id AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.control_flag AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.node_qycwfzr AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.node_qyfgld AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.node_ypfxsybzj AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.zx_xyedyjhkje AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.zx_xyedyjhkrq AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.zx_xyedbckdpz AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.zx_xyedblwcqk AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.zx_sysjhkze AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.zx_xyedyjhkje_last AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.zx_xyedyjhkrq_last AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.zx_xyedsqly_last AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.zx_byljkdje AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.yjy_memo AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.t_cqcekd_doc_item_1 AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.t_cqcekd_doc_item_2 AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.t_cqcekd_doc_item_3 AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.t_cqcekd_doc_item_6 AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.t_cqcekd_doc_item_4 AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.t_cqcekd_doc_item_5 AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.t_cqcekd_doc_item_7 AS CHAR), 1, 255), ''),COALESCE(SUBSTRING(CAST(t.t_cqcekd_doc_item_8 AS CHAR), 1, 255), '')),256) as DW_ID, NOW() as dw_createtime, NOW() as dw_updatetime, 1 as is_active,t.jl_is_del,t.ts,t.billno,t.billstatus,t.billdate,t.pk_billtype,t.make_user,t.make_date,t.modify_user,t.modify_time,t.approve_user,t.approve_time,t.approve_note,t.seqid,t.salesid,t.sqr,t.sqrq,t.entryname,t.entryid,t.customname,t.customid,t.financeclassname,t.xyqk,t.total,t.sqly,t.node_bmjl,t.node_fgld,t.node_cwfzr,t.node_zjl,t.node_qyglzx,t.node_ypfxsyb,t.node_jtfgld,t.flow_config_id,t.control_flag,t.node_qycwfzr,t.node_qyfgld,t.node_ypfxsybzj,t.zx_xyedyjhkje,t.zx_xyedyjhkrq,t.zx_xyedbckdpz,t.zx_xyedblwcqk,t.zx_sysjhkze,t.zx_xyedyjhkje_last,t.zx_xyedyjhkrq_last,t.zx_xyedsqly_last,t.zx_byljkdje,t.yjy_memo,t.t_cqcekd_doc_item_1,t.t_cqcekd_doc_item_2,t.t_cqcekd_doc_item_3,t.t_cqcekd_doc_item_6,t.t_cqcekd_doc_item_4,t.t_cqcekd_doc_item_5,t.t_cqcekd_doc_item_7,t.t_cqcekd_doc_item_8 from t_cqcekd_doc t"""
+          }
+        }
+        sink{
+          Doris {
+            fenodes = "10.60.10.13:8030"
+            username = "root"
+            password = "doris123"
+            database = "ods_oa"
+            table = "${table_name}_doristmp"
+            data_save_mode = DROP_DATA
+            save_mode_create_template = """
+              CREATE TABLE IF NOT EXISTS `${database}`.`${table}` (
+                  ${rowtype_fields}
+              ) ENGINE=OLAP
+              UNIQUE KEY(billid,DW_ID)
+              DISTRIBUTED BY HASH (billid,DW_ID)
+              PROPERTIES (
+                  "replication_allocation" = "tag.location.default: 1",
+                  "in_memory" = "false",
+                  "storage_format" = "V2",
+                  "disable_auto_compaction" = "false"
+              )
+            """
+            doris.config = {
+              format = "json"
+              read_json_by_line="true"
+            }
+          }
+        }
+
+  - name: t_cqcekd_doc_ods_update
+    task_type: Sql
+    fail_retry_times: 1
+    fail_retry_interval: 5
+    datasource_name: "ods_oa"
+    flag: YES
+    deps: [t_cqcekd_doc_ods_tmp]
+    sql: |
+        UPDATE t_cqcekd_doc t
+        SET t.dw_updatetime = NOW(), t.is_active = 0 
+        WHERE t.is_active=1 AND NOT EXISTS (SELECT 1 FROM t_cqcekd_doc_doristmp s WHERE s.billid = t.billid AND s.DW_ID = t.DW_ID) ;
+        INSERT INTO t_cqcekd_doc (`billid`,`jl_is_del`,`ts`,`billno`,`billstatus`,`billdate`,`pk_billtype`,`make_user`,`make_date`,`modify_user`,`modify_time`,`approve_user`,`approve_time`,`approve_note`,`seqid`,`salesid`,`sqr`,`sqrq`,`entryname`,`entryid`,`customname`,`customid`,`financeclassname`,`xyqk`,`total`,`sqly`,`node_bmjl`,`node_fgld`,`node_cwfzr`,`node_zjl`,`node_qyglzx`,`node_ypfxsyb`,`node_jtfgld`,`flow_config_id`,`control_flag`,`node_qycwfzr`,`node_qyfgld`,`node_ypfxsybzj`,`zx_xyedyjhkje`,`zx_xyedyjhkrq`,`zx_xyedbckdpz`,`zx_xyedblwcqk`,`zx_sysjhkze`,`zx_xyedyjhkje_last`,`zx_xyedyjhkrq_last`,`zx_xyedsqly_last`,`zx_byljkdje`,`yjy_memo`,`t_cqcekd_doc_item_1`,`t_cqcekd_doc_item_2`,`t_cqcekd_doc_item_3`,`t_cqcekd_doc_item_6`,`t_cqcekd_doc_item_4`,`t_cqcekd_doc_item_5`,`t_cqcekd_doc_item_7`,`t_cqcekd_doc_item_8`,`dw_id`,`dw_createtime`,`dw_updatetime`,`is_active`)
+        SELECT s.`billid`,s.`jl_is_del`,s.`ts`,s.`billno`,s.`billstatus`,s.`billdate`,s.`pk_billtype`,s.`make_user`,s.`make_date`,s.`modify_user`,s.`modify_time`,s.`approve_user`,s.`approve_time`,s.`approve_note`,s.`seqid`,s.`salesid`,s.`sqr`,s.`sqrq`,s.`entryname`,s.`entryid`,s.`customname`,s.`customid`,s.`financeclassname`,s.`xyqk`,s.`total`,s.`sqly`,s.`node_bmjl`,s.`node_fgld`,s.`node_cwfzr`,s.`node_zjl`,s.`node_qyglzx`,s.`node_ypfxsyb`,s.`node_jtfgld`,s.`flow_config_id`,s.`control_flag`,s.`node_qycwfzr`,s.`node_qyfgld`,s.`node_ypfxsybzj`,s.`zx_xyedyjhkje`,s.`zx_xyedyjhkrq`,s.`zx_xyedbckdpz`,s.`zx_xyedblwcqk`,s.`zx_sysjhkze`,s.`zx_xyedyjhkje_last`,s.`zx_xyedyjhkrq_last`,s.`zx_xyedsqly_last`,s.`zx_byljkdje`,s.`yjy_memo`,s.`t_cqcekd_doc_item_1`,s.`t_cqcekd_doc_item_2`,s.`t_cqcekd_doc_item_3`,s.`t_cqcekd_doc_item_6`,s.`t_cqcekd_doc_item_4`,s.`t_cqcekd_doc_item_5`,s.`t_cqcekd_doc_item_7`,s.`t_cqcekd_doc_item_8`,s.`dw_id`,s.`dw_createtime`,s.`dw_updatetime`,s.`is_active`
+        FROM t_cqcekd_doc_doristmp s
+        WHERE NOT EXISTS (SELECT 1 FROM t_cqcekd_doc WHERE s.billid = t_cqcekd_doc.billid AND s.DW_ID = t_cqcekd_doc.DW_ID AND t_cqcekd_doc.IS_ACTIVE=1);
+        DROP TABLE t_cqcekd_doc_doristmp;

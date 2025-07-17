@@ -73,6 +73,23 @@ tasks:
         FROM bms_sa_doctoset_doristmp s
         WHERE NOT EXISTS (SELECT 1 FROM bms_sa_doctoset WHERE s.SALESDTLID = BMS_SA_DOCTOSET.SALESDTLID AND s.SASETTLEDTLID = BMS_SA_DOCTOSET.SASETTLEDTLID AND s.DW_ID = BMS_SA_DOCTOSET.DW_ID AND BMS_SA_DOCTOSET.IS_ACTIVE=1);
         DROP TABLE bms_sa_doctoset_doristmp;
+        UPDATE bms_sa_doctoset s
+        SET is_active = CASE 
+            WHEN ranked.row_num = 1 AND s.dw_createtime = s.dw_updatetime THEN 1
+            ELSE 0
+        END
+        FROM (
+            SELECT t.SALESDTLID, t.SASETTLEDTLID,
+            t.dw_createtime,
+            ROW_NUMBER() OVER (
+                PARTITION BY t.SALESDTLID
+                ORDER BY t.dw_createtime DESC
+            ) as row_num
+            FROM bms_sa_doctoset t
+        ) ranked
+        WHERE s.SALESDTLID = ranked.SALESDTLID
+        AND s.SASETTLEDTLID = ranked.SASETTLEDTLID
+        AND s.dw_createtime = ranked.dw_createtime; 
 
   - name: BMS_SA_SETTOREC_ods_tmp
     task_type: SeaTunnel
