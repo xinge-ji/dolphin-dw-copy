@@ -1,4 +1,7 @@
 sql/
+logs/
+config.yaml
+*.log
 *.py
 *.txt
 *.png
