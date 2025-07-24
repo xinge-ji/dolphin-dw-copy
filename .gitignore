@@ -1,5 +1,6 @@
 sql/
 logs/
+.cache/
 config.yaml
 *.log
 *.py
