@@ -667,7 +667,7 @@ tasks:
     startup_script: "seatunnel.sh"
     use_custom: true
     deploy_mode: "cluster"
-    flag: NO
+    flag: YES
     deps: [BMS_SA_REC_DTL_d_ods_update]
     raw_script: |
         env{
@@ -719,7 +719,7 @@ tasks:
     fail_retry_times: 1
     fail_retry_interval: 5
     datasource_name: "ods_erp"
-    flag: NO
+    flag: YES
     deps: [GRESA_SA_DTL_d_ods_tmp]
     sql: |
         UPDATE gresa_sa_dtl t
